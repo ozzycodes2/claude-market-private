@@ -1,0 +1,29 @@
+{
+  "pr_number": 0,
+  "docs_status": "complete | needs_updates | drifted",
+  "summary": {
+    "drift": 0,
+    "completeness": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0,
+    "total": 0
+  },
+  "findings": [
+    {
+      "facet": "drift | completeness",
+      "drift_class": "stale-comment | superseded-model | rendered-lag | adr-index | env-mismatch | retired-rule | duplicated-claim | missing-doc",
+      "severity": "high | medium | low",
+      "path": "docs/adrs/README.md",
+      "line": 64,
+      "title": "5-10 word statement of the drift",
+      "doc_says": "verbatim quote of the drifted doc line",
+      "code_says": "the contradicting code location (path:line or symbol) or 'removed by <sha>'",
+      "body": "one-paragraph explanation tying the doc claim to the code fact",
+      "fix": "concrete correction (or 'regenerate <artifact>' for rendered lag)"
+    }
+  ],
+  "notes": [
+    "Findings with path+line are posted inline; omit both for cross-file/architectural drift."
+  ]
+}
