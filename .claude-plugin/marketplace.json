@@ -1,5 +1,6 @@
 {
   "name": "claude-market-private",
+  "description": "Private Claude Code plugin marketplace for ozzycodes2.",
   "owner": {
     "name": "Osniel Quintana-Salgado",
     "email": "osniel.quintana-salgado@machinify.com"
