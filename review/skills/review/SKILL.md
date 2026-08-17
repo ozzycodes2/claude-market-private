@@ -34,7 +34,7 @@ This skill coordinates the full review workflow:
 
 ```bash
 # Invoke with PR URL
-> /comprehensive-pr-review:review https://github.com/org/repo/pull/123
+> /review:review https://github.com/org/repo/pull/123
 
 # The skill will automatically:
 # - Analyze the PR
@@ -88,7 +88,7 @@ What's the PR URL? (e.g., https://github.com/org/repo/pull/123)
 
 ```
 Use Skill tool:
-- skill: "comprehensive-pr-review:analyze"
+- skill: "review:analyze"
 - args: "<PR_URL> <OUTPUT_DIR>"
 ```
 
@@ -152,21 +152,21 @@ Now that we have the foundation (analysis + code review), run quality checks in 
 ### 4.1 Launch Test Analysis
 ```
 Use Skill tool:
-- skill: "comprehensive-pr-review:test-gaps"
+- skill: "review:test-gaps"
 - args: "<PR_URL> <OUTPUT_DIR>"
 ```
 
 ### 4.2 Launch Security Scanner
 ```
 Use Skill tool:
-- skill: "comprehensive-pr-review:security-scan"
+- skill: "review:security-scan"
 - args: "<PR_URL> <OUTPUT_DIR>"
 ```
 
 ### 4.3 Launch Documentation Validator
 ```
 Use Skill tool:
-- skill: "comprehensive-pr-review:docs-check"
+- skill: "review:docs-check"
 - args: "<PR_URL> <OUTPUT_DIR>"
 ```
 
@@ -189,7 +189,7 @@ CAN_RUN=$(jq -r '.test_setup.can_run_safely' "$OUTPUT_DIR/pr-analysis-${PR_NUMBE
 **If tests can run safely:**
 ```
 Use Skill tool:
-- skill: "comprehensive-pr-review:run-tests"
+- skill: "review:run-tests"
 - args: "<PR_URL> <OUTPUT_DIR>"
 ```
 
@@ -209,7 +209,7 @@ After test execution (or skip), generate code/docs:
 
 ```
 Use Skill tool:
-- skill: "comprehensive-pr-review:codegen"
+- skill: "review:codegen"
 - args: "<PR_URL> <OUTPUT_DIR>"
 ```
 
@@ -383,7 +383,7 @@ Apply these to every `body`, `summary_line`, `rationale`, `required_actions`, an
     }
   ],
   "review_metadata": {
-    "tool_name": "comprehensive-pr-review",
+    "tool_name": "review",
     "review_title": "Review",
     "tool_version": "<read from .claude-plugin/plugin.json — do not hardcode>",
     "model": "<your exact model ID, e.g. claude-opus-4-8>",

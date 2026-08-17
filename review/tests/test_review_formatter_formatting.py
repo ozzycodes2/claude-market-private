@@ -1,10 +1,10 @@
-"""Tests for comprehensive-pr-review/scripts/review_formatter.py formatting.
+"""Tests for review/scripts/review_formatter.py formatting.
 
 Covers the rendering rules exercised by the review comment: the verdict
 heading, per-category section icons, and collapsible section structure. Run
 with:
 
-    python3 -m unittest discover comprehensive-pr-review/tests
+    python3 -m unittest discover review/tests
 """
 import importlib.util
 import unittest

@@ -14,7 +14,7 @@ description: >
 allowed-tools: Bash Read Grep Glob
 metadata:
   author: machinify
-  facet-of: comprehensive-pr-review
+  facet-of: review
 ---
 
 # Documentation Drift & Completeness Check

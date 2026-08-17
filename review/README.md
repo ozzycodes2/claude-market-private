@@ -1,4 +1,4 @@
-# comprehensive-pr-review
+# review
 
 Comprehensive, language-agnostic PR review. One orchestrator skill coordinates a
 change analysis, a 3-pass deep code review, security scanning, test-gap analysis,
@@ -15,7 +15,7 @@ posts a single unified GitHub review (summary + inline comments). Rust and Machi
 Or invoke the orchestrator explicitly:
 
 ```
-/comprehensive-pr-review:review https://github.com/org/repo/pull/123
+/review:review https://github.com/org/repo/pull/123
 ```
 
 The orchestrator runs the full workflow and posts one consolidated review to the PR
@@ -42,12 +42,12 @@ coverage, and fetching mac-ui's **live** authority docs (`ai-behavior-spec`,
 `ai-code-audit`, `ai-testing-guide`, per-component `mac-*.md`) at review time since
 the framework changes.
 
-Each sub-skill can also be invoked standalone (e.g. `/comprehensive-pr-review:security-scan <PR_URL>`).
+Each sub-skill can also be invoked standalone (e.g. `/review:security-scan <PR_URL>`).
 
 ## How it works
 
 ```
-/comprehensive-pr-review:review <PR_URL>
+/review:review <PR_URL>
   │
   ├─ Phase 1  analyze  →  deep code review (3 parallel bug-finder passes, inline)
   ├─ Phase 2  test-gaps · security-scan · docs-drift   (parallel)

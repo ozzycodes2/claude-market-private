@@ -716,7 +716,7 @@ def emit_review_meta(sha: str, round_number: int, engine: str = "") -> str:
     """Generate a review-meta HTML comment for embedding in review body.
 
     The ``engine`` field records which code-review engine produced the review
-    (e.g. ``review-toolkit``, ``comprehensive-pr-review``). Downstream consumers (notably
+    (e.g. ``review-toolkit``, ``review``). Downstream consumers (notably
     plugin-review's Step 1.5b engine-change detection) parse this field to
     decide whether to force a full review on baseline reset.
     """

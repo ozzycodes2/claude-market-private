@@ -4,7 +4,7 @@ description: Generates simple tests, docstrings, and documentation updates for P
 allowed-tools: Bash Read Write
 metadata:
   author: machinify
-  facet-of: comprehensive-pr-review
+  facet-of: review
 ---
 
 # Code Generator
