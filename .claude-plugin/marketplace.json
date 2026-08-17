@@ -54,6 +54,28 @@
         "productivity"
       ],
       "source": "./session-improv"
+    },
+    {
+      "name": "repo-improv",
+      "version": "0.1.0",
+      "description": "Restructures bloated agent-instructions files (CLAUDE.md/AGENTS.md) via progressive disclosure and converts their deterministic CLI-policy rules into enforced Claude Code PreToolUse hooks. Provides the agent-docs-improv skill.",
+      "category": "development",
+      "repository": "https://github.com/ozzycodes2/claude-market-private",
+      "license": "MIT",
+      "author": {
+        "name": "Osniel Quintana-Salgado",
+        "email": "osniel.quintana-salgado@machinify.com"
+      },
+      "keywords": [
+        "claude-md",
+        "agents-md",
+        "progressive-disclosure",
+        "hooks",
+        "pretooluse",
+        "documentation",
+        "developer-experience"
+      ],
+      "source": "./repo-improv"
     }
   ]
 }
