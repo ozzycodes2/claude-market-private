@@ -1,20 +1,22 @@
-# repo-improv
+# agent-authoring
 
-Cleans up a repo's agent-instructions file (`CLAUDE.md`, `AGENTS.md`, etc.) in two
-independent phases: restructure it with progressive disclosure, then convert its
-deterministic CLI-policy rules into enforced Claude Code hooks.
+Author and improve agent-facing instructions and skills. Two complementary skills:
+clean up and enforce a repo's agent-instructions files, and write effective docs
+and skills for agents in the first place.
 
 ## Usage
 
 ```
 > clean up my CLAUDE.md, it's grown into one giant file
 > turn the "always use just, never bare cargo fmt" rule into a hook
+> help me write a SKILL.md for this workflow
 ```
 
-Or invoke the skill explicitly:
+Or invoke a skill explicitly:
 
 ```
-/repo-improv:agent-docs-improv
+/agent-authoring:agent-docs-improv
+/agent-authoring:writing-for-agents
 ```
 
 ## Skills
@@ -22,6 +24,7 @@ Or invoke the skill explicitly:
 | Skill | What it does |
 |-------|--------------|
 | `agent-docs-improv` | Phase 1: finds contradictions, extracts root-file essentials, splits the rest into topic files under `docs/agents/`, flags (doesn't delete) redundant/vague instructions. Phase 2: identifies which of those rules are CLI-command-shaped, confirms scope with the user, then writes `.claude/hooks/*.sh` scripts wired into `.claude/settings.json`'s `PreToolUse` — deterministically blocking the banned invocation instead of relying on the agent remembering the rule every session. |
+| `writing-for-agents` | Guidance for writing documents agents read — skills (`SKILL.md`), `AGENTS.md`, and `CLAUDE.md`. Covers the mechanics of what makes agent-facing prose effective. |
 
 ## How it works
 
@@ -31,7 +34,7 @@ Phase 1 (progressive disclosure)
   → extract root essentials
   → split the rest into docs/agents/*.md
   → delegate issue-tracker/domain-docs/triage-labels to
-    /mattpocock-skills:setup-matt-pocock-skills (prose fallback if not installed)
+    /setup-matt-pocock-skills (prose fallback if not installed)
   → rewrite root as a slim index + links
   → flag deletion candidates (leave them in place)
   → verify zero content loss (git diff --stat + spot-check grep)
@@ -53,7 +56,7 @@ rather than faking enforcement with a check that can't see what it needs to.
 - `jq` — hook scripts parse the `PreToolUse` stdin JSON with it.
 - macOS's BSD `grep` is the tested baseline for hook regexes (no `\s`/`\b`
   support) — see `skills/agent-docs-improv/references/hook-patterns.md`.
-- Optional: the `mattpocock-skills` plugin (`setup-matt-pocock-skills`) — used
+- Optional: the `architecture-design` plugin (`setup-matt-pocock-skills`) — used
   to scaffold issue-tracker/domain-docs/triage-labels conventions in Phase 1.
   Not required; the skill falls back to doing the equivalent by hand.
 

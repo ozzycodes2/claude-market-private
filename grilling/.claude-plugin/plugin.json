@@ -1,0 +1,21 @@
+{
+  "name": "grilling",
+  "version": "0.1.0",
+  "description": "Relentless interviews to stress-test a plan, decision, or design before you commit to it. Provides grilling (the core interview), grill-me (a quick trigger), grill-with-docs (grilling that also produces ADRs and a glossary as decisions crystallize), and wayfinder (plan work too large for one session as a map of decision tickets, resolved one at a time).",
+  "repository": "https://github.com/ozzycodes2/claude-market-private",
+  "license": "MIT",
+  "author": {
+    "name": "Osniel Quintana-Salgado",
+    "email": "osniel.quintana-salgado@machinify.com"
+  },
+  "keywords": [
+    "grilling",
+    "stress-test",
+    "planning",
+    "decision-making",
+    "interview",
+    "wayfinder",
+    "adr",
+    "productivity"
+  ]
+}

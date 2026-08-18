@@ -9,7 +9,7 @@
     {
       "name": "review",
       "version": "0.5.1",
-      "description": "Comprehensive multi-phase PR review \u2014 change analysis, 3-pass deep code review, security scanning, test analysis, and documentation-drift checks, posted as one unified GitHub review. Rust and Machinify mac-ui changes get tailored checks.",
+      "description": "Comprehensive multi-phase PR review — change analysis, 3-pass deep code review, security scanning, test analysis, and documentation-drift checks, posted as one unified GitHub review. Rust and Machinify mac-ui changes get tailored checks.",
       "category": "development",
       "repository": "https://github.com/ozzycodes2/claude-market-private",
       "license": "MIT",
@@ -56,9 +56,9 @@
       "source": "./session-improv"
     },
     {
-      "name": "repo-improv",
-      "version": "0.1.0",
-      "description": "Restructures bloated agent-instructions files (CLAUDE.md/AGENTS.md) via progressive disclosure and converts their deterministic CLI-policy rules into enforced Claude Code PreToolUse hooks. Provides the agent-docs-improv skill.",
+      "name": "agent-authoring",
+      "version": "0.2.0",
+      "description": "Author and improve agent-facing instructions and skills. Restructures bloated CLAUDE.md/AGENTS.md via progressive disclosure and converts deterministic CLI-policy rules into enforced PreToolUse hooks (agent-docs-improv), and gives guidance for writing effective skills and agent docs (writing-for-agents).",
       "category": "development",
       "repository": "https://github.com/ozzycodes2/claude-market-private",
       "license": "MIT",
@@ -72,10 +72,57 @@
         "progressive-disclosure",
         "hooks",
         "pretooluse",
+        "writing-for-agents",
+        "skill-authoring",
         "documentation",
         "developer-experience"
       ],
-      "source": "./repo-improv"
+      "source": "./agent-authoring"
+    },
+    {
+      "name": "architecture-design",
+      "version": "0.1.0",
+      "description": "Design deep modules and sharpen a project's domain model. Shared vocabulary for module depth, interfaces, and seams; domain terminology, ADRs, and CONTEXT docs; and a codebase deepening scan with an HTML report. Run setup-matt-pocock-skills once first.",
+      "category": "development",
+      "repository": "https://github.com/ozzycodes2/claude-market-private",
+      "license": "MIT",
+      "author": {
+        "name": "Osniel Quintana-Salgado",
+        "email": "osniel.quintana-salgado@machinify.com"
+      },
+      "keywords": [
+        "architecture",
+        "deep-modules",
+        "domain-modeling",
+        "ubiquitous-language",
+        "adr",
+        "codebase-design",
+        "development"
+      ],
+      "source": "./architecture-design"
+    },
+    {
+      "name": "grilling",
+      "version": "0.1.0",
+      "description": "Relentless interviews to stress-test a plan, decision, or design before you commit to it. Provides grilling (the core interview), grill-me (a quick trigger), grill-with-docs (grilling that also produces ADRs and a glossary as decisions crystallize), and wayfinder (plan work too large for one session as a map of decision tickets, resolved one at a time).",
+      "category": "productivity",
+      "repository": "https://github.com/ozzycodes2/claude-market-private",
+      "license": "MIT",
+      "author": {
+        "name": "Osniel Quintana-Salgado",
+        "email": "osniel.quintana-salgado@machinify.com"
+      },
+      "keywords": [
+        "grilling",
+        "stress-test",
+        "planning",
+        "decision-making",
+        "interview",
+        "wayfinder",
+        "adr",
+        "productivity"
+      ],
+      "source": "./grilling"
     }
   ]
 }

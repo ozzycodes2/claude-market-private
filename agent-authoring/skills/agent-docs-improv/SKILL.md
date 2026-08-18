@@ -64,7 +64,7 @@ linked topic files loaded only when relevant.
    `docs/agents/triage-labels.md`, or the `## Agent skills` block yourself
    when a better tool exists for it.
 
-   Check whether `/mattpocock-skills:setup-matt-pocock-skills` is available
+   Check whether `/setup-matt-pocock-skills` is available
    (look for it among your available skills). If it is, run it now. Hand it
    what you already learned in steps 1-2 — which file is authoritative,
    any existing `## Agent skills` content you found — so it doesn't re-ask

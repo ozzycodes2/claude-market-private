@@ -1,0 +1,22 @@
+{
+  "name": "agent-authoring",
+  "version": "0.2.0",
+  "description": "Author and improve agent-facing instructions and skills. Restructures bloated CLAUDE.md/AGENTS.md via progressive disclosure and converts deterministic CLI-policy rules into enforced PreToolUse hooks (agent-docs-improv), and gives guidance for writing effective skills and agent docs (writing-for-agents).",
+  "repository": "https://github.com/ozzycodes2/claude-market-private",
+  "license": "MIT",
+  "author": {
+    "name": "Osniel Quintana-Salgado",
+    "email": "osniel.quintana-salgado@machinify.com"
+  },
+  "keywords": [
+    "claude-md",
+    "agents-md",
+    "progressive-disclosure",
+    "hooks",
+    "pretooluse",
+    "writing-for-agents",
+    "skill-authoring",
+    "documentation",
+    "developer-experience"
+  ]
+}
