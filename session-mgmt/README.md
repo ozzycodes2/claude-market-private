@@ -1,10 +1,35 @@
 # session-mgmt
 
-Manage the lifecycle of a Claude Code working session. Its `exit-session` skill tears
-down the ephemeral resources a session spun up — so you can wrap up with a single
-`/exit-session` and get a clean machine back.
+Manage the lifecycle of a Claude Code working session — open one cleanly with
+`start-session`, close it cleanly with `exit-session`.
 
-## Usage
+- **`start-session <name>`** — begin a task in a fresh, isolated git worktree named
+  after the argument, with a matching local branch. Uses the `EnterWorktree` tool (so
+  the session's working directory follows into the worktree — no `cd` flood), places it
+  under `.claude/worktrees/`, and if the name is a JIRA key (e.g. `COB-103`) loads that
+  story from the Atlassian plugin and summarizes the implementation ask. Then it stops
+  and waits — it sets up the workspace, it doesn't start coding.
+- **`exit-session`** — tear down the ephemeral resources a session spun up, so you can
+  wrap up with a single command and get a clean machine back.
+
+## start-session
+
+```
+> /start-session COB-103        # worktree + branch "COB-103", loads the JIRA story
+> /start-session random-misc    # worktree + branch "random-misc", no ticket
+> start a worktree for SUBRO-1505
+```
+
+Whatever name you pass becomes the worktree directory **and** the local branch,
+verbatim. The branch is based on a freshly-fetched origin default (`worktree.baseRef:
+fresh`). JIRA loading is optional: a non-ticket name just skips it, and if the Atlassian
+plugin isn't enabled the worktree is still created with a one-line note.
+
+Why `EnterWorktree` and not `git worktree add`? `EnterWorktree` switches the session
+into the new worktree; `git worktree add` into a path does not, which forces a
+`cd …/worktree &&` prefix onto every later command. This skill uses the tool on purpose.
+
+## exit-session
 
 ```
 > /exit-session
