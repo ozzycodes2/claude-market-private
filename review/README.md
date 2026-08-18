@@ -33,6 +33,7 @@ keeping a human in the loop).
 | `docs-drift` | Detects docs (ADRs, OpenAPI, rendered artifacts, READMEs, comments) that have drifted out of sync with the changed code, plus doc-completeness gaps. |
 | `run-tests` | Executes the suite in a sandboxed, timeout-limited way — only when analysis deems it safe. |
 | `codegen` | Drafts tests, docstrings, and CHANGELOG entries to fill surfaced gaps (human review required before committing). |
+| `monitor-pr` | Continuously watches a PR (drive with `/loop`) for CI failures and new review comments, tracks findings in a scratch file, dispatches subagents to fix them (in parallel when independent), and resolves/acknowledges each comment once its fix is pushed. |
 
 **Rust & mac-ui tailoring:** `analyze` detects Rust (cargo/just/nextest/llvm-cov)
 and `@vlognow/mac-ui` (Machinify Web Components) usage. When present, `security-scan`,
@@ -43,6 +44,26 @@ coverage, and fetching mac-ui's **live** authority docs (`ai-behavior-spec`,
 the framework changes.
 
 Each sub-skill can also be invoked standalone (e.g. `/review:security-scan <PR_URL>`).
+
+## Monitor a PR (post-open)
+
+Where `review` *produces* a review, `monitor-pr` *reacts* to what lands on a PR you
+opened — CI failures and incoming review comments — and shepherds it to green:
+
+```
+> /monitor-pr 45
+> watch PR #45 for comments and check failures and fix them as they come
+> /monitor-pr 45 --critical-only        # act only on CI failures + blocking bot threads
+```
+
+It baselines the PR, then on each `/loop` tick polls CI + review threads
+(`scripts/poll-pr.sh`, read-only), records findings in `.claude/pr-monitor/pr-<n>.md`,
+and dispatches subagents to fix — in parallel when the work is independent. CI failures
+and the bot's own review threads are fixed automatically; human comments and nits are
+reported for your decision. **When a fix is pushed, the corresponding comment is always
+acknowledged** — the review thread is resolved, or, if it isn't inline/resolvable, a new
+comment replies `@author` with the fix. The tracker is deleted once everything is
+handled and CI is green. It never merges or force-pushes — that stays with you.
 
 ## How it works
 
