@@ -108,13 +108,22 @@ Store key findings:
 - Continue with limited information
 - Note in final review: "⚠️ Change analysis failed"
 
-## Step 3: Run Deep Code Review (3 parallel passes)
+## Step 3: Run Deep Code Review (3 parallel passes, one model each)
 
 Run the deep code review inline — **spawn 3 independent bug-finders in parallel** with the Task tool. Each pass analyzes the same diff but may catch different issues; findings confirmed by multiple passes are high-confidence.
 
+**Give each pass a different model.** Running the same model three times shares the same blind spots — three different models give genuinely independent perspectives, so a finding confirmed across models is far stronger signal, and the mix costs less than three deep-model passes. Assign models as:
+
+| Pass | `model` value | Model ID | Role |
+|------|---------------|----------|------|
+| 1 | `opus` | `claude-opus-4-8` | Deepest reasoning — subtle logic, races, security data-flow |
+| 2 | `sonnet` | `claude-sonnet-5` | Strong, different model family — diversifies findings |
+| 3 | `haiku` | `claude-haiku-4-5` | Fast breadth pass — a cheap third independent perspective |
+
 **Send ONE message with THREE Task tool calls.** For each:
 - `subagent_type`: `general-purpose`
-- `description`: `Bug hunter pass [1/2/3]`
+- `model`: the pass's model from the table above (`opus`, `sonnet`, `haiku` respectively). **Do not omit this** — an omitted `model` makes the pass inherit the session model, which collapses all three passes onto one model and defeats the diversity.
+- `description`: `Bug hunter pass [1 opus / 2 sonnet / 3 haiku]`
 - `prompt`: the Bug-Finder Prompt below, with the PR diff (from Step 2 / `gh pr diff <FULL_URL>`) inserted in place of `{{DIFF}}`.
 
 **Don't wait for completion yet** — let these run while Step 4 proceeds; collect results in Step 6.
@@ -143,34 +152,55 @@ Return a JSON array of findings, each: {"severity":"critical|high|medium","path"
 {{DIFF}}
 ```
 
-**Merge (in Step 6):** group findings by `path` + `line`; prepend "[Found by N/3 passes]" to any found by 2+ passes; take the highest severity.
+**Merge (in Step 6):** group findings by `path` + `line`; prepend "[Found by N/3 models]" to any found by 2+ passes; take the highest severity. A finding surfaced by more than one model family is especially high-confidence — weight it accordingly in Step 7.
 
 ## Step 4: Run Phase 2 Skills (Parallel)
 
 Now that we have the foundation (analysis + code review), run quality checks in parallel:
 
-### 4.1 Launch Test Analysis
+### 4.1 Launch Test Analysis (Sonnet subagent)
+
+Run test-gap analysis in a **Task subagent pinned to a lower model** — assessing coverage and recommending tests is moderate reasoning over the diff and existing tests, well within Sonnet's range.
 ```
-Use Skill tool:
-- skill: "review:test-gaps"
-- args: "<PR_URL> <OUTPUT_DIR>"
+Use Task tool:
+- subagent_type: "general-purpose"
+- model: "sonnet"   # mid-tier is sufficient for coverage/gap analysis; far cheaper than opus. Do not omit.
+- description: "Test-gap analysis (sonnet)"
+- prompt: |
+    Invoke the Skill tool with skill "review:test-gaps" and args "<PR_URL> <OUTPUT_DIR>".
+    Follow that skill exactly and write its output JSON to <OUTPUT_DIR> as the skill specifies
+    ($OUTPUT_DIR/test-analysis-<PR_NUMBER>.json). Return a one-line summary of coverage and gaps.
 ```
 
-### 4.2 Launch Security Scanner
+### 4.2 Launch Security Scanner (Sonnet subagent)
+
+Run security scanning in a **Task subagent pinned to a lower model** — it's mostly running tools (semgrep, linters, dependency checkers) and summarizing their output, which doesn't need the orchestrator's frontier model.
 ```
-Use Skill tool:
-- skill: "review:security-scan"
-- args: "<PR_URL> <OUTPUT_DIR>"
+Use Task tool:
+- subagent_type: "general-purpose"
+- model: "sonnet"   # mid-tier: enough to interpret injection/crypto traces, far cheaper than opus. Do not omit.
+- description: "Security scan (sonnet)"
+- prompt: |
+    Invoke the Skill tool with skill "review:security-scan" and args "<PR_URL> <OUTPUT_DIR>".
+    Follow that skill exactly and write its output JSON to <OUTPUT_DIR> as the skill specifies
+    ($OUTPUT_DIR/security-scan-<PR_NUMBER>.json). Return a one-line summary of the finding counts.
 ```
 
-### 4.3 Launch Documentation Validator
+### 4.3 Launch Documentation Validator (Haiku subagent)
+
+Run the docs drift/completeness check in a **Task subagent pinned to the cheapest model** — it's cross-file claim matching, not deep reasoning.
 ```
-Use Skill tool:
-- skill: "review:docs-check"
-- args: "<PR_URL> <OUTPUT_DIR>"
+Use Task tool:
+- subagent_type: "general-purpose"
+- model: "haiku"    # cheapest tier is sufficient for doc claim/completeness matching. Do not omit.
+- description: "Docs drift check (haiku)"
+- prompt: |
+    Invoke the Skill tool with skill "review:docs-drift" and args "<PR_URL> <OUTPUT_DIR>".
+    Follow that skill exactly and write its output JSON to <OUTPUT_DIR> as the skill specifies
+    ($OUTPUT_DIR/docs-drift-<PR_NUMBER>.json). Return a one-line summary.
 ```
 
-**These can run in parallel** since they all consume the same analysis JSON and are independent.
+**All three Phase 2 checks run in parallel as subagents on lower models** — test analysis (4.1) and security (4.2) on Sonnet, docs (4.3) on Haiku. Send the three Task calls in ONE message so they run concurrently, let them run while Step 5 proceeds, and collect in Step 6. They're independent (all consume the same analysis JSON) and none needs the orchestrator's frontier model.
 
 **If any skill fails:**
 - Log the error
@@ -233,7 +263,7 @@ Read tool: $OUTPUT_DIR/code-generation-<PR_NUMBER>.json
 - deep code review — 3 passes (Step 3)
 - test-gaps (Step 4.1)
 - security-scan (Step 4.2)
-- docs-check (Step 4.3)
+- docs-drift (Step 4.3)
 - run-tests (Step 5.1) - if ran
 - codegen (Step 5.2)
 
@@ -254,7 +284,7 @@ Read tool: $OUTPUT_DIR/code-generation-<PR_NUMBER>.json
 - High security findings
 - Dependency vulnerabilities
 
-**docs-check** (Step 4.3) - Read `$OUTPUT_DIR/docs-validation-<PR_NUMBER>.json`:
+**docs-drift** (Step 4.3) - Read `$OUTPUT_DIR/docs-drift-<PR_NUMBER>.json`:
 - Documentation status
 - Missing docs count
 - Required updates
@@ -324,7 +354,7 @@ Build the review formatter input JSON with findings from all review stages. Map 
 6. **Test Execution Results** — body only (pass/fail counts, failures list). No inline findings.
 7. **Code Generation** — body only (generated test suggestions, docstrings). No inline findings.
 
-Set `review_metadata.model` to your own exact model ID (e.g. `claude-opus-4-8`), so the footer records which model produced the review. Use the model ID from your environment context. Omit the field if you cannot determine it.
+Set `review_metadata.model` to your own exact model ID (e.g. `claude-opus-4-8`), so the footer records which model orchestrated the review. Use the model ID from your environment context. Omit the field if you cannot determine it. Because the 3-pass code review ran on three different models, note the pass models (`claude-opus-4-8`, `claude-sonnet-5`, `claude-haiku-4-5`) in the "Code Review Results" section `body` so readers know the passes were model-diverse.
 
 ### Formatting rules for all prose (bodies, summary lines, rationale, actions)
 
@@ -461,8 +491,8 @@ View full review: <PR_URL>
 ## Notes
 
 - This skill is the entry point for comprehensive reviews
-- It runs an inline 3-pass deep code review and coordinates 6 skills: analyze, test-gaps, security-scan, docs-check, run-tests, codegen
+- It runs a model-diverse 3-pass deep code review (opus + sonnet + haiku) and coordinates 6 skills: analyze, test-gaps, security-scan (sonnet subagent), docs-drift (haiku subagent), run-tests, codegen
 - Designed to be extended as new skills are added
 - Always maintains human-in-the-loop (never auto-approves/merges)
 - Generated code requires human review before committing
-- Cost: ~$5-10 per PR (3-pass deep review + 6 analysis/execution skills)
+- Cost: ~$3-7 per PR (model-diverse 3-pass deep review — one opus + one sonnet + one haiku — plus 6 analysis/execution skills; cheaper and higher-signal than three opus passes)
