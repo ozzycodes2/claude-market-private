@@ -40,8 +40,8 @@
     },
     {
       "name": "session-improv",
-      "version": "0.1.0",
-      "description": "Query Claude Code session history and conversation data with SQL (DuckDB) via cc-query. Provides the reflect skill for session analysis, token usage, tool patterns, and agent activity.",
+      "version": "0.2.0",
+      "description": "Query Claude Code session history and conversation data with SQL (DuckDB) via cc-query. Provides the reflect skill for session analysis, token usage, tool patterns, and agent activity, and plugin-curation for evidence-based keep/consolidate/prune audits of installed plugins, skills, and MCP servers.",
       "category": "productivity",
       "repository": "https://github.com/ozzycodes2/claude-market-private",
       "license": "MIT",
@@ -55,6 +55,8 @@
         "duckdb",
         "cc-query",
         "reflect",
+        "plugin-curation",
+        "audit",
         "productivity"
       ],
       "source": "./session-improv"
@@ -153,6 +155,30 @@
         "productivity"
       ],
       "source": "./session-mgmt"
+    },
+    {
+      "name": "technical-writing",
+      "version": "0.1.0",
+      "description": "Human-facing developer writing done well. writing-commit-messages crafts commit messages and PR descriptions for work landing on main; writing-code-comments writes and prunes comments and API docs that explain WHY, sparingly; writing-design-docs produces problem-statement design docs before committing to a non-obvious direction. Adapted from ceej-skills under MIT.",
+      "category": "development",
+      "repository": "https://github.com/ozzycodes2/claude-market-private",
+      "license": "MIT",
+      "author": {
+        "name": "Osniel Quintana-Salgado",
+        "email": "osniel.quintana-salgado@machinify.com"
+      },
+      "keywords": [
+        "writing",
+        "commit-messages",
+        "pr-descriptions",
+        "code-comments",
+        "api-docs",
+        "design-docs",
+        "documentation",
+        "git",
+        "development"
+      ],
+      "source": "./technical-writing"
     }
   ]
 }
