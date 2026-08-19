@@ -7,17 +7,17 @@ disable-model-invocation: true
 
 # Security Scanner
 
-Runs comprehensive security scanning on PR changes using multiple tools: semgrep for code patterns, language-specific linters for vulnerabilities, and dependency checkers for known CVEs.
+Security-scan PR changes using multiple tools: semgrep for code patterns, language-specific linters for vulnerabilities, dependency checkers for known CVEs.
 
 ## Inputs
 
 - **PR URL**: Full GitHub/Enterprise PR URL
-- **OUTPUT_DIR** (optional): Directory for output files. Defaults to a private `mktemp -d` directory if not provided.
+- **OUTPUT_DIR** (optional): Output dir. Defaults to private `mktemp -d`.
 - **Analysis JSON**: From `analyze` skill at `$OUTPUT_DIR/pr-analysis-<number>.json`
 
 ## Outputs
 
-Writes security findings to `$OUTPUT_DIR/security-scan-<PR_NUMBER>.json` with structure:
+Writes security findings to `$OUTPUT_DIR/security-scan-<PR_NUMBER>.json`:
 ```json
 {
   "pr_number": 123,
@@ -88,7 +88,7 @@ gem install brakeman
 
 ## Step 0: Parse Arguments
 
-Extract PR URL and output directory from arguments:
+Extract PR URL and output dir from arguments:
 
 ```bash
 PR_URL="$1"
@@ -109,7 +109,7 @@ cat "$OUTPUT_DIR/pr-analysis-${PR_NUMBER}.json"
 
 ## Step 1: Check Tool Availability
 
-Detect which security tools are available:
+Detect which security tools available:
 
 ```bash
 # Universal
@@ -159,7 +159,7 @@ Recommend installing: semgrep (universal), <language-specific tool>
 
 ## Step 2: Run Semgrep (Universal Scanner)
 
-Semgrep is language-agnostic and catches most common vulnerabilities:
+Semgrep is language-agnostic, catches most common vulnerabilities:
 
 ```bash
 # Run semgrep with security rules
@@ -174,7 +174,7 @@ semgrep \
 ```
 
 **Rules to use:**
-- `auto` - Auto-detect language and use appropriate rules
+- `auto` - Auto-detect language, use appropriate rules
 - `p/security-audit` - OWASP Top 10 patterns
 - `p/secrets` - Detect hardcoded secrets
 - `p/ci` - CI/CD security issues
@@ -271,19 +271,19 @@ spotbugs \
 ### Rust: cargo tooling + correctness/PHI catalog
 
 When `PRIMARY_LANG=rust`, cargo tooling replaces the (Rust-blind) generic
-scanners. Read `references/rust-security.md` and run its supply-chain commands
+scanners. Read `references/rust-security.md`, run its supply-chain commands
 (`cargo audit`, `cargo deny`, `cargo machete`, `cargo clippy -- -D warnings` or
-`just clippy`), then grep the changed `.rs` (non-test) for its correctness/PHI
+`just clippy`), then grep changed `.rs` (non-test) for its correctness/PHI
 pattern catalog — secret/PHI behind `#[derive(Debug)]`, sensitive values in
 logs, blank-env `Some("")`, silent enum fallback, `reqwest::Client::new()`
-without a timeout, and `unwrap`/`expect`/`panic!`/`unsafe` in non-test code.
-These are the classes that recur on this codebase; report them as a Rust
+without a timeout, `unwrap`/`expect`/`panic!`/`unsafe` in non-test code.
+These classes recur on this codebase; report them as a Rust
 cluster.
 
 ### mac-ui: idiom & security audit (dynamic)
 
 When `USES_MAC_UI=true`, read `references/mac-ui-audit.md` and follow it: fetch
-mac-ui's live authority docs from `$MAC_UI_REF_REPO` via `gh api` (the repo is
+mac-ui's live authority docs from `$MAC_UI_REF_REPO` via `gh api` (repo is
 internal), then audit changed `mac-*` `.ts` against the fetched Violation
 Catalog — `innerHTML = var` (XSS), raw `new CustomEvent` dispatch, unsafe casts.
 Fetch at HEAD; never audit from memory, because the framework changes.
@@ -292,7 +292,7 @@ Fetch at HEAD; never audit from memory, because the framework changes.
 
 ### 4.1 Pattern-Based Detection
 
-Look for common secret patterns in diff:
+Look for common secret patterns in diff.
 
 ```bash
 gh pr diff <PR_URL> | grep -E "(password|secret|key|token|api_key)" | grep -v "test\|example"
@@ -326,7 +326,7 @@ gho_[A-Za-z0-9]{36}  # GitHub OAuth Token
 
 ### 4.2 Entropy-Based Detection
 
-High-entropy strings (likely secrets):
+High-entropy strings (likely secrets).
 
 ```bash
 # Find strings with high entropy (randomness)
@@ -341,91 +341,11 @@ done
 
 ## Step 5: Scan for Common Vulnerabilities
 
-### 5.1 Injection Vulnerabilities
-
-**SQL Injection:**
-```bash
-# Python
-grep -n "execute.*f\".*SELECT\|execute.*%.*SELECT" <changed_files>
-
-# JavaScript
-grep -n "query.*\`.*SELECT\|query.*\${.*SELECT" <changed_files>
-
-# Go
-grep -n "Query.*fmt.Sprintf.*SELECT" <changed_files>
-```
-
-**Command Injection:**
-```bash
-# Look for shell execution with user input
-grep -n "subprocess.call\|os.system\|exec\|shell=True" <changed_files>
-```
-
-**XSS (Cross-Site Scripting):**
-```bash
-# Look for unsafe HTML rendering
-grep -n "innerHTML\|dangerouslySetInnerHTML\|document.write" <changed_files>
-```
-
-### 5.2 Authentication Issues
-
-```bash
-# Weak password hashing
-grep -n "md5\|sha1\|base64" <changed_files>
-
-# Missing authentication
-grep -n "@app.route\|@router\|app.get\|app.post" <changed_files> | \
-  grep -v "auth\|login\|@require"
-
-# Hardcoded credentials
-grep -n "password\s*=\|token\s*=\|api_key\s*=" <changed_files>
-```
-
-### 5.3 Crypto Issues
-
-```bash
-# Weak crypto
-grep -n "DES\|RC4\|MD5\|SHA1" <changed_files>
-
-# Insecure random
-grep -n "random.random\|Math.random" <changed_files>
-```
+Read `references/common-vulnerabilities.md` before grepping changed files for injection, auth, crypto patterns per language.
 
 ## Step 6: Analyze Dependencies
 
-### 6.1 Check for Known Vulnerabilities
-
-**Python:**
-```bash
-# Parse requirements.txt
-grep -E "^[a-zA-Z0-9_-]+==\d" requirements.txt | while read dep; do
-  package=$(echo $dep | cut -d'=' -f1)
-  version=$(echo $dep | cut -d'=' -f3)
-
-  # Check against vulnerability databases
-  # (via safety check output from Step 3)
-done
-```
-
-**JavaScript:**
-```bash
-# npm audit already checked in Step 3
-# Parse results for critical/high
-jq '.vulnerabilities | to_entries[] | select(.value.severity == "critical" or .value.severity == "high")' "$OUTPUT_DIR"/npm-audit-results.json
-```
-
-### 6.2 Check for Outdated Dependencies
-
-```bash
-# Python
-pip list --outdated --format=json | jq '.[] | select(.latest_version > .version)'
-
-# JavaScript
-npm outdated --json
-
-# Go
-go list -u -m -json all | jq 'select(.Update != null)'
-```
+Read `references/dependency-analysis.md` before checking known CVEs and outdated packages per language.
 
 ## Step 7: Categorize Findings
 
@@ -490,7 +410,7 @@ Group findings by category:
 
 ### 8.2 Context Adjustment
 
-Adjust severity based on context:
+Adjust severity by context:
 
 - **Increase if:**
   - Code handles user input
@@ -505,38 +425,11 @@ Adjust severity based on context:
 
 ## Step 9: Generate Fixes
 
-For each finding, suggest a fix:
-
-**SQL Injection:**
-```python
-# Bad
-cursor.execute(f"SELECT * FROM users WHERE id={user_id}")
-
-# Good
-cursor.execute("SELECT * FROM users WHERE id=?", (user_id,))
-```
-
-**Command Injection:**
-```python
-# Bad
-os.system(f"ping {host}")
-
-# Good
-subprocess.run(["ping", host], capture_output=True, check=True)
-```
-
-**Weak Crypto:**
-```python
-# Bad
-hashlib.md5(password.encode()).hexdigest()
-
-# Good
-bcrypt.hashpw(password.encode(), bcrypt.gensalt())
-```
+Read `references/generate-fixes.md` before suggesting fix for each finding; contains bad/good code examples.
 
 ## Step 10: Generate Security Report JSON
 
-Build the JSON with `jq -n` so every PR-derived value (file paths, code snippets, messages) is safely escaped — pass numbers/arrays/objects with `--argjson` and plain strings with `--arg`. Never interpolate untrusted text directly into a heredoc. The `*_JSON` variables below must already be valid JSON (build them with `jq`).
+Build JSON with `jq -n` so every PR-derived value (file paths, code snippets, messages) is safely escaped — pass numbers/arrays/objects with `--argjson`, plain strings with `--arg`. Never interpolate untrusted text into a heredoc. `*_JSON` variables below must already be valid JSON (build them with `jq`).
 
 ```bash
 jq -n \
@@ -601,29 +494,6 @@ Analysis saved to: $OUTPUT_DIR/security-scan-123.json
 ⚠️ Address critical and high findings before merge
 ```
 
-## Error Handling
+## Error Handling and Notes
 
-**If no security tools installed:**
-```
-⚠️ Limited security scanning (no tools found)
-Install semgrep for comprehensive scanning: pip install semgrep
-```
-
-**If tools fail:**
-- Continue with remaining tools
-- Note which tools failed in report
-- Don't fail entire scan
-
-**If no findings:**
-```
-✅ No security issues found
-(Scanned with: semgrep, bandit)
-```
-
-## Notes
-
-- Scans only changed files (not entire codebase)
-- Some tools require dependencies to be installed
-- False positives possible (review findings)
-- Can be run standalone or via review
-- Complements (not replaces) manual security review
+Read `references/error-handling-and-notes.md` when tools fail, no tools installed, no findings, or need scan caveats.

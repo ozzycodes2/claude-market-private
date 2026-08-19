@@ -1,7 +1,7 @@
 {
   "name": "session-mgmt",
   "version": "0.2.0",
-  "description": "Manage the full lifecycle of a Claude Code working session. start-session opens a task in a fresh, isolated git worktree (via EnterWorktree, never `git worktree add`) named after the argument, and loads the JIRA story when the name is an issue key. exit-session detects and tears down the ephemeral resources a session created — background processes and dev servers, Docker/compose stacks, local Kubernetes clusters, git worktrees, throwaway local branches, and temp files — with a plan-confirm-execute flow that never destroys data without confirmation.",
+  "description": "Manage the full lifecycle of a Claude Code working session. start-session opens a task in a fresh, isolated git worktree (via EnterWorktree, never `git worktree add`) named after the argument, and loads the JIRA story when the name is an issue key. exit-session tears down the ephemeral resources a session created — background processes and dev servers, Docker/compose stacks, local Kubernetes clusters, git worktrees, merged local branches, and temp files — permission-free, then quits the CLI; it still confirms before destroying data (volume wipes, uncommitted work) and hands back deny-listed remote/history ops.",
   "repository": "https://github.com/ozzycodes2/claude-market-private",
   "license": "MIT",
   "author": {

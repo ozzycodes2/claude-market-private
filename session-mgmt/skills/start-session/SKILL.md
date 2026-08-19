@@ -18,16 +18,15 @@ compatibility: >-
   worktree.baseRef: fresh). JIRA loading is optional and needs the Atlassian plugin
   (atlassian@machinify-plugins) enabled. EnterWorktree and the Atlassian MCP tools
   are deferred — load them via ToolSearch before calling.
-metadata:
-  argument-hint: "<worktree/branch name — a JIRA key like COB-103, or any slug like random-misc>"
+argument-hint: "<worktree/branch name — a JIRA key like COB-103, or any slug like random-misc>"
 disable-model-invocation: true
 ---
 
 # Start Session
 
 Begin a working session inside a clean, isolated git worktree named after the task,
-then load whatever context that task needs — and stop there. The point is a correct,
-low-friction start: the worktree becomes the session's working directory so no `cd`
+then load whatever context that task needs — and stop there. Point is a correct,
+low-friction start: worktree becomes the session's working directory so no `cd`
 gymnastics follow, and if the task is a JIRA ticket its story is on screen before the
 user types another word.
 
@@ -35,8 +34,8 @@ user types another word.
 
 1. **EnterWorktree, never `git worktree add`.** EnterWorktree creates the worktree
    *and* switches the session's cwd into it. `git worktree add` into a path (especially
-   `/tmp`) does not move the session cwd — Bash resets to the repo root after every
-   call, forcing a `cd …/worktree &&` prefix on every command for the rest of the
+   `/tmp`) does not move the session cwd — Bash resets to repo root after every
+   call, forcing a `cd …/worktree &&` prefix on every command for rest of the
    session. This skill exists to prevent that. Use the tool.
 2. **The argument is the name — verbatim.** Whatever the user passes (`COB-103`,
    `random-misc`) is the worktree directory name *and* the local branch name. Do not
@@ -52,7 +51,7 @@ user types another word.
 
 ### Phase 0 — Parse the argument (no tools)
 
-- `NAME` = the argument, used verbatim. If none was given, ask the user for one (or a
+- `NAME` = the argument, used verbatim. If none given, ask the user for one (or a
   ticket) before doing anything — do not auto-generate a random name; the name carries
   meaning here.
 - Validate `NAME` against EnterWorktree's rule: each `/`-separated segment may contain
@@ -65,7 +64,7 @@ user types another word.
 ### Phase 1 — Preconditions (read-only)
 
 - Confirm a git repo: `git rev-parse --git-dir`. (Outside a repo, EnterWorktree falls
-  back to WorktreeCreate/WorktreeRemove hooks; if there are none, surface that and stop.)
+  back to WorktreeCreate/WorktreeRemove hooks; if none, surface that and stop.)
 - Confirm the session is **not already in a worktree**. EnterWorktree refuses to create
   a new worktree from inside one. If `git rev-parse --git-common-dir` shows this is
   already a linked worktree, tell the user (they likely want a fresh top-level session)
@@ -80,7 +79,7 @@ user types another word.
 3. Do **not** run `git worktree add`, `git checkout -b`, or any `cd`. The tool does all
    of it; the branch is created for you.
 
-**Fallback (only if EnterWorktree is unavailable):** create the worktree at the
+**Fallback (only if EnterWorktree unavailable):** create the worktree at the
 conventional path — `git worktree add .claude/worktrees/<NAME> -b <NAME> origin/<default>`
 — then re-run `ToolSearch select:EnterWorktree` and call `EnterWorktree({ path:
 ".claude/worktrees/<NAME>" })` to enter it. If EnterWorktree truly cannot be loaded,
@@ -107,11 +106,11 @@ commands must use absolute paths / `git -C <path>` (do not sprinkle `cd`).
 
 ### Phase 4 — Report and stop
 
-Print a short summary and then wait:
+Print a short summary, then wait:
 
 - Worktree: `.claude/worktrees/<NAME>` · branch `<NAME>` · based on `origin/<default>`.
 - If a ticket was loaded: the story summary and implementation ask from Phase 3.
-- If not a ticket, or JIRA was skipped: say so in one line.
+- If not a ticket, or JIRA skipped: say so in one line.
 - End with an explicit handoff, e.g. *"Workspace ready. What would you like to build?"*
 
 **Then stop.** Do not begin implementation, exploration, or planning until the user
@@ -125,7 +124,7 @@ gives the next instruction.
 - **Name rules are strict.** Spaces, `@`, `:` and other punctuation are rejected. Fix
   with the user rather than silently mangling the name.
 - **`baseRef: fresh` needs the remote.** The base is a freshly-fetched origin default;
-  if offline or the remote is unreachable, EnterWorktree may fail — report it plainly.
+  if offline or the remote unreachable, EnterWorktree may fail — report it plainly.
 - **Don't pre-create the branch.** EnterWorktree makes the branch; a prior
   `git checkout -b <NAME>` will collide with it.
 - **JIRA is optional.** A non-ticket name (`random-misc`) is a perfectly valid session;

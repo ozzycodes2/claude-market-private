@@ -7,18 +7,18 @@ disable-model-invocation: true
 
 # Analyze PR Changes
 
-Comprehensive analysis of a pull request to understand what changed, what languages/frameworks are involved, how to test it, and what impact areas need review.
+Analyze a pull request: what changed, which languages/frameworks involved, how to test it, what impact areas need review.
 
-This skill is the **foundation** for other review skills - it produces structured analysis that drives test recommendations, security scanning, and documentation validation.
+**Foundation** for other review skills - produces structured analysis driving test recommendations, security scanning, documentation validation.
 
 ## Inputs
 
 - **PR URL**: Full GitHub/Enterprise PR URL (e.g., `https://github.com/org/repo/pull/123`)
-- **OUTPUT_DIR** (optional): Directory for output files. Defaults to a private `mktemp -d` directory if not provided.
+- **OUTPUT_DIR** (optional): Output dir. Defaults to private `mktemp -d`.
 
 ## Outputs
 
-Writes analysis to `<OUTPUT_DIR>/pr-analysis-<PR_NUMBER>.json` with structure:
+Writes analysis to `<OUTPUT_DIR>/pr-analysis-<PR_NUMBER>.json`:
 ```json
 {
   "pr": {
@@ -92,14 +92,14 @@ from. Downstream skills read both from this JSON.
 
 ## Step 0: Parse Arguments
 
-Extract PR URL and output directory from arguments:
+Extract PR URL and output dir from arguments:
 
 ```bash
 PR_URL="$1"
 # Default to a private per-run temp dir when run standalone (no OUTPUT_DIR passed)
 OUTPUT_DIR="${2:-$(mktemp -d -t pr-review-XXXXXX)}"
 
-# Create output directory if it doesn't exist
+# Create output dir if missing
 mkdir -p "$OUTPUT_DIR"
 
 # Extract PR number for filename
@@ -137,8 +137,8 @@ Analyze file extensions and count:
 gh pr diff <PR_URL> --name-only | sed 's/.*\.//' | sort | uniq -c | sort -rn
 ```
 
-**Primary language**: Extension with most files
-**Secondary languages**: Extensions with >10% of files
+**Primary language**: extension with most files
+**Secondary languages**: extensions with >10% of files
 
 **Language mapping:**
 - `.py` → Python
@@ -152,7 +152,7 @@ gh pr diff <PR_URL> --name-only | sed 's/.*\.//' | sort | uniq -c | sort -rn
 
 ## Step 4: Detect Frameworks
 
-Look for framework indicators in changed files or project root:
+Look for framework indicators in changed files or project root.
 
 **Python:**
 - Django: `django` in requirements.txt, `manage.py` exists
@@ -184,7 +184,7 @@ Look for framework indicators in changed files or project root:
   `cargo-llvm-cov` in CI. Note any `--fail-under-lines` threshold (a hard gate).
 - Supply-chain: `cargo-audit`, `cargo-deny` (`deny.toml`), `cargo-machete`.
 - Command source: prefer a `justfile` — its `fmt`/`clippy`/`test`/`coverage`/`ci`
-  recipes are what CI runs; record the exact recipes rather than guessing.
+  recipes are what CI runs; record exact recipes, don't guess.
 
 **mac-ui / Web Components (`@vlognow/mac-ui`):**
 - Set `uses_mac_ui: true` when any of: `package.json` (root or a workspace
@@ -194,7 +194,7 @@ Look for framework indicators in changed files or project root:
 - Monorepo: `lerna.json` + `packages/` → lerna workspace; `biome.json` → Biome
   lint/format; `vite.config.ts`/`web-dev-server-config.js` → Vite/WTR.
 - Test runner: per-package `package.json` `test` script is authoritative
-  (web-test-runner / vitest / jsdom); do not assume.
+  (web-test-runner / vitest / jsdom); don't assume.
 
 ## Step 5: Analyze Test Setup
 
@@ -236,7 +236,7 @@ echo "go test ./..."
 
 ### 5.3 Safety Assessment
 
-Determine if tests can be run safely:
+Determine if tests can run safely.
 
 **Safe indicators:**
 - Standard test frameworks (pytest, jest, go test, junit)
@@ -251,7 +251,7 @@ Determine if tests can be run safely:
 - Docker/docker-compose required
 - Tests modify filesystem outside /tmp
 
-**Rust safety:** the workspace suite is safe to run ONLY if it needs no live
+**Rust safety:** workspace suite is safe to run ONLY if it needs no live
 infra. Mark unsafe when tests gate on env like `PGURL`, `KAFKA_BOOTSTRAP_SERVERS`,
 `RUN_KAFKA_TESTS`, or a `just compose-up` stack — those need Postgres/Kafka/
 LocalStack up, and coverage gates (`--fail-under-lines`) only pass with them
@@ -259,7 +259,7 @@ running. A unit-only subset (`cargo nextest run -E 'not test(/integration/)'`)
 is usually safe; record it as the safe command.
 
 **mac-ui safety:** web-component tests often need a browser/headless Chromium
-(web-test-runner) which may be absent in a sandbox — default to unsafe unless the
+(web-test-runner) that may be absent in a sandbox — default to unsafe unless the
 package's `test` script is jsdom/vitest-only.
 
 **Decision:**
@@ -274,7 +274,7 @@ can_run_safely = (
 
 ## Step 6: Detect Build System
 
-Look for build configuration files:
+Look for build config files.
 
 **Python:**
 - `setup.py` → setuptools
@@ -319,7 +319,7 @@ Look for build configuration files:
 
 ### 7.1 Detect High-Impact Areas
 
-Look for changes in sensitive files/patterns:
+Look for changes in sensitive files/patterns.
 
 **Authentication/Security:**
 - Files matching: `*auth*`, `*security*`, `*login*`, `*password*`, `*token*`
@@ -341,7 +341,7 @@ Look for changes in sensitive files/patterns:
 
 ### 7.2 Detect Breaking Changes
 
-Look for indicators:
+Indicators:
 - Major version bump in package file
 - Removed or renamed functions/classes
 - Changed function signatures
@@ -353,7 +353,7 @@ Keywords in commits/PR title:
 
 ## Step 8: Security Sensitivity Assessment
 
-Determine if PR needs extra security scrutiny:
+Determine if PR needs extra security scrutiny.
 
 **High security sensitivity:**
 - Changes authentication/authorization code
@@ -376,9 +376,9 @@ security_sensitive = (
 
 ## Step 9: Generate Analysis JSON
 
-Combine all findings into structured JSON and write to `$OUTPUT_DIR/pr-analysis-<PR_NUMBER>.json`.
+Combine all findings into structured JSON, write to `$OUTPUT_DIR/pr-analysis-<PR_NUMBER>.json`.
 
-Build the JSON with `jq -n` so every PR-derived value is safely escaped — pass strings with `--arg` and numbers/booleans/arrays/objects with `--argjson`. Never interpolate untrusted text directly into a heredoc.
+Build JSON with `jq -n` so every PR-derived value is safely escaped — pass strings with `--arg`, numbers/booleans/arrays/objects with `--argjson`. Never interpolate untrusted text into a heredoc.
 
 ```bash
 jq -n \
@@ -412,7 +412,7 @@ jq -n \
 
 ## Step 10: Provide Summary to User
 
-Display human-readable summary:
+Display human-readable summary.
 
 ```
 ✅ PR Analysis Complete
@@ -462,7 +462,7 @@ Error: Could not fetch PR. Check:
 
 ## Notes
 
-- This skill does NOT modify code or run tests - it only analyzes
-- All analysis is read-only (safe to run on any PR)
-- Output JSON is designed to be consumed by other skills
+- Does NOT modify code or run tests - only analyzes
+- All analysis read-only (safe to run on any PR)
+- Output JSON designed to be consumed by other skills
 - Can be run standalone or as part of review

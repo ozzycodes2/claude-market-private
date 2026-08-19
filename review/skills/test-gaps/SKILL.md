@@ -7,17 +7,17 @@ disable-model-invocation: true
 
 # Test Analysis
 
-Analyzes test coverage for PR changes and recommends new tests based on what code was modified. Identifies untested code paths, missing test cases, and suggests specific test scenarios.
+Analyzes test coverage for PR changes, recommends new tests based on modified code. Identifies untested code paths, missing test cases, suggests specific test scenarios.
 
 ## Inputs
 
 - **PR URL**: Full GitHub/Enterprise PR URL
-- **OUTPUT_DIR** (optional): Directory for output files. Defaults to a private `mktemp -d` directory if not provided.
+- **OUTPUT_DIR** (optional): Output dir. Defaults to private `mktemp -d`.
 - **Analysis JSON**: From `analyze` skill at `<OUTPUT_DIR>/pr-analysis-<number>.json`
 
 ## Outputs
 
-Writes test analysis to `<OUTPUT_DIR>/test-analysis-<PR_NUMBER>.json` with structure:
+Writes test analysis to `<OUTPUT_DIR>/test-analysis-<PR_NUMBER>.json`:
 ```json
 {
   "pr_number": 123,
@@ -80,7 +80,7 @@ analyze https://github.com/org/repo/pull/123
 
 ## Step 0: Parse Arguments
 
-Extract PR URL and output directory from arguments:
+Extract PR URL and output dir from arguments:
 
 ```bash
 PR_URL="$1"
@@ -135,10 +135,10 @@ Extract:
 
 **Rust:** unit tests are IN-FILE in a `#[cfg(test)] mod tests` block in the same
 `.rs` (not a separate `test_*` file); integration tests are in the crate's
-`tests/`. The file-convention mapping below does not apply — read
-`references/rust-tests.md` and map changed items to `#[test]`/`#[tokio::test]`
+`tests/`. File-convention mapping below does not apply — read
+`references/rust-tests.md`, map changed items to `#[test]`/`#[tokio::test]`
 by symbol, use `cargo-llvm-cov`/`just coverage` for real coverage against the
-repo's own `--fail-under-lines` gate, and name untested error arms/variants and
+repo's own `--fail-under-lines` gate, name untested error arms/variants and
 `from_env` branches explicitly.
 
 **mac-ui / Web Components:** when `analyze` set `uses_mac_ui: true`, read
@@ -155,7 +155,7 @@ MAC_UI_REF_REPO=$(jq -r '.mac_ui_ref_repo // "vlognow/mac-ui"' "$OUTPUT_DIR/pr-a
 
 ### 2.2 Map Code Files to Test Files
 
-For each code file changed, find corresponding test file:
+For each changed code file, find corresponding test file:
 
 **Convention mapping:**
 - `src/auth.py` → `tests/test_auth.py`
@@ -196,7 +196,7 @@ Parse diff to identify:
 For each new/modified function:
 1. Search test files for references to that function name
 2. If not found → **untested**
-3. If found → **tested** (but check if tests cover new behavior)
+3. If found → **tested** (but check tests cover new behavior)
 
 **Example - Python:**
 ```bash
@@ -215,8 +215,8 @@ grep -r "test.*${function_name}\|it.*${function_name}" __tests__/ || echo "UNTES
 ## Step 4: Estimate Coverage
 
 > **Rust:** skip the heuristic below — run `cargo llvm-cov`/`just coverage` for
-> real per-file coverage when the suite is runnable (see `references/rust-tests.md`),
-> and report the repo's own threshold as the target.
+> real per-file coverage when the suite is runnable (see `references/rust-tests.md`);
+> report the repo's own threshold as the target.
 
 ### 4.1 Count Changed Lines vs Tested Lines
 
@@ -227,9 +227,9 @@ gh pr diff <PR_URL> | grep "^+" | grep -v "^+++" | grep -v "^\+\s*$" | grep -v "
 ```
 
 **Tested lines (heuristic):**
-- If function has test: Count 70% of function lines as "tested"
-- If function has no test: Count 0% as "tested"
-- If function modified and test modified: Count 80% as "tested"
+- Function has test: count 70% of function lines as "tested"
+- Function has no test: count 0% as "tested"
+- Function modified and test modified: count 80% as "tested"
 
 **Coverage percentage:**
 ```
@@ -267,7 +267,7 @@ coverage = (tested_lines / changed_lines) * 100
 
 ## Step 6: Generate Test Recommendations
 
-For each untested or under-tested area, generate specific test recommendations:
+For each untested or under-tested area, generate specific recommendations.
 
 ### 6.1 Recommendation Template
 
@@ -303,7 +303,7 @@ For each untested or under-tested area, generate specific test recommendations:
 
 ### 6.3 Generate Test Cases
 
-For each untested function, generate 2-3 test cases:
+For each untested function, generate 2-3 cases:
 
 **1. Happy Path**
 - Normal input → expected output
@@ -326,71 +326,11 @@ Then: [Expected outcome]
 
 ## Step 7: Recommend Test Framework Setup
 
-If no tests exist yet, recommend setup:
-
-**Python (pytest):**
-```bash
-# Add to requirements.txt
-pytest>=7.0.0
-pytest-cov>=4.0.0
-
-# Create tests/ directory
-mkdir tests
-touch tests/__init__.py
-touch tests/conftest.py
-
-# Example test file
-cat > tests/test_example.py <<EOF
-import pytest
-from src.module import function
-
-def test_function_happy_path():
-    result = function("input")
-    assert result == "expected"
-EOF
-```
-
-**JavaScript (jest):**
-```bash
-# Add to package.json
-npm install --save-dev jest @testing-library/jest-dom
-
-# Create jest.config.js
-npx jest --init
-
-# Example test file
-cat > __tests__/example.test.js <<EOF
-import { function } from '../src/module';
-
-describe('function', () => {
-  test('happy path', () => {
-    const result = function('input');
-    expect(result).toBe('expected');
-  });
-});
-EOF
-```
-
-**Go:**
-```bash
-# Tests are in same package with _test.go suffix
-cat > pkg_test.go <<EOF
-package pkg
-
-import "testing"
-
-func TestFunction(t *testing.T) {
-    result := Function("input")
-    if result != "expected" {
-        t.Errorf("got %v, want %v", result, "expected")
-    }
-}
-EOF
-```
+Read `references/framework-setup.md` when no tests exist — per-language setup boilerplate (pytest, jest, Go).
 
 ## Step 8: Check Test File Updates Needed
 
-For existing test files, check if they need updates:
+For existing test files, check if they need updates.
 
 ### 8.1 Modified Code Without Modified Tests
 
@@ -413,9 +353,9 @@ done
 ### 8.2 Changed Function Signatures
 
 Look for:
-- Added parameters → Tests need new parameter values
-- Removed parameters → Tests need to remove parameters
-- Changed return type → Tests need updated assertions
+- Added parameters → tests need new parameter values
+- Removed parameters → tests need to remove parameters
+- Changed return type → tests need updated assertions
 
 **Example detection (Python):**
 ```bash
@@ -427,7 +367,7 @@ git diff HEAD origin/main -- "$code_file" | grep "^-def\|^+def"
 
 Combine all findings.
 
-Build the JSON with `jq -n` so every PR-derived value is safely escaped — pass numbers/arrays/objects with `--argjson` and plain strings with `--arg`. Never interpolate untrusted text directly into a heredoc. The `*_JSON` variables below must already be valid JSON (e.g. arrays built with `jq`).
+Build JSON with `jq -n` so every PR-derived value is safely escaped — pass numbers/arrays/objects with `--argjson`, plain strings with `--arg`. Never interpolate untrusted text into a heredoc. `*_JSON` variables below must already be valid JSON (e.g. arrays built with `jq`).
 
 ```bash
 jq -n \
@@ -474,7 +414,7 @@ jq -n \
 
 ## Step 10: Provide Summary
 
-Display human-readable summary:
+Display human-readable summary.
 
 ```
 ✅ Test Analysis Complete
@@ -529,8 +469,8 @@ Test analysis skipped
 
 ## Notes
 
-- This skill only ANALYZES tests, it doesn't run them (that's run-tests)
-- Recommendations are heuristic-based (not code coverage tool)
-- Works best when test file naming conventions are followed
+- Only ANALYZES tests, does not run them (that's run-tests)
+- Recommendations heuristic-based (not code coverage tool)
+- Works best when test file naming conventions followed
 - Can be run standalone or as part of review
 - Output designed for both human reading and machine consumption

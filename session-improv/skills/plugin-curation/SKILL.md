@@ -6,25 +6,25 @@ disable-model-invocation: true
 
 # Plugin Curation
 
-An audit pass over an installed Claude Code setup: pull real usage signals, cross-reference what's enabled, and produce keep / consolidate / prune recommendations. The output decides nothing on its own — it surfaces evidence so the user can prune with confidence.
+An audit pass over an installed Claude Code setup: pull real usage signals, cross-reference what's enabled, produce keep / consolidate / prune recommendations. The output decides nothing on its own — it surfaces evidence so the user can prune with confidence.
 
 **Core principle:** disable on evidence, not vibes — and read the evidence honestly. A low invocation count is a *question*, not a verdict: the count is blind to hooks, MCP servers, LSPs, subagents, and passive reference skills. **A favorited plugin is never an automatic cut.**
 
 ## When to use
 
-- The user suspects their plugin/skill/MCP set has grown into bloat.
+- User suspects their plugin/skill/MCP set has grown into bloat.
 - A periodic checkpoint (quarterly fits the data window most setups retain).
 - Before sharing a setup, or when context/startup feels heavier than the work justifies.
 
-**Skip if:** the user just wants to toggle one known plugin — that's a `/plugin` action, not an audit.
+**Skip if:** user just wants to toggle one known plugin — that's a `/plugin` action, not an audit.
 
 ## How to run
 
-The work is: gather signals (steps 1–3), categorize (step 4), apply the caveat (step 5), then recommend (step 6). **This skill never edits `settings.json`** — it recommends; the user disables via `/plugin` or `update-config` afterward.
+Work is: gather signals (steps 1–3), categorize (step 4), apply the caveat (step 5), then recommend (step 6). **This skill never edits `settings.json`** — it recommends; user disables via `/plugin` or `update-config` afterward.
 
 ### 1. Read the primary signals — `~/.claude.json`
 
-This file holds the authoritative all-time counters. Read three keys (ignore a fourth):
+Holds authoritative all-time counters. Read three keys (ignore a fourth):
 
 ```bash
 python3 - << 'PY'
@@ -42,8 +42,8 @@ print(", ".join((d.get("mcpServers") or {}).keys()))
 PY
 ```
 
-- **`skillUsage`** — `usageCount` *and* `lastUsedAt`. Recency is half the signal: a high count that's 90 days stale means *abandoned*, not *valued* (the classic case is a skill you migrated away from but never disabled). Rank by count, but read the age column next to it.
-- **`favoritePlugins`** — the user's explicit pins. Treat every entry as a keep. If usage data argues for cutting one, surface the conflict — don't override the pin.
+- **`skillUsage`** — `usageCount` *and* `lastUsedAt`. Recency is half the signal: a high count that's 90 days stale means *abandoned*, not *valued* (classic case: a skill you migrated away from but never disabled). Rank by count, but read the age column next to it.
+- **`favoritePlugins`** — user's explicit pins. Treat every entry as a keep. If usage data argues for cutting one, surface the conflict — don't override the pin.
 - **`mcpServers`** — user-configured MCP servers. Their value lives in `mcp__*` calls (step 2), never in a Skill count.
 - **`toolUsage`** — present but unreliable (typically near-empty). Don't base anything on it.
 
@@ -56,7 +56,7 @@ CCQ=$(ls ~/.claude/plugins/cache/cc-query-dev/cc-query/*/bin/cc-query | head -1)
 "$CCQ" < <path-to>/queries.sql      # the queries.sql sitting next to this SKILL.md
 ```
 
-`queries.sql` (this skill's directory) returns MCP calls by server, subagent spawns by type (the spawn tool is `Agent`, not `Task`), and the data window. Note the earliest timestamp — it bounds every count.
+`queries.sql` (this skill's directory) returns MCP calls by server, subagent spawns by type (spawn tool is `Agent`, not `Task`), and the data window. Note the earliest timestamp — it bounds every count.
 
 ### 3. Read what's enabled and what's orphaned
 
@@ -77,10 +77,10 @@ A plugin cached but absent from `enabledPlugins` entirely is also dead weight �
 | Live core | count > 0 and recently used | Keep |
 | Favorited | listed in `favoritePlugins` | Keep (flag if usage is low — user's call) |
 | Abandoned | high count but weeks/months stale | Question: did you migrate away? Likely disable |
-| Off-domain, zero use | no use AND irrelevant to the user's actual work | Prune candidate |
-| Redundant cluster | several enabled plugins cover one job; user has a preferred one | Consolidate to the preferred; the rest are candidates |
+| Off-domain, zero use | no use AND irrelevant to user's actual work | Prune candidate |
+| Redundant cluster | several enabled plugins cover one job; user has a preferred one | Consolidate to the preferred; rest are candidates |
 | Dead cache orphan | `.orphaned_at` and/or absent from the enabled map | Already off; optional cache clear |
-| Zero-use but defensible | count 0 but provides a hook / MCP / LSP / subagent / passive reference | Keep; flag for the user to confirm |
+| Zero-use but defensible | count 0 but provides a hook / MCP / LSP / subagent / passive reference | Keep; flag for user to confirm |
 
 ### 5. Apply the caveat — *before* recommending anything
 

@@ -6,66 +6,66 @@ disable-model-invocation: true
 
 # Setup Matt Pocock's Skills
 
-Scaffold the per-repo configuration that the engineering skills assume:
+Scaffold per-repo config the engineering skills assume:
 
-- **Issue tracker** — where issues live (GitHub by default; local markdown is also supported out of the box)
-- **Triage labels** — the strings used for the five canonical triage roles
-- **Domain docs** — where `CONTEXT.md` and ADRs live, and the consumer rules for reading them
+- **Issue tracker** — where issues live (GitHub by default; local markdown also supported)
+- **Triage labels** — strings for the five canonical triage roles
+- **Domain docs** — where `CONTEXT.md` and ADRs live, plus consumer rules for reading them
 
-This is a prompt-driven skill, not a deterministic script. Explore, present what you found, confirm with the user, then write.
+Prompt-driven, not a deterministic script. Explore, present findings, confirm with user, then write.
 
 ## Process
 
 ### 1. Explore
 
-Look at the current repo to understand its starting state. Read whatever exists; don't assume:
+Inspect current repo state. Read what exists; don't assume:
 
-- `git remote -v` and `.git/config` — is this a GitHub repo? Which one?
-- `AGENTS.md` and `CLAUDE.md` at the repo root — does either exist? Is there already an `## Agent skills` section in either?
-- `CONTEXT.md` and `CONTEXT-MAP.md` at the repo root
-- `docs/adr/` and any `src/*/docs/adr/` directories
-- `docs/agents/` — does this skill's prior output already exist?
-- `.scratch/` — sign that a local-markdown issue tracker convention is already in use
-- Is the `triage` skill installed? (a `triage` skill folder alongside this one, or `triage` in your available skills.) This decides whether Section B runs at all.
-- Monorepo signals — a `pnpm-workspace.yaml`, a `workspaces` field in `package.json`, or a populated `packages/*` with its own `src/`. Present only in a genuinely large multi-package repo; their absence means single-context, which is almost every repo.
+- `git remote -v` and `.git/config` — GitHub repo? Which one?
+- `AGENTS.md` and `CLAUDE.md` at repo root — either exist? Already an `## Agent skills` section in either?
+- `CONTEXT.md` and `CONTEXT-MAP.md` at repo root
+- `docs/adr/` and any `src/*/docs/adr/` dirs
+- `docs/agents/` — this skill's prior output already there?
+- `.scratch/` — sign a local-markdown issue tracker convention is in use
+- Is `triage` skill installed? (a `triage` skill folder alongside this one, or `triage` in available skills.) Decides whether Section B runs.
+- Monorepo signals — `pnpm-workspace.yaml`, a `workspaces` field in `package.json`, or populated `packages/*` with own `src/`. Present only in a genuinely large multi-package repo; absence means single-context, almost every repo.
 
 ### 2. Present findings and ask
 
-Summarise what's present and what's missing. Then take the sections in order — one section, one answer, then the next.
+Summarise present vs missing. Take sections in order — one section, one answer, then next.
 
-Lead each section with the recommended answer so the user can accept it in a word. Give a one-line explainer only when the choice genuinely branches; skip the section entirely when exploration already settled it (Section B when `triage` isn't installed, Section C when there's no monorepo).
+Lead each section with recommended answer so user accepts in a word. One-line explainer only when choice genuinely branches; skip section when exploration settled it (Section B when `triage` not installed, Section C when no monorepo).
 
 **Section A — Issue tracker.**
 
-> Explainer: The "issue tracker" is where issues live for this repo. Skills like `to-tickets`, `triage`, and `to-spec` read from and write to it — they need to know whether to call `gh issue create`, write a markdown file under `.scratch/`, or follow some other workflow you describe. Pick the place you actually track work for this repo.
+> Explainer: The "issue tracker" is where issues live for this repo. Skills like `to-tickets`, `triage`, and `to-spec` read/write it — they need to know whether to call `gh issue create`, write a markdown file under `.scratch/`, or follow another workflow you describe. Pick where you actually track work.
 
-Default posture: these skills were designed for GitHub. If a `git remote` points at GitHub, propose that. If a `git remote` points at GitLab (`gitlab.com` or a self-hosted host), propose GitLab. Otherwise (or if the user prefers), offer:
+Default posture: designed for GitHub. If a `git remote` points at GitHub, propose that. If at GitLab (`gitlab.com` or self-hosted), propose GitLab. Otherwise (or if user prefers), offer:
 
-- **GitHub** — issues live in the repo's GitHub Issues (uses the `gh` CLI)
-- **GitLab** — issues live in the repo's GitLab Issues (uses the [`glab`](https://gitlab.com/gitlab-org/cli) CLI)
-- **Local markdown** — issues live as files under `.scratch/<feature>/` in this repo (good for solo projects or repos without a remote)
-- **Other** (Jira, Linear, etc.) — ask the user to describe the workflow in one paragraph; the skill will record it as freeform prose
+- **GitHub** — issues in repo's GitHub Issues (uses `gh` CLI)
+- **GitLab** — issues in repo's GitLab Issues (uses [`glab`](https://gitlab.com/gitlab-org/cli) CLI)
+- **Local markdown** — issues as files under `.scratch/<feature>/` (good for solo projects or repos without a remote)
+- **Other** (Jira, Linear, etc.) — ask user to describe workflow in one paragraph; recorded as freeform prose
 
-Record the choice in `docs/agents/issue-tracker.md`. The GitHub and GitLab templates carry a "PRs as a request surface" flag, defaulted **off** — leave it off and don't raise it; a user who wants external PRs in the triage queue can flip the flag in the file later.
+Record choice in `docs/agents/issue-tracker.md`. GitHub and GitLab templates carry a "PRs as a request surface" flag, defaulted **off** — leave it off and don't raise it; user can flip the flag in the file later.
 
-**Section B — Triage label vocabulary.** Skip this section entirely if the `triage` skill isn't installed (exploration told you) — an uninstalled skill needs no labels.
+**Section B — Triage label vocabulary.** Skip entirely if `triage` skill not installed — an uninstalled skill needs no labels.
 
-If it is installed, ask exactly one question:
+If installed, ask exactly one question:
 
-> Do you want to keep the default triage labels? (recommended: **yes**)
+> Keep default triage labels? (recommended: **yes**)
 
-The defaults are the five canonical roles, each label string equal to its name: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. On **yes**, write them as-is. Only if the user says no — usually because their tracker already uses other names (e.g. `bug:triage` for `needs-triage`) — collect the overrides so `triage` applies existing labels instead of creating duplicates.
+Defaults are the five canonical roles, each label string equal to its name: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. On **yes**, write as-is. Only if user says no — usually because their tracker uses other names (e.g. `bug:triage` for `needs-triage`) — collect overrides so `triage` applies existing labels instead of creating duplicates.
 
-**Section C — Domain docs.** Default to **single-context** — one `CONTEXT.md` + `docs/adr/` at the repo root. This fits almost every repo; write it without asking.
+**Section C — Domain docs.** Default **single-context** — one `CONTEXT.md` + `docs/adr/` at repo root. Fits almost every repo; write without asking.
 
 Offer **multi-context** — a root `CONTEXT-MAP.md` pointing to per-context `CONTEXT.md` files — only when exploration found monorepo signals. Then confirm which layout they want.
 
 ### 3. Confirm and edit
 
-Show the user a draft of:
+Show user a draft of:
 
-- The `## Agent skills` block to add to whichever of `CLAUDE.md` / `AGENTS.md` is being edited (see step 4 for selection rules)
-- The contents of `docs/agents/issue-tracker.md`, `docs/agents/domain.md`, and `docs/agents/triage-labels.md` (the last only when `triage` is installed)
+- The `## Agent skills` block to add to whichever of `CLAUDE.md` / `AGENTS.md` is edited (see step 4 for selection rules)
+- Contents of `docs/agents/issue-tracker.md`, `docs/agents/domain.md`, and `docs/agents/triage-labels.md` (last only when `triage` installed)
 
 Let them edit before writing.
 
@@ -75,11 +75,11 @@ Let them edit before writing.
 
 - If `CLAUDE.md` exists, edit it.
 - Else if `AGENTS.md` exists, edit it.
-- If neither exists, ask the user which one to create — don't pick for them.
+- If neither exists, ask user which to create — don't pick for them.
 
-Never create `AGENTS.md` when `CLAUDE.md` already exists (or vice versa) — always edit the one that's already there.
+Never create `AGENTS.md` when `CLAUDE.md` already exists (or vice versa) — always edit the one already there.
 
-If an `## Agent skills` block already exists in the chosen file, update its contents in-place rather than appending a duplicate. Don't overwrite user edits to the surrounding sections.
+If an `## Agent skills` block already exists in the chosen file, update its contents in-place rather than appending a duplicate. Don't overwrite user edits to surrounding sections.
 
 The block:
 
@@ -99,18 +99,18 @@ The block:
 [one-line summary of layout — "single-context" or "multi-context"]. See `docs/agents/domain.md`.
 ```
 
-Include the `### Triage labels` sub-block, and write `docs/agents/triage-labels.md`, only when `triage` is installed and Section B ran. When it isn't, both are omitted.
+Include the `### Triage labels` sub-block, and write `docs/agents/triage-labels.md`, only when `triage` installed and Section B ran. Otherwise both omitted.
 
 Then write the docs files using the seed templates in this skill folder as a starting point:
 
 - [issue-tracker-github.md](./issue-tracker-github.md) — GitHub issue tracker
 - [issue-tracker-gitlab.md](./issue-tracker-gitlab.md) — GitLab issue tracker
 - [issue-tracker-local.md](./issue-tracker-local.md) — local-markdown issue tracker
-- [triage-labels.md](./triage-labels.md) — label mapping (only if `triage` is installed)
+- [triage-labels.md](./triage-labels.md) — label mapping (only if `triage` installed)
 - [domain.md](./domain.md) — domain doc consumer rules + layout
 
 For "other" issue trackers, write `docs/agents/issue-tracker.md` from scratch using the user's description.
 
 ### 5. Done
 
-Tell the user the setup is complete and which engineering skills will now read from these files. Mention they can edit `docs/agents/*.md` directly later — re-running this skill is only necessary if they want to switch issue trackers or restart from scratch.
+Tell user setup is complete and which engineering skills now read these files. Mention they can edit `docs/agents/*.md` directly later — re-running this skill is only necessary to switch issue trackers or restart from scratch.

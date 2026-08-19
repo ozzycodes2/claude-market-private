@@ -15,21 +15,21 @@ Suggestions and human comments are surfaced for a decision, never silently acted
 
 ## Core principles
 
-1. **Baseline, then diff.** Snapshot the PR once at the start. On every later tick,
+1. **Baseline, then diff.** Snapshot the PR once at start. On every later tick,
    act only on what is *new or still-open* versus that baseline — never re-litigate a
-   comment already handled or a check that was already green. (Learned the hard way:
+   comment already handled or a check already green. (Learned the hard way:
    without a baseline the monitor churns on stale findings.)
 2. **One monitor per PR.** Before starting, check for an existing tracker for this PR.
    If one is active, resume it — do **not** spin up a second loop. Two monitors on one
-   PR means double subagents, double commits, and confusion.
+   PR means double subagents, double commits, confusion.
 3. **The scratch file is the source of truth.** Every finding, its severity, owner
    subagent, and status live in the tracker. It survives compaction and lets a resumed
    monitor know exactly what is in flight.
 4. **Fix what's yours; ask about the rest.** CI failures and the bot's own unresolved
    review threads are auto-fixed. Human review comments and nit/suggestion-level items
    are logged and reported for the user to decide — pause and ask before acting.
-5. **Parallelize independent work.** Findings that touch disjoint files/areas get one
-   subagent each, launched together. Findings that overlap are serialized to avoid
+5. **Parallelize independent work.** Findings touching disjoint files/areas get one
+   subagent each, launched together. Overlapping findings are serialized to avoid
    clobbering each other's commits.
 6. **Respect the permission deny-list.** Never `gh pr merge`, never force-push `main`,
    never `git reset --hard`. Fixes are pushed to the *PR branch*. Merging stays with the
@@ -41,7 +41,7 @@ Suggestions and human comments are surfaced for a decision, never silently acted
 /monitor-pr <pr-number> [--repo owner/name] [--auto | --critical-only]
 ```
 
-- `<pr-number>` — required. `--repo` defaults to the current repo (`gh repo view`).
+- `<pr-number>` — required. `--repo` defaults to current repo (`gh repo view`).
 - Default mode: auto-fix **CI failures** + **unresolved bot review threads**; **gate**
   human comments and suggestions (log + report + ask).
 - `--auto` — also act on human comments and suggestions without pausing.
@@ -110,7 +110,7 @@ scripts/poll-pr.sh <n> [--repo owner/name]     # JSON: checks, threads{bot,human
 ```
 
 Diff against the tracker. New failing checks and newly-unresolved threads become new
-`Open` findings; checks that went green and threads that are now resolved/outdated move
+`Open` findings; checks that went green and threads now resolved/outdated move
 to `Done`. Merged/closed PR → stop and clean up.
 
 ### Phase 2 — Dispatch fixes
@@ -169,7 +169,7 @@ remain:
 
 ## Cadence — drive with `/loop`
 
-This skill is built to run as a loop. Drive it with the **`/loop`** skill: each firing
+Built to run as a loop. Drive it with the **`/loop`** skill: each firing
 re-enters and runs one Phase 1→3 tick. Under the hood that uses `ScheduleWakeup` for
 dynamic pacing — if you aren't launched via `/loop`, self-schedule the next tick with
 `ScheduleWakeup`.
@@ -194,7 +194,7 @@ Always pass the same `/monitor-pr <n>` prompt back so the next firing repeats th
   `CLAUDE_BOT=<substring>`.
 - **Don't act on outdated threads.** `isOutdated: true` usually means the code moved on;
   verify before spending a subagent.
-- **Suggestion rounds.** A poll that surfaces only nits/human comments in default mode is
+- **Suggestion rounds.** A poll surfacing only nits/human comments in default mode is
   a *report*, not a work order — summarize and wait for the user.
 - **One PR, one tracker, one loop.** Re-invoking on a PR that already has a tracker
   resumes it; it never starts a parallel monitor.

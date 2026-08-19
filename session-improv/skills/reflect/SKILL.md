@@ -12,12 +12,12 @@ Use `${CLAUDE_PLUGIN_ROOT}/bin/cc-query` to analyze Claude Code sessions with SQ
 
 ## Query Planning (Read This First)
 
-**Each bash call costs ~1-2 seconds** (DuckDB init + JSONL parsing). A session with 20 separate queries wastes 20-40 seconds on overhead alone.
+**Each bash call costs ~1-2 seconds** (DuckDB init + JSONL parsing). 20 separate queries wastes 20-40 seconds on overhead alone.
 
 **Before running any query:**
 1. List all questions you need answered
-2. Combine them into 1-2 heredoc batches
-3. Store results mentally - never re-run the same query
+2. Combine into 1-2 heredoc batches
+3. Store results mentally — never re-run the same query
 
 **Standard pattern:**
 ```bash
@@ -38,7 +38,7 @@ ${CLAUDE_PLUGIN_ROOT}/bin/cc-query                    # All projects
 ${CLAUDE_PLUGIN_ROOT}/bin/cc-query ~/code/myproject   # Specific project
 ```
 
-**IMPORTANT**: Always use heredoc (not echo). This enables batching:
+**IMPORTANT**: Always use heredoc (not echo). Enables batching:
 ```bash
 cat << 'EOF' | ${CLAUDE_PLUGIN_ROOT}/bin/cc-query
 SELECT count(*) FROM messages;
@@ -88,7 +88,7 @@ EOF
 
 **User-specific**: `toolUseResult`, `sourceToolAssistantUUID`, `todos`, `isMeta`
 
-**human_messages only**: `content` (VARCHAR) - extracted text, not JSON
+**human_messages only**: `content` (VARCHAR) — extracted text, not JSON
 
 ## Example Queries
 
@@ -172,7 +172,7 @@ SELECT tool_name, count(*) FROM tool_uses GROUP BY tool_name;  -- Simple!
 
 **Column names are camelCase**: Use `sessionId`, `agentId`, `toolUseResult` (NOT `session_id`, `agent_id`)
 
-**Arrow operators fail on mixed data**: When using base views (`assistant_messages`, `messages`), arrow operators like `message->'content'->0->>'name'` cause "Conversion Error" because rows have different JSON structures. Use `json_extract_string()` or convenience views:
+**Arrow operators fail on mixed data**: On base views (`assistant_messages`, `messages`), arrow operators like `message->'content'->0->>'name'` cause "Conversion Error" because rows have different JSON structures. Use `json_extract_string()` or convenience views:
 ```sql
 -- FAILS: message->'content'->0->>'name'
 -- WORKS: json_extract_string(message, '$.content[0].name')
@@ -181,7 +181,7 @@ SELECT tool_name, count(*) FROM tool_uses GROUP BY tool_name;  -- Simple!
 
 ## JSON Access
 
-- `json_extract_string(message, '$.field')` - **preferred**, handles mixed types
+- `json_extract_string(message, '$.field')` — **preferred**, handles mixed types
 - `message->'field'` returns JSON (use only when all rows have same structure)
 - `message->>'field'` returns string (same caveat)
 - `message->'content'->0` array access (0-indexed)
@@ -200,7 +200,7 @@ SELECT tool_name, count(*) FROM tool_uses GROUP BY tool_name;  -- Simple!
 
 ### Two-Call Pattern for Unknown Sessions
 
-**Call 1: Discovery** - Find what you're looking for:
+**Call 1: Discovery** — Find what you're looking for:
 ```bash
 cat << 'EOF' | ${CLAUDE_PLUGIN_ROOT}/bin/cc-query
 -- Recent sessions
@@ -209,7 +209,7 @@ FROM messages GROUP BY sessionId, project ORDER BY started DESC LIMIT 10;
 EOF
 ```
 
-**Call 2: Deep Analysis** - Query the specific session(s):
+**Call 2: Deep Analysis** — Query the specific session(s):
 ```bash
 cat << 'EOF' | ${CLAUDE_PLUGIN_ROOT}/bin/cc-query
 -- Replace SESSION_ID with ID from Call 1
@@ -245,7 +245,7 @@ WHERE lower(content) LIKE '%error%';
 ```
 
 ### Never Re-Query
-Once you have a result, remember it. Don't run the same query again to "verify" or "check".
+Once you have a result, remember it. Don't re-run the same query to "verify" or "check".
 
 ## Common Analysis Patterns
 

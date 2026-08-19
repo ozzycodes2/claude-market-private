@@ -23,7 +23,7 @@ disable-model-invocation: true
 Two facets, one skill:
 
 - **Drift** — docs that now *contradict the code* (or each other) after the
-  PR's changes. This is the hard part: the drift lives in a file the PR did
+  PR's changes. The hard part: the drift lives in a file the PR did
   not touch, so a diff-only reviewer never sees it.
 - **Completeness** — expected doc updates the PR *should have made but didn't*
   (CHANGELOG entry, README/API doc for a new surface, docstrings on new public
@@ -92,13 +92,13 @@ gh pr diff "$PR_URL" --name-only > "$OUTPUT_DIR/pr.files"
 
 ### Step 2: Extract claims
 
-Read `references/drift-patterns.md` — it is the authoritative catalog of drift
+Read `references/drift-patterns.md` — authoritative catalog of drift
 classes with a detection heuristic and a real example for each. Work through
 it; do not improvise categories.
 
 A **claim** is any doc sentence, table row, code comment, or config comment
-that asserts a *checkable code fact*: a module path, type/function name, an
-endpoint, an env var name, a file that is generated from another, a PHI/data
+asserting a *checkable code fact*: a module path, type/function name, an
+endpoint, an env var name, a file generated from another, a PHI/data
 model statement, an ADR status, or "X is wired to Y". Collect claims from every
 doc the inventory found — not only docs in the PR diff.
 

@@ -5,63 +5,60 @@ description: Use when writing a commit message or PR description for work that w
 
 # Writing Commit Messages
 
-Helps draft a commit message worth living in `main` for years. The reader you're writing for is some future maintainer — often you, three years from now, with no memory of what you were thinking — staring at a single `git blame` line and trying to figure out why the code is the way it is.
+Draft commit message worth living in `main` for years. Reader is future maintainer — often you, three years out, no memory of your thinking — staring at one `git blame` line, figuring out why code is the way it is.
 
-**Core principle:** trunk commits are the durable record. Branch commits can be anything ("Friday is Hawaiian shirt day"). The commit trail in `main` is what survives the migration from GitHub to GitLab and back; that's what you're writing for.
+**Core principle:** trunk commits are the durable record. Branch commits can be anything ("Friday is Hawaiian shirt day"). The `main` commit trail survives migration from GitHub to GitLab and back; that's what you're writing for.
 
 Source: CJ's own "Writing great commit messages" document.
 
 ## When to use
 
-- Writing a PR description for work intended to merge into `main` (or `master` or `latest`).
-- Writing a message for a significant commit.
-- Writing a message for any direct commit to trunk.
+- PR description for work merging into `main` (or `master` or `latest`).
+- Message for a significant commit.
+- Message for any direct commit to trunk.
 - User asks "what should this commit message be?" or "write the PR description for X."
 
-**Skip if:** committing to a feature branch where the work will be squashed later — that's Hawaiian-shirt-day territory and anything goes. Also skip for trivial fixup commits the author plans to autosquash.
+**Skip if:** committing to a feature branch where work squashes later — Hawaiian-shirt-day territory, anything goes. Also skip trivial fixup commits the author plans to autosquash.
 
 ## Structure: the inverted pyramid
 
 A great commit message is a newspaper article, not a diff summary. The pyramid:
 
 1. _Headline_ Try for 50 chars. Conventional Commits prefix (`feat:`, `fix:`, `docs:`,
-   `chore:`) is welcome — works great for humans and for tooling.
-2. _Dek_ The subhed that tells what broke or what the change was, meaningfully.
-3. _Lede paragraph._ What changed in the system's behavior, and _why_. Someone who reads
-   only this paragraph should get the gist. Keep it short.
+   `chore:`) welcome — works great for humans and tooling.
+2. _Dek_ Subhed telling what broke or what the change was, meaningfully.
+3. _Lede paragraph._ What changed in behavior, and _why_. A reader of only this paragraph
+   should get the gist. Keep short.
 4. Consider if this is enough.
-5. _Technical choices / background._ Optional. Use it if the implementation was non-obvious,
-   if there was a viable alternative worth naming, or if the problem itself was hard.
-   Keep it short.
+5. _Technical choices / background._ Optional. Use if implementation was non-obvious,
+   if a viable alternative is worth naming, or if the problem was hard. Keep short.
 6. _Details about how._ Optional. Bullet list of picky stuff: subtle invariants, edge cases
-   handled, things deliberately not done. Include only if unusual or interesting in some way.
-   Keep it short.
-7. _Drive-by changes._ Additional small changes made along the way that did not relate
-   to the main topic, but were easy to do, such as bug fixes in adjacent code.
-8. _Bug / issue references._ At the end, to assist automation. Don't put these in the
-   headline — they eat your 50 characters.
+   handled, things deliberately not done. Include only if unusual or interesting. Keep short.
+7. _Drive-by changes._ Small changes made along the way, unrelated to the main topic but
+   easy to do, such as bug fixes in adjacent code.
+8. _Bug / issue references._ At the end, to assist automation. Not in the headline — they
+   eat your 50 characters.
 
 ### Length
 
-- Headline: ~50 chars so it fits in `git log --oneline` and GitHub file views.
+- Headline: ~50 chars so it fits `git log --oneline` and GitHub file views.
 - Body: hard-wrap at 80 chars. Unwrapped lines are miserable in a terminal pager. Linus Torvalds,
   noted relaxation coach, says 74; CJ says 80; pick something in 72–80 and stick with it.
-- Body length: as long as the change deserves. A boring config tweak is one paragraph.
-  A subtle concurrency fix can be ten. Think about the importance of the change and how
-  difficult it will be to understand in the future: devote more words to critical changes,
-  and fewer words to small changes.
-- BE CONCISE no matter what. Use simple declarative sentences. Do not use emoji or **bold**.
-- You may use `backticks` to indicate symbols, names in code, or shell commands.
+- Body length: as long as the change deserves. Boring config tweak: one paragraph.
+  Subtle concurrency fix: ten. Weigh importance and future difficulty: more words for
+  critical changes, fewer for small ones.
+- BE CONCISE no matter what. Use simple declarative sentences. No emoji, no **bold**.
+- You may use `backticks` for symbols, code names, or shell commands.
 
-Use clear, concise English prose. Don't repeat facts. Focus on information future readers will
-need so they can understand why the work was done the way it was, and what your intentions were.
+Use clear, concise English prose. Don't repeat facts. Focus on what future readers need to
+understand why the work was done that way, and what your intentions were.
 
-Avoid _leaked frames._ Leaked frames are references that only parse from inside the session that produced them. From inside they read as clear, which is why the writer cannot see them. Assume that the reader of a commit message has only the context of the repo itself.
+Avoid _leaked frames._ Leaked frames are references that only parse from inside the session that produced them. From inside they read as clear, which is why the writer cannot see them. Assume the reader has only the context of the repo itself.
 
 ### Tense
 
 Imperative for the headline (matches Conventional Commits and Linux kernel convention);
-past tense for the "how it was done" details reads naturally.
+past tense for "how it was done" details reads naturally.
 
 ## Example: an inverted-pyramid commit
 
@@ -96,27 +93,27 @@ Fixes #42, #44, #47.
 
 | Don't | Why |
 | ----- | --- |
-| Accept GitHub's default squash message | It's the concatenation of your WIP commits. Almost always noise.                                                       |
-| Skip the body for "small" changes      | The change might be small; the _why_ often isn't. One body sentence body is still useful.                                  |
-| Cram bug numbers into the headline     | Put them at the end of the message.               |
-| Skip the _why_                         | The diff already says what changed. The why is the only thing the message uniquely contributes. |
-| Mix tenses within one message          | Use the past tense. |
-| Hand-wave "see PR"                     | Two years from now the PR may be archived, link-rotted, or behind an org boundary. The commit is the durable artifact. |
-| Write ten paragraphs.                  | Long explanatations belong in documentation |
+| Accept GitHub's default squash message | Concatenation of your WIP commits. Almost always noise.                                                       |
+| Skip the body for "small" changes      | Change might be small; the _why_ often isn't. One body sentence is still useful.                                  |
+| Cram bug numbers into the headline     | Put them at the end.               |
+| Skip the _why_                         | Diff already says what changed. The why is the only thing the message uniquely contributes. |
+| Mix tenses within one message          | Use past tense. |
+| Hand-wave "see PR"                     | In two years the PR may be archived, link-rotted, or behind an org boundary. The commit is the durable artifact. |
+| Write ten paragraphs.                  | Long explanations belong in documentation |
 
 ## When asked to draft
 
-Procedure when the user asks for a commit/PR message draft:
+Procedure when user asks for a commit/PR message draft:
 
-1. **Look at the diff first.** `git diff <range>` or `git log <range>` — don't draft from memory or conversation context alone. The diff is ground truth.
-2. **Propose the headline candidate** in chat before drafting the body. The headline is the single hardest line; getting it right early shapes the rest.
-3. **Draft the body in inverted-pyramid order.** Lede first. Only add technical-choices and how-details paragraphs if the change actually warrants them — boring routine commits are headline + one paragraph.
+1. **Look at the diff first.** `git diff <range>` or `git log <range>` — don't draft from memory or conversation alone. The diff is ground truth.
+2. **Propose the headline candidate** in chat before the body. The headline is the hardest line; getting it right early shapes the rest.
+3. **Draft the body in inverted-pyramid order.** Lede first. Add technical-choices and how-details paragraphs only if the change warrants them — boring routine commits are headline + one paragraph.
 4. **Hard-wrap the body at 80 chars.** Always, per the Length rules above.
-5. **Confirm with the user** before pasting into a PR or running `git commit`. The user's voice and judgment about what's worth memorializing should win.
+5. **Confirm with the user** before pasting into a PR or running `git commit`. The user's voice and judgment about what's worth memorializing win.
 
 ## What a great commit message is NOT — real-world specimens
 
-CJ's collection from the wild. The fourth specimen is the most common — it's what GitHub gives you by default if you don't override the squash message.
+CJ's collection from the wild. The fourth specimen is most common — GitHub's default if you don't override the squash message.
 
 ```
 fixed bug

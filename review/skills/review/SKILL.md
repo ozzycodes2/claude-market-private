@@ -7,11 +7,11 @@ disable-model-invocation: true
 
 # Orchestrate Full PR Review
 
-Master orchestrator that runs a comprehensive PR review by coordinating multiple specialized skills. Produces a single unified review comment with all findings and recommendations.
+Master orchestrator. Runs comprehensive PR review by coordinating specialized skills. Produces single unified review comment with all findings and recommendations.
 
 ## Overview
 
-This skill coordinates the full review workflow:
+Workflow:
 
 **Phase 1: Foundation**
 1. Analyze changes (detect languages, frameworks, impact)
@@ -111,21 +111,21 @@ Store key findings:
 
 ## Step 3: Run Deep Code Review (3 parallel passes, one model each)
 
-Run the deep code review inline — **spawn 3 independent bug-finders in parallel** with the Task tool. Each pass analyzes the same diff but may catch different issues; findings confirmed by multiple passes are high-confidence.
+Run deep code review inline — **spawn 3 independent bug-finders in parallel** with Task tool. Each pass analyzes same diff but may catch different issues; findings confirmed by multiple passes are high-confidence.
 
-**Give each pass a different model.** Running the same model three times shares the same blind spots — three different models give genuinely independent perspectives, so a finding confirmed across models is far stronger signal, and the mix costs less than three deep-model passes. Assign models as:
+**Give each pass a different model.** Same model three times shares same blind spots — three different models give independent perspectives, so a finding confirmed across models is far stronger signal, and the mix costs less than three deep-model passes. Assign models as:
 
 | Pass | `model` value | Model ID | Role |
 |------|---------------|----------|------|
 | 1 | `opus` | `claude-opus-4-8` | Deepest reasoning — subtle logic, races, security data-flow |
 | 2 | `sonnet` | `claude-sonnet-5` | Strong, different model family — diversifies findings |
-| 3 | `haiku` | `claude-haiku-4-5` | Fast breadth pass — a cheap third independent perspective |
+| 3 | `haiku` | `claude-haiku-4-5` | Fast breadth pass — cheap third independent perspective |
 
 **Send ONE message with THREE Task tool calls.** For each:
 - `subagent_type`: `general-purpose`
-- `model`: the pass's model from the table above (`opus`, `sonnet`, `haiku` respectively). **Do not omit this** — an omitted `model` makes the pass inherit the session model, which collapses all three passes onto one model and defeats the diversity.
+- `model`: the pass's model from table above (`opus`, `sonnet`, `haiku` respectively). **Do not omit this** — omitted `model` makes pass inherit session model, collapsing all three passes onto one model and defeating the diversity.
 - `description`: `Bug hunter pass [1 opus / 2 sonnet / 3 haiku]`
-- `prompt`: the Bug-Finder Prompt below, with the PR diff (from Step 2 / `gh pr diff <FULL_URL>`) inserted in place of `{{DIFF}}`.
+- `prompt`: the Bug-Finder Prompt below, with PR diff (from Step 2 / `gh pr diff <FULL_URL>`) inserted in place of `{{DIFF}}`.
 
 **Don't wait for completion yet** — let these run while Step 4 proceeds; collect results in Step 6.
 
@@ -153,15 +153,15 @@ Return a JSON array of findings, each: {"severity":"critical|high|medium","path"
 {{DIFF}}
 ```
 
-**Merge (in Step 6):** group findings by `path` + `line`; prepend "[Found by N/3 models]" to any found by 2+ passes; take the highest severity. A finding surfaced by more than one model family is especially high-confidence — weight it accordingly in Step 7.
+**Merge (in Step 6):** group findings by `path` + `line`; prepend "[Found by N/3 models]" to any found by 2+ passes; take highest severity. A finding surfaced by more than one model family is especially high-confidence — weight it accordingly in Step 7.
 
 ## Step 4: Run Phase 2 Skills (Parallel)
 
-Now that we have the foundation (analysis + code review), run quality checks in parallel:
+With foundation ready (analysis + code review), run quality checks in parallel:
 
 ### 4.1 Launch Test Analysis (Sonnet subagent)
 
-Run test-gap analysis in a **Task subagent pinned to a lower model** — assessing coverage and recommending tests is moderate reasoning over the diff and existing tests, well within Sonnet's range.
+Run test-gap analysis in a **Task subagent pinned to a lower model** — assessing coverage and recommending tests is moderate reasoning over diff and existing tests, well within Sonnet's range.
 ```
 Use Task tool:
 - subagent_type: "general-purpose"
@@ -175,7 +175,7 @@ Use Task tool:
 
 ### 4.2 Launch Security Scanner (Sonnet subagent)
 
-Run security scanning in a **Task subagent pinned to a lower model** — it's mostly running tools (semgrep, linters, dependency checkers) and summarizing their output, which doesn't need the orchestrator's frontier model.
+Run security scanning in a **Task subagent pinned to a lower model** — mostly running tools (semgrep, linters, dependency checkers) and summarizing their output, which doesn't need the orchestrator's frontier model.
 ```
 Use Task tool:
 - subagent_type: "general-purpose"
@@ -189,7 +189,7 @@ Use Task tool:
 
 ### 4.3 Launch Documentation Validator (Haiku subagent)
 
-Run the docs drift/completeness check in a **Task subagent pinned to the cheapest model** — it's cross-file claim matching, not deep reasoning.
+Run docs drift/completeness check in a **Task subagent pinned to the cheapest model** — cross-file claim matching, not deep reasoning.
 ```
 Use Task tool:
 - subagent_type: "general-purpose"
@@ -201,7 +201,7 @@ Use Task tool:
     ($OUTPUT_DIR/docs-drift-<PR_NUMBER>.json). Return a one-line summary.
 ```
 
-**All three Phase 2 checks run in parallel as subagents on lower models** — test analysis (4.1) and security (4.2) on Sonnet, docs (4.3) on Haiku. Send the three Task calls in ONE message so they run concurrently, let them run while Step 5 proceeds, and collect in Step 6. They're independent (all consume the same analysis JSON) and none needs the orchestrator's frontier model.
+**All three Phase 2 checks run in parallel as subagents on lower models** — test analysis (4.1) and security (4.2) on Sonnet, docs (4.3) on Haiku. Send the three Task calls in ONE message so they run concurrently, let them run while Step 5 proceeds, collect in Step 6. They're independent (all consume same analysis JSON) and none needs the orchestrator's frontier model.
 
 **If any skill fails:**
 - Log the error
@@ -491,8 +491,8 @@ View full review: <PR_URL>
 
 ## Notes
 
-- This skill is the entry point for comprehensive reviews
-- It runs a model-diverse 3-pass deep code review (opus + sonnet + haiku) and coordinates 6 skills: analyze, test-gaps, security-scan (sonnet subagent), docs-drift (haiku subagent), run-tests, codegen
+- Entry point for comprehensive reviews
+- Runs a model-diverse 3-pass deep code review (opus + sonnet + haiku) and coordinates 6 skills: analyze, test-gaps, security-scan (sonnet subagent), docs-drift (haiku subagent), run-tests, codegen
 - Designed to be extended as new skills are added
 - Always maintains human-in-the-loop (never auto-approves/merges)
 - Generated code requires human review before committing

@@ -7,17 +7,17 @@ disable-model-invocation: true
 
 # Test Runner
 
-Executes tests safely in an isolated environment with strict timeout and resource limits. Only runs tests deemed safe by the analyze skill.
+Run tests in isolated env with strict timeout and resource limits. Only runs tests analyze skill marked safe.
 
 ## Inputs
 
 - **PR URL**: Full GitHub/Enterprise PR URL
-- **OUTPUT_DIR** (optional): Directory for output files. Defaults to a private `mktemp -d` directory if not provided.
+- **OUTPUT_DIR** (optional): Output dir. Defaults to private `mktemp -d`.
 - **Analysis JSON**: From `analyze` at `$OUTPUT_DIR/pr-analysis-<number>.json`
 
 ## Outputs
 
-Writes test results to `$OUTPUT_DIR/test-results-<PR_NUMBER>.json` with structure:
+Writes test results to `$OUTPUT_DIR/test-results-<PR_NUMBER>.json`:
 ```json
 {
   "pr_number": 123,
@@ -64,7 +64,7 @@ if (test_setup.can_run_safely !== true) {
 
 ## Step 0: Parse Arguments
 
-Extract PR URL and output directory from arguments:
+Extract PR URL and output dir from arguments:
 
 ```bash
 PR_URL="$1"
@@ -96,7 +96,7 @@ From analysis JSON, check:
 
 ### 1.2 Additional Safety Checks
 
-**Forbidden patterns in test commands:**
+**Forbidden patterns in test command:**
 ```bash
 # Check test command for dangerous patterns
 DANGEROUS_PATTERNS=(
@@ -125,7 +125,7 @@ done
 
 ### 1.3 Resource Limits
 
-Set strict limits. `ulimit` takes numeric values (KB for `-v`/`-f`, seconds for `-t`), so use integers — string values like `"2g"` evaluate to `0` in arithmetic and silently disable the limit.
+Set strict limits. `ulimit` takes numeric values (KB for `-v`/`-f`, seconds for `-t`), so use integers — string values like `"2g"` evaluate to `0` and silently disable the limit.
 
 ```bash
 # Maximum wall-clock execution time: 10 minutes (enforced by `timeout`)
@@ -236,13 +236,13 @@ TEST_COMMAND=$(jq -r '.test_setup.test_command' "$ANALYSIS_FILE")
 # mac-ui: the package.json `test` script (per-package), NOT a guessed command.
 ```
 
-**Rust safety gate:** only run when `analyze` marked the suite safe. The full
-workspace suite that gates on `PGURL`/`KAFKA_BOOTSTRAP_SERVERS`/`RUN_KAFKA_TESTS`
-or a `just compose-up` stack is NOT safe here — run the recorded unit-only
+**Rust safety gate:** only run when `analyze` marked suite safe. Full
+workspace suite gating on `PGURL`/`KAFKA_BOOTSTRAP_SERVERS`/`RUN_KAFKA_TESTS`
+or a `just compose-up` stack is NOT safe here — run recorded unit-only
 subset (e.g. `cargo nextest run -E 'not test(/integration/)'`) or skip and tell
-the reviewer coverage/integration must run locally with the compose stack up.
+reviewer coverage/integration must run locally with compose stack up.
 
-**mac-ui safety gate:** web-test-runner needs a headless browser that a sandbox
+**mac-ui safety gate:** web-test-runner needs a headless browser a sandbox
 may lack — if `analyze` marked it unsafe, skip and report, don't force it.
 
 ### 3.2 Run Tests with Timeout and Limits
@@ -279,13 +279,13 @@ DURATION=$((END_TIME - START_TIME))
 
 ### 3.3 Network Isolation (Optional - if supported)
 
-**Linux (using network namespaces):**
+**Linux (network namespaces):**
 ```bash
 # Run tests without network access
 unshare --net bash -c "$TEST_COMMAND"
 ```
 
-**macOS (using pfctl - requires sudo, skip if not available):**
+**macOS (pfctl - requires sudo, skip if unavailable):**
 ```bash
 # Network isolation harder on macOS, skip for now
 echo "Network isolation not available on macOS"
@@ -337,7 +337,7 @@ FAILED=$(grep "Failures:" "$OUTPUT_DIR/test-output-${PR_NUMBER}.log" | grep -oE 
 
 ### 4.2 Extract Failure Details
 
-If tests failed, extract failure information:
+If tests failed, extract failure info:
 
 ```bash
 # Find failure details
@@ -385,7 +385,7 @@ ELSE:
 
 If tests failed, categorize:
 
-**Flaky tests** (if re-run shows different results):
+**Flaky tests** (re-run shows different results):
 - Random failures
 - Timing-dependent
 - Non-deterministic
@@ -398,11 +398,11 @@ If tests failed, categorize:
 **Setup failures:**
 - Import errors
 - Missing dependencies
-- Configuration issues
+- Config issues
 
 ## Step 6: Generate Test Results JSON
 
-Build the JSON with `jq -n` so PR-derived values (the test command and captured output) are safely escaped — pass numbers/arrays/objects with `--argjson` and plain strings with `--arg`. Never interpolate untrusted text directly into a heredoc. The `*_JSON` variables below must already be valid JSON (build them with `jq`).
+Build JSON with `jq -n` so PR-derived values (test command, captured output) are safely escaped — pass numbers/arrays/objects with `--argjson`, plain strings with `--arg`. Never interpolate untrusted text into a heredoc. `*_JSON` variables below must already be valid JSON (build them with `jq`).
 
 ```bash
 jq -n \
@@ -481,167 +481,17 @@ Failures:
 Results saved to: $OUTPUT_DIR/test-results-123.json
 ```
 
-## Safety Features
-
-These are the guarantees the runner actually enforces. Read the caveats — several
-controls are best-effort and OS-dependent, not hard sandboxing.
-
-### Enforced
-- ✅ **Wall-clock timeout** — each run is wrapped in `timeout` (10 min tests,
-  5 min dependency install); the process is killed when it expires.
-- ✅ **Isolated workspace** — code is checked out into a fresh `mktemp -d`
-  directory; cleaned up after the run.
-- ✅ **Dangerous-pattern denylist** — the test command is grepped for a small set
-  of destructive patterns (`rm -rf`, `dd if=`, `mkfs`, `ssh`, privileged Docker,
-  production URLs). This is **defense-in-depth only**, not a real sandbox: a
-  denylist cannot catch every dangerous command, so never rely on it alone.
-
-### Best-effort (OS-dependent, not guaranteed)
-- ⚠️ **Memory limit (`ulimit -v`, ~2GB)** — a soft per-process address-space
-  cap. Behavior varies by platform and does not bound child processes reliably.
-- ⚠️ **Single-file size limit (`ulimit -f`, ~1GB)** — limits the size of any one
-  file written, **not** total disk usage. No portable total-disk cap exists.
-
-### Not enforced
-- ❌ **Network isolation** — attempted via `unshare --net` on Linux (requires
-  privileges/namespaces) and **skipped entirely on macOS**. Do not assume tests
-  run without network access; only production-URL patterns in the command are
-  blocked, and the workload itself may still make outbound connections.
-- ❌ **CPU-core / CPU-seconds limit** — not set; wall-clock `timeout` is the only
-  time bound.
-
-## When Tests Are NOT Run
-
-Skip test execution if:
-- `test_setup.can_run_safely` is false
-- No test framework detected
-- Test command contains dangerous patterns
-- PR requires external services (databases, APIs)
-- Integration/E2E tests detected (too slow/unsafe)
-
-**In these cases:**
-```
-⚠️ Test Execution Skipped
-
-Reason: <specific reason>
-Recommendation: Run tests manually with: <command>
-```
-
-## Error Handling
-
-**If checkout fails:**
-```
-Error: Could not checkout PR
-- Check permissions
-- Verify PR is open
-- Try: gh pr checkout <number>
-```
-
-**If dependency install fails:**
-```
-Error: Dependency installation failed
-- Check requirements file syntax
-- Verify package availability
-- Review install logs
-```
-
-**If tests crash:**
-```
-Error: Test execution crashed
-- Check test configuration
-- Review test output for errors
-- Verify dependencies installed correctly
-```
-
-**If timeout:**
-```
-⏱️ Tests timed out after 10 minutes
-- Tests may be too slow for automated execution
-- Consider optimizing test suite
-- Run manually for full results
-```
-
-## Examples
-
-### Python (pytest)
-```bash
-# Setup
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-
-# Run
-timeout 600 pytest -v --tb=short --maxfail=10
-
-# Parse
-# "23 passed, 2 failed in 45.2s"
-```
-
-### JavaScript (jest)
-```bash
-# Setup
-npm ci
-
-# Run
-timeout 600 npm test -- --verbose --bail
-
-# Parse
-# "Tests: 2 failed, 23 passed, 25 total"
-```
-
-### Go
-```bash
-# Setup (dependencies auto-download)
-go mod download
-
-# Run
-timeout 600 go test -v -timeout 5m ./...
-
-# Parse
-# "PASS" or "FAIL"
-```
-
-### Rust (cargo-nextest)
-```bash
-# Setup
-cargo fetch
-
-# Run — unit-only safe subset (full suite needs the compose stack; skip that here)
-timeout 600 cargo nextest run -E 'not test(/integration/)' 2>&1 | tail -30
-# If the repo has a justfile, `just test` is what CI runs.
-
-# Parse
-# "Summary [   1.234s] 206 tests run: 206 passed, 0 skipped"
-```
-
-### mac-ui (per-package script)
-```bash
-# Setup
-npm ci
-
-# Run — use the package's own test script; jsdom/vitest are sandbox-safe,
-# web-test-runner needs a headless browser (skip if unavailable).
-timeout 600 npm -w <package> test 2>&1 | tail -30
-```
-
-### Java (Maven)
-```bash
-# Setup
-mvn test-compile
-
-# Run
-timeout 600 mvn test -Dmaven.test.failure.ignore=false
-
-# Parse
-# "Tests run: 25, Failures: 2"
-```
+- Safety guarantees + best-effort/not-enforced caveats: read `references/safety-features.md` when relying on isolation, timeout, memory, network limits.
+- Skip conditions + skip message: read `references/when-not-run.md` before deciding not to run tests.
+- Error handling messages (checkout, install, crash, timeout): read `references/error-handling.md` when a step fails.
+- Per-language setup/run/parse examples: read `references/examples.md` when building test command.
 
 ## Notes
 
 - Only runs unit tests (not integration/e2e)
-- Tests run in isolated temporary directory
+- Tests run in isolated temp dir
 - All output captured for analysis
 - Workspace cleaned up after execution
 - Safe by default - skips if any doubt about safety
-- Never modifies user's working directory
+- Never modifies user's working dir
 - Can be run standalone or via review
