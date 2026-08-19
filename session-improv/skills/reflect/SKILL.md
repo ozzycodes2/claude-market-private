@@ -3,6 +3,7 @@ name: reflect
 description: Query Claude Code conversation history and session data using SQL. Use when analyzing past conversations, token usage, tool patterns, agent activity, or extracting insights from session logs. Triggers on requests about session history, conversation analysis, usage statistics, or cc-query.
 context: fork
 allowed-tools: Bash
+disable-model-invocation: true
 ---
 
 # Querying Session Data

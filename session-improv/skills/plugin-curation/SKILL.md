@@ -1,6 +1,7 @@
 ---
 name: plugin-curation
 description: Use when the user wants to audit or prune their Claude Code setup — says "audit my plugins", "what am I actually using", "curate my Claude setup", "which plugins can I disable", "clean up my enabled plugins" — or runs a periodic (e.g. quarterly) review of installed plugins, skills, and MCP servers. Produces keep / consolidate / prune recommendations grounded in real usage counts.
+disable-model-invocation: true
 ---
 
 # Plugin Curation

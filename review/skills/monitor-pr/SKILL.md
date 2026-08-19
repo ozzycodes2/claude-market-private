@@ -2,6 +2,7 @@
 name: monitor-pr
 description: Continuously watch a GitHub PR (usually one Claude just opened) for CI failures and new review comments, and drive fixes as they arrive. Use when the user says "monitor this PR", "watch PR #45", "watch the PR for comments and check failures", "address review comments as they come along", "keep an eye on CI and fix failures", or after opening a PR and wanting it shepherded to green. Polls on an interval (drive with /loop), records every finding in a scratch-file issue tracker, dispatches subagents to fix — in parallel when the work is independent — resolves bot review threads it addresses, and deletes the tracker once everything is handled. Gates suggestions and human comments for user confirmation instead of acting blindly.
 allowed-tools: Bash Read Write Edit Skill Agent ScheduleWakeup TaskCreate TaskUpdate
+disable-model-invocation: true
 ---
 
 # Monitor PR

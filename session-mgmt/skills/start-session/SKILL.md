@@ -20,6 +20,7 @@ compatibility: >-
   are deferred — load them via ToolSearch before calling.
 metadata:
   argument-hint: "<worktree/branch name — a JIRA key like COB-103, or any slug like random-misc>"
+disable-model-invocation: true
 ---
 
 # Start Session

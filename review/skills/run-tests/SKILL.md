@@ -2,6 +2,7 @@
 name: run-tests
 description: Safely execute tests in isolated environment with timeout and resource limits. Use when reviewing a PR and you need to actually run its tests in a sandboxed, resource-limited environment.
 allowed-tools: Bash Read
+disable-model-invocation: true
 ---
 
 # Test Runner

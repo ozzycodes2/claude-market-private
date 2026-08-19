@@ -2,6 +2,7 @@
 name: security-scan
 description: Run security scans using semgrep, linters, and dependency checkers to find vulnerabilities. Use when reviewing a PR that touches security-sensitive code or you need to surface injection, crypto, secrets, or dependency CVE risks.
 allowed-tools: Bash Read Grep Glob
+disable-model-invocation: true
 ---
 
 # Security Scanner

@@ -19,6 +19,7 @@ compatibility: >-
   task runner. Respects the user's settings.json permission deny-list.
 metadata:
   argument-hint: "[optional: resource to scope to, e.g. worktree | docker | tilt | scratch]"
+disable-model-invocation: true
 ---
 
 # Exit Session

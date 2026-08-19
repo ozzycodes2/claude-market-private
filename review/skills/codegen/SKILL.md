@@ -5,6 +5,7 @@ allowed-tools: Bash Read Write
 metadata:
   author: machinify
   facet-of: review
+disable-model-invocation: true
 ---
 
 # Code Generator
