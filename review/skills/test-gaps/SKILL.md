@@ -2,7 +2,6 @@
 name: test-gaps
 description: Analyze test coverage and recommend new tests based on code changes. Use when reviewing a PR and you need to assess whether the changes are adequately tested.
 allowed-tools: Bash Read Grep Glob
-disable-model-invocation: true
 ---
 
 # Test Analysis

@@ -15,7 +15,6 @@ allowed-tools: Bash Read Grep Glob
 metadata:
   author: machinify
   facet-of: review
-disable-model-invocation: true
 ---
 
 # Documentation Drift & Completeness Check

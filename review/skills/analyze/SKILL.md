@@ -2,7 +2,6 @@
 name: analyze
 description: Analyze PR changes to detect languages, frameworks, test setup, and impact areas. Use when starting a PR review and you need to understand what changed before deeper analysis.
 allowed-tools: Bash Read Grep Glob
-disable-model-invocation: true
 ---
 
 # Analyze PR Changes
