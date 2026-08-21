@@ -55,6 +55,10 @@ user types another word.
    exits, so writing it alone renames nothing durable. Write the transcript record
    directly (see Phase 2.5); mirror into the pid file too, best-effort, for the live
    indicator.
+6. **Execute silently; report once.** Don't narrate phase transitions, tool calls, or
+   intermediate checks ("Preconditions pass...", "Now Phase 2.5...", "Verifying...").
+   Run Phases 0-3 without commentary. The only output is the Phase 4 report — unless a
+   real precondition fails and needs a user decision (that's a stop, not narration).
 
 ## Workflow
 
@@ -181,9 +185,9 @@ Notes:
    If the fetch fails (permissions, unknown key), report the error in one line and
    continue — the worktree still stands.
 
-### Phase 4 — Report and stop
+### Phase 4 — Report once, then stop
 
-Print a short summary, then wait:
+This is the *only* narration Phases 0-3 produce. Print a short summary, then wait:
 
 - Worktree: `.claude/worktrees/<NAME>` · branch `<NAME>` · based on `origin/<default>`.
 - Session renamed to `<NAME>` (or a one-line note if the rename was skipped).
@@ -193,6 +197,22 @@ Print a short summary, then wait:
 
 **Then stop.** Do not begin implementation, exploration, or planning until the user
 gives the next instruction.
+
+## Reducing permission prompts
+
+Claude Code plugins have no mechanism to self-grant permissions — every tool call
+below is still gated by the *user's own* `settings.json` (project or
+`~/.claude/settings.json`), never by anything this plugin ships. To run this skill
+end-to-end without prompts, add to `permissions.allow`:
+
+- `EnterWorktree`, `ExitWorktree` — the worktree lifecycle tools Phase 2 calls directly.
+- `ToolSearch` — loads deferred tools (`EnterWorktree`, the Atlassian tools); read-only.
+- `Bash(git rev-parse *)`, `Bash(git worktree list)` — Phase 1's read-only preconditions
+  (covered already if you blanket-allow `Bash(git *)`).
+- Phase 2.5's rename scripts run under `python3`. There's no way to allowlist just
+  those two scripts without allowlisting `python3` broadly — it's a general-purpose
+  interpreter, so treat `Bash(python3 *)` as a deliberate, standalone trust decision,
+  not something to add solely for this skill.
 
 ## Gotchas
 
