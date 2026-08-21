@@ -158,8 +158,8 @@
     },
     {
       "name": "technical-writing",
-      "version": "0.1.0",
-      "description": "Human-facing developer writing done well. writing-commit-messages crafts commit messages and PR descriptions for work landing on main; writing-code-comments writes and prunes comments and API docs that explain WHY, sparingly; writing-design-docs produces problem-statement design docs before committing to a non-obvious direction. Adapted from ceej-skills under MIT.",
+      "version": "0.2.0",
+      "description": "Human-facing developer writing done well. writing-design-docs produces problem-statement design docs before committing to a non-obvious technical direction. Adapted from ceej-skills under MIT.",
       "category": "development",
       "repository": "https://github.com/ozzycodes2/claude-market-private",
       "license": "MIT",
@@ -169,13 +169,10 @@
       },
       "keywords": [
         "writing",
-        "commit-messages",
-        "pr-descriptions",
-        "code-comments",
-        "api-docs",
         "design-docs",
+        "problem-statement",
         "documentation",
-        "git",
+        "planning",
         "development"
       ],
       "source": "./technical-writing"
