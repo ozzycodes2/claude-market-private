@@ -48,9 +48,13 @@ user types another word.
    ticket, or the Atlassian plugin isn't available, skip that step with a one-line note
    and still deliver the worktree.
 5. **Rename the session to `NAME`.** `/rename` is a user-typed command with no callable
-   tool, but it only writes the `name` field of `~/.claude/sessions/<pid>.json`. Do the
-   same write directly so the session shows up under `NAME` in `/resume`. Match your own
-   session file by `sessionId` (see Phase 2.5) — never guess by filename.
+   tool. What actually makes a name show up in `/resume` is a `custom-title` record
+   appended to the session's own transcript JSONL file — not the `name` field of
+   `~/.claude/sessions/<pid>.json`. That pid file only drives the live "concurrent
+   sessions" indicator while the process runs, and is deleted the instant the process
+   exits, so writing it alone renames nothing durable. Write the transcript record
+   directly (see Phase 2.5); mirror into the pid file too, best-effort, for the live
+   indicator.
 
 ## Workflow
 
@@ -91,13 +95,38 @@ conventional path — `git worktree add .claude/worktrees/<NAME> -b <NAME> origi
 warn the user that the session cwd will not follow the worktree and that subsequent
 commands must use absolute paths / `git -C <path>` (do not sprinkle `cd`).
 
-### Phase 2.5 — Rename the session to `NAME`
+### Phase 2.5 — Persist the session title to `NAME`
 
-Give the session a findable name — the same effect as the user typing `/rename <NAME>`.
-There is no tool for it, but `/rename` merely writes the `name` field of this session's
-metadata file at `~/.claude/sessions/<pid>.json`. Write it directly, locating *your own*
-file by matching `sessionId` to the `CLAUDE_CODE_SESSION_ID` env var (the file is named
-after the Claude PID, not the session id, so do not guess by filename):
+Give the session a findable, durable title — the same effect as the user typing
+`/rename <NAME>`. There is no callable tool for it, so write the underlying record
+directly. `/resume`'s picker builds its title list by scanning each session's own
+transcript file for `{"type":"custom-title","customTitle":...}` lines (falling back
+to `ai-title` if none exist) — it does **not** read `~/.claude/sessions/<pid>.json`.
+That pid file only drives the live "concurrent sessions" indicator while this process
+is running, and gets deleted the instant the process exits, so writing only there
+renames nothing durable — the change vanishes the moment the session ends.
+
+Find *this* session's transcript by matching the filename to the session id (never
+guess the project-dir slug — its encoding isn't a stable contract):
+
+```bash
+python3 - "$CLAUDE_CODE_SESSION_ID" "<NAME>" <<'PY'
+import json, sys, os, glob
+sid, name = sys.argv[1], sys.argv[2]
+matches = glob.glob(os.path.expanduser(f"~/.claude/projects/*/{sid}.jsonl"))
+if not matches:
+    print("no transcript file matched; skipping rename")
+else:
+    with open(matches[0], "a") as f:
+        f.write(json.dumps({"type": "custom-title", "customTitle": name, "sessionId": sid}) + "\n")
+        f.write(json.dumps({"type": "agent-name", "agentName": name, "sessionId": sid}) + "\n")
+    print("renamed session ->", name)
+PY
+```
+
+Then, best-effort, mirror the name into the live pid file too, so any concurrent
+sessions view reflects it immediately while this process keeps running (purely
+cosmetic — safe to skip on failure):
 
 ```bash
 python3 - "$CLAUDE_CODE_SESSION_ID" "<NAME>" <<'PY'
@@ -115,21 +144,24 @@ for p in glob.glob(os.path.join(d, "*.json")):
         with os.fdopen(fd, "w") as f:
             json.dump(j, f)
         os.replace(tmp, p)
-        print("renamed session ->", name)
         break
-else:
-    print("no session file matched; skipping rename")
 PY
 ```
 
 Notes:
-- Write atomically (temp file + `os.replace`) — Claude's own process also writes this
-  file for status updates; it preserves an externally-set `name`, but never leave a
-  half-written file it could read.
-- If `CLAUDE_CODE_SESSION_ID` is unset or no file matches, print the one-line skip and
-  continue — a missing name is not worth failing the session over.
-- The live status-line title may not refresh until the next reload/`/resume`; the
-  persisted, resumable name updates immediately. That's the part that matters.
+- Append, don't rewrite. The transcript file is being actively written by this very
+  process for the rest of the session; a single `open(..., "a")` write is one
+  `write(2)` call under `O_APPEND`, which can't corrupt or race with the process's
+  own appends. Never read-modify-write this file the way the pid file is handled.
+- Match the transcript by filename (`<sessionId>.jsonl`) under `~/.claude/projects/*/`
+  — never by reconstructing the project-dir slug.
+- If `CLAUDE_CODE_SESSION_ID` is unset or no transcript file matches, print the
+  one-line skip and continue — a missing name is not worth failing the session over.
+- This renames the session for next time — it takes effect when the session is opened
+  via `/resume` afterward. It does not repaint the *currently running* process's own
+  terminal title or prompt-box name (only the interactive `/rename` command updates
+  that in-memory state); the pid-file mirror above is the closest live-visible
+  approximation.
 
 ### Phase 3 — Load the JIRA story (only if `NAME` is a ticket)
 
