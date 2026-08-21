@@ -9,9 +9,10 @@ description: >-
   tool (never `git worktree add`) under .claude/worktrees/, named exactly after the
   argument, with a matching local branch. If the argument is a JIRA issue key (e.g.
   COB-103, SUBRO-1505), also loads that story from the Atlassian plugin when
-  available and summarizes the implementation ask. Then stops and waits for the
-  user's instructions — it sets up the workspace and context, it does not start
-  implementing.
+  available and summarizes the implementation ask. Also renames the session to the
+  argument (the same effect as `/rename <NAME>`) so it's easy to find in `/resume`.
+  Then stops and waits for the user's instructions — it sets up the workspace and
+  context, it does not start implementing.
 license: MIT
 compatibility: >-
   Requires a git repo (EnterWorktree branches off a fresh origin default; honors
@@ -46,6 +47,10 @@ user types another word.
 4. **Degrade gracefully.** JIRA loading is a bonus, not a gate. If the argument isn't a
    ticket, or the Atlassian plugin isn't available, skip that step with a one-line note
    and still deliver the worktree.
+5. **Rename the session to `NAME`.** `/rename` is a user-typed command with no callable
+   tool, but it only writes the `name` field of `~/.claude/sessions/<pid>.json`. Do the
+   same write directly so the session shows up under `NAME` in `/resume`. Match your own
+   session file by `sessionId` (see Phase 2.5) — never guess by filename.
 
 ## Workflow
 
@@ -86,6 +91,46 @@ conventional path — `git worktree add .claude/worktrees/<NAME> -b <NAME> origi
 warn the user that the session cwd will not follow the worktree and that subsequent
 commands must use absolute paths / `git -C <path>` (do not sprinkle `cd`).
 
+### Phase 2.5 — Rename the session to `NAME`
+
+Give the session a findable name — the same effect as the user typing `/rename <NAME>`.
+There is no tool for it, but `/rename` merely writes the `name` field of this session's
+metadata file at `~/.claude/sessions/<pid>.json`. Write it directly, locating *your own*
+file by matching `sessionId` to the `CLAUDE_CODE_SESSION_ID` env var (the file is named
+after the Claude PID, not the session id, so do not guess by filename):
+
+```bash
+python3 - "$CLAUDE_CODE_SESSION_ID" "<NAME>" <<'PY'
+import json, sys, os, glob, tempfile
+sid, name = sys.argv[1], sys.argv[2]
+d = os.path.expanduser("~/.claude/sessions")
+for p in glob.glob(os.path.join(d, "*.json")):
+    try:
+        j = json.load(open(p))
+    except Exception:
+        continue
+    if j.get("sessionId") == sid:
+        j["name"] = name
+        fd, tmp = tempfile.mkstemp(dir=d)
+        with os.fdopen(fd, "w") as f:
+            json.dump(j, f)
+        os.replace(tmp, p)
+        print("renamed session ->", name)
+        break
+else:
+    print("no session file matched; skipping rename")
+PY
+```
+
+Notes:
+- Write atomically (temp file + `os.replace`) — Claude's own process also writes this
+  file for status updates; it preserves an externally-set `name`, but never leave a
+  half-written file it could read.
+- If `CLAUDE_CODE_SESSION_ID` is unset or no file matches, print the one-line skip and
+  continue — a missing name is not worth failing the session over.
+- The live status-line title may not refresh until the next reload/`/resume`; the
+  persisted, resumable name updates immediately. That's the part that matters.
+
 ### Phase 3 — Load the JIRA story (only if `NAME` is a ticket)
 
 1. Load the deferred Atlassian tools: `ToolSearch` with query
@@ -109,6 +154,7 @@ commands must use absolute paths / `git -C <path>` (do not sprinkle `cd`).
 Print a short summary, then wait:
 
 - Worktree: `.claude/worktrees/<NAME>` · branch `<NAME>` · based on `origin/<default>`.
+- Session renamed to `<NAME>` (or a one-line note if the rename was skipped).
 - If a ticket was loaded: the story summary and implementation ask from Phase 3.
 - If not a ticket, or JIRA skipped: say so in one line.
 - End with an explicit handoff, e.g. *"Workspace ready. What would you like to build?"*
