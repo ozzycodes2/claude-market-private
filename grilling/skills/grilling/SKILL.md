@@ -1,7 +1,6 @@
 ---
 name: grilling
 description: Grill the user relentlessly about a plan, decision, or idea. Use when the user wants to stress-test their thinking, or uses any 'grill' trigger phrases.
-disable-model-invocation: true
 ---
 
 Interview user relentlessly until shared understanding reached. Map as **design tree**: every decision branches into decisions hanging off it.
