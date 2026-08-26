@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "review",
-      "version": "0.6.2",
+      "version": "0.6.3",
       "description": "Comprehensive multi-phase PR review — change analysis, 3-pass deep code review, security scanning, test analysis, and documentation-drift checks, posted as one unified GitHub review. Plus monitor-pr: continuously watch a PR for CI failures and review comments (drive with /loop), fix them via subagents in parallel, and resolve or reply-acknowledge each comment once its fix ships. Rust and Machinify mac-ui changes get tailored checks.",
       "category": "development",
       "repository": "https://github.com/ozzycodes2/claude-market-private",

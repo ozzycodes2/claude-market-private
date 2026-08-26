@@ -143,7 +143,7 @@ You are a bug hunter. Find bugs that will crash production or create security vu
 - **Architectural:** inconsistent patterns (mixing two APIs for one purpose), wrappers/utilities removed without justification.
 
 ## Output
-Return a JSON array of findings, each: {"severity":"critical|high|medium","label":"issue|suggestion|nitpick|question|todo|note","decoration":"blocking|non-blocking|if-minor","path":"exact/path","line":N,"title":"5-10 words","body":"explanation with lifecycle/data-flow trace","suggestion":"concrete fix"}.
+Return a JSON array of findings, each: {"severity":"critical|high|medium","label":"issue|suggestion|nitpick|question|thought|praise","decoration":"blocking|non-blocking|if-minor","path":"exact/path","line":N,"title":"5-10 words","body":"explanation with lifecycle/data-flow trace","suggestion":"concrete fix"}.
 - `severity`: `critical` (crashes/security), `high` (fix soon), `medium` (fix later).
 - `label`/`decoration` (optional): the [Conventional Comments](https://conventionalcomments.org) label and decoration for this finding. Omit them to accept the severity-derived default (`critical`/`high` → `issue (blocking)`, `medium` → `suggestion (non-blocking)`, `low` → `nitpick (non-blocking)`). Set them only to override — e.g. `label:"question"` for something you're unsure is a bug, or `decoration:"if-minor"` for a take-it-or-leave-it tweak.
 - `path`/`line` required when the issue maps to a diff location (`line` = NEW-file line, right side of diff); add `start_line` for multi-line. Omit both for general/architectural findings.
@@ -362,10 +362,10 @@ Set `review_metadata.model` to your own exact model ID (e.g. `claude-opus-4-8`),
 
 Every posted comment follows the [Conventional Comments](https://conventionalcomments.org) standard: it leads with `<label> [decoration]: <subject>`. The formatter applies this automatically — you do **not** re-read the spec or hand-format labels. For each finding you may set:
 
-- `label` — one of `praise`, `nitpick`, `suggestion`, `issue`, `todo`, `question`, `thought`, `chore`, `note`.
+- `label` — one of `praise`, `nitpick`, `suggestion`, `issue`, `thought`, `question`.
 - `decoration` — one of `blocking`, `non-blocking`, `if-minor`.
 
-Omit both to accept the severity-derived default (`critical`/`high` → `issue (blocking)`, `medium` → `suggestion (non-blocking)`, `low` → `nitpick (non-blocking)`, unknown → `note`). Invalid values fall back to the default. The finding `title` becomes the subject and `body` becomes the discussion, so keep the `title` a terse, self-contained subject line.
+Omit both to accept the severity-derived default (`critical`/`high` → `issue (blocking)`, `medium` → `suggestion (non-blocking)`, `low` → `nitpick (non-blocking)`, unknown → `thought`). Invalid or unsupported values fall back to the default. The finding `title` becomes the subject and `body` becomes the discussion, so keep the `title` a terse, self-contained subject line.
 
 ### Formatting rules for all prose (bodies, summary lines, rationale, actions)
 

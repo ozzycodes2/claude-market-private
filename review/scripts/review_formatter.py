@@ -111,23 +111,22 @@ SEVERITY_ALERT = {
 # Conventional Comments (https://conventionalcomments.org) — a settled standard.
 # Every posted comment leads with `<label> [decoration]: <subject>`. The rules
 # are baked in here so reviews are consistently labelled without re-reading the
-# spec each run. Allowed labels and decorations are the full published set.
+# spec each run. We support the actionable subset of the published labels.
 CONVENTIONAL_LABELS = {
-    "praise", "nitpick", "suggestion", "issue",
-    "todo", "question", "thought", "chore", "note",
+    "praise", "nitpick", "suggestion", "issue", "thought", "question",
 }
 CONVENTIONAL_DECORATIONS = {"blocking", "non-blocking", "if-minor"}
 
 # Default (label, decoration) applied to a finding that doesn't declare its own.
 # Blocking severities become blocking `issue`s; lesser ones become non-blocking
-# `suggestion`/`nitpick`. Unknown/absent severity falls back to a plain `note`.
+# `suggestion`/`nitpick`. Unknown/absent severity falls back to a `thought`.
 _SEVERITY_CONVENTIONAL = {
     "critical": ("issue", "blocking"),
     "high": ("issue", "blocking"),
     "medium": ("suggestion", "non-blocking"),
     "low": ("nitpick", "non-blocking"),
 }
-_DEFAULT_CONVENTIONAL = ("note", "")
+_DEFAULT_CONVENTIONAL = ("thought", "")
 
 
 def conventional_prefix(finding: dict) -> str:

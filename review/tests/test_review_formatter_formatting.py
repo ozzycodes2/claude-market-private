@@ -108,9 +108,9 @@ class ConventionalPrefixTest(unittest.TestCase):
         for sev, expected in cases.items():
             self.assertEqual(conventional_prefix({"severity": sev}), expected)
 
-    def test_unknown_or_missing_severity_falls_back_to_note(self):
-        self.assertEqual(conventional_prefix({}), "note")
-        self.assertEqual(conventional_prefix({"severity": "bogus"}), "note")
+    def test_unknown_or_missing_severity_falls_back_to_thought(self):
+        self.assertEqual(conventional_prefix({}), "thought")
+        self.assertEqual(conventional_prefix({"severity": "bogus"}), "thought")
 
     def test_explicit_label_and_decoration_override_severity(self):
         got = conventional_prefix(
@@ -120,8 +120,20 @@ class ConventionalPrefixTest(unittest.TestCase):
 
     def test_explicit_label_keeps_severity_decoration(self):
         """A valid label without its own decoration keeps the severity default."""
-        got = conventional_prefix({"severity": "critical", "label": "todo"})
-        self.assertEqual(got, "todo (blocking)")
+        got = conventional_prefix({"severity": "critical", "label": "question"})
+        self.assertEqual(got, "question (blocking)")
+
+    def test_supported_labels(self):
+        for label in ("praise", "nitpick", "suggestion", "issue", "thought", "question"):
+            self.assertEqual(conventional_prefix({"label": label}), label)
+
+    def test_unsupported_label_falls_back_to_severity_default(self):
+        """Labels outside the supported set (e.g. todo/chore/note) fall back."""
+        for label in ("todo", "chore", "note"):
+            self.assertEqual(
+                conventional_prefix({"severity": "critical", "label": label}),
+                "issue (blocking)",
+            )
 
     def test_invalid_label_and_decoration_fall_back(self):
         got = conventional_prefix(
@@ -155,9 +167,9 @@ class InlineBodyConventionalTest(unittest.TestCase):
         )
         self.assertIn("**praise (non-blocking):** Nice refactor", body)
 
-    def test_inline_body_without_severity_uses_note(self):
+    def test_inline_body_without_severity_uses_thought(self):
         body = self.f._format_inline_body({"title": "Consider renaming"})
-        self.assertEqual(body.splitlines()[0], "**note:** Consider renaming")
+        self.assertEqual(body.splitlines()[0], "**thought:** Consider renaming")
 
 
 class AllFindingsConventionalTest(unittest.TestCase):
