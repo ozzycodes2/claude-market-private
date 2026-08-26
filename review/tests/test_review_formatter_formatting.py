@@ -17,6 +17,7 @@ _spec.loader.exec_module(review_formatter)
 
 ReviewFormatter = review_formatter.ReviewFormatter
 DEFAULT_SECTION_ICON = review_formatter.DEFAULT_SECTION_ICON
+conventional_prefix = review_formatter.conventional_prefix
 
 
 def _section(title, **extra):
@@ -92,6 +93,87 @@ class SectionIconTest(unittest.TestCase):
         rendered = self.f._format_section(_section("Security Analysis"))
         self.assertIn("<details>", rendered)
         self.assertIn("<summary><h3>:lock: Security Analysis", rendered)
+
+
+class ConventionalPrefixTest(unittest.TestCase):
+    """The prefix always resolves to a valid conventionalcomments.org label."""
+
+    def test_severity_defaults(self):
+        cases = {
+            "critical": "issue (blocking)",
+            "high": "issue (blocking)",
+            "medium": "suggestion (non-blocking)",
+            "low": "nitpick (non-blocking)",
+        }
+        for sev, expected in cases.items():
+            self.assertEqual(conventional_prefix({"severity": sev}), expected)
+
+    def test_unknown_or_missing_severity_falls_back_to_note(self):
+        self.assertEqual(conventional_prefix({}), "note")
+        self.assertEqual(conventional_prefix({"severity": "bogus"}), "note")
+
+    def test_explicit_label_and_decoration_override_severity(self):
+        got = conventional_prefix(
+            {"severity": "critical", "label": "question", "decoration": "if-minor"}
+        )
+        self.assertEqual(got, "question (if-minor)")
+
+    def test_explicit_label_keeps_severity_decoration(self):
+        """A valid label without its own decoration keeps the severity default."""
+        got = conventional_prefix({"severity": "critical", "label": "todo"})
+        self.assertEqual(got, "todo (blocking)")
+
+    def test_invalid_label_and_decoration_fall_back(self):
+        got = conventional_prefix(
+            {"severity": "medium", "label": "wat", "decoration": "nope"}
+        )
+        self.assertEqual(got, "suggestion (non-blocking)")
+
+    def test_label_matching_is_case_insensitive(self):
+        got = conventional_prefix({"label": "SUGGESTION", "decoration": "Non-Blocking"})
+        self.assertEqual(got, "suggestion (non-blocking)")
+
+
+class InlineBodyConventionalTest(unittest.TestCase):
+    def setUp(self):
+        self.f = ReviewFormatter({})
+
+    def test_inline_body_leads_with_conventional_label(self):
+        body = self.f._format_inline_body(
+            {"severity": "critical", "title": "Null deref in handler",
+             "body": "trace here", "suggestion": "guard it"}
+        )
+        lines = body.splitlines()
+        self.assertEqual(lines[0], "> [!CAUTION]")
+        self.assertEqual(lines[1], "> **issue (blocking):** Null deref in handler `CRITICAL`")
+        self.assertIn("trace here", body)
+        self.assertIn("**Suggestion:** guard it", body)
+
+    def test_inline_body_respects_explicit_label(self):
+        body = self.f._format_inline_body(
+            {"severity": "low", "label": "praise", "title": "Nice refactor"}
+        )
+        self.assertIn("**praise (non-blocking):** Nice refactor", body)
+
+    def test_inline_body_without_severity_uses_note(self):
+        body = self.f._format_inline_body({"title": "Consider renaming"})
+        self.assertEqual(body.splitlines()[0], "**note:** Consider renaming")
+
+
+class AllFindingsConventionalTest(unittest.TestCase):
+    def setUp(self):
+        self.f = ReviewFormatter({})
+
+    def test_body_findings_lead_with_conventional_label(self):
+        section = {"findings": [
+            {"severity": "medium", "title": "Extract helper",
+             "path": "a.py", "line": 4, "body": "why"},
+        ]}
+        rendered = self.f._format_all_findings(section)
+        self.assertIn(
+            ":yellow_circle: **suggestion (non-blocking):** Extract helper `MEDIUM` (`a.py:4`)",
+            rendered,
+        )
 
 
 if __name__ == "__main__":

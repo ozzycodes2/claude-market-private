@@ -143,8 +143,9 @@ You are a bug hunter. Find bugs that will crash production or create security vu
 - **Architectural:** inconsistent patterns (mixing two APIs for one purpose), wrappers/utilities removed without justification.
 
 ## Output
-Return a JSON array of findings, each: {"severity":"critical|high|medium","path":"exact/path","line":N,"title":"5-10 words","body":"explanation with lifecycle/data-flow trace","suggestion":"concrete fix"}.
+Return a JSON array of findings, each: {"severity":"critical|high|medium","label":"issue|suggestion|nitpick|question|todo|note","decoration":"blocking|non-blocking|if-minor","path":"exact/path","line":N,"title":"5-10 words","body":"explanation with lifecycle/data-flow trace","suggestion":"concrete fix"}.
 - `severity`: `critical` (crashes/security), `high` (fix soon), `medium` (fix later).
+- `label`/`decoration` (optional): the [Conventional Comments](https://conventionalcomments.org) label and decoration for this finding. Omit them to accept the severity-derived default (`critical`/`high` → `issue (blocking)`, `medium` → `suggestion (non-blocking)`, `low` → `nitpick (non-blocking)`). Set them only to override — e.g. `label:"question"` for something you're unsure is a bug, or `decoration:"if-minor"` for a take-it-or-leave-it tweak.
 - `path`/`line` required when the issue maps to a diff location (`line` = NEW-file line, right side of diff); add `start_line` for multi-line. Omit both for general/architectural findings.
 - Formatting for `title`, `body`, `suggestion`: wrap **every** code reference — identifiers, function/method/type names, file paths, config keys, literals, SQL — in `` `backticks` ``, and use fenced ```` ``` ```` blocks for multi-line snippets; never leave code as bare prose. Keep `body` to 1–2 terse sentences (or a couple of short bullets), not a paragraph.
 - After the JSON, add a 1-2 sentence summary. Focus on crashes and vulnerabilities, not style.
@@ -356,6 +357,15 @@ Build the review formatter input JSON with findings from all review stages. Map 
 7. **Code Generation** — body only (generated test suggestions, docstrings). No inline findings.
 
 Set `review_metadata.model` to your own exact model ID (e.g. `claude-opus-4-8`), so the footer records which model orchestrated the review. Use the model ID from your environment context. Omit the field if you cannot determine it. Because the 3-pass code review ran on three different models, note the pass models (`claude-opus-4-8`, `claude-sonnet-5`, `claude-haiku-4-5`) in the "Code Review Results" section `body` so readers know the passes were model-diverse.
+
+### Conventional Comments (enforced by the formatter)
+
+Every posted comment follows the [Conventional Comments](https://conventionalcomments.org) standard: it leads with `<label> [decoration]: <subject>`. The formatter applies this automatically — you do **not** re-read the spec or hand-format labels. For each finding you may set:
+
+- `label` — one of `praise`, `nitpick`, `suggestion`, `issue`, `todo`, `question`, `thought`, `chore`, `note`.
+- `decoration` — one of `blocking`, `non-blocking`, `if-minor`.
+
+Omit both to accept the severity-derived default (`critical`/`high` → `issue (blocking)`, `medium` → `suggestion (non-blocking)`, `low` → `nitpick (non-blocking)`, unknown → `note`). Invalid values fall back to the default. The finding `title` becomes the subject and `body` becomes the discussion, so keep the `title` a terse, self-contained subject line.
 
 ### Formatting rules for all prose (bodies, summary lines, rationale, actions)
 

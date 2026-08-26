@@ -108,6 +108,46 @@ SEVERITY_ALERT = {
     "low": "NOTE",
 }
 
+# Conventional Comments (https://conventionalcomments.org) — a settled standard.
+# Every posted comment leads with `<label> [decoration]: <subject>`. The rules
+# are baked in here so reviews are consistently labelled without re-reading the
+# spec each run. Allowed labels and decorations are the full published set.
+CONVENTIONAL_LABELS = {
+    "praise", "nitpick", "suggestion", "issue",
+    "todo", "question", "thought", "chore", "note",
+}
+CONVENTIONAL_DECORATIONS = {"blocking", "non-blocking", "if-minor"}
+
+# Default (label, decoration) applied to a finding that doesn't declare its own.
+# Blocking severities become blocking `issue`s; lesser ones become non-blocking
+# `suggestion`/`nitpick`. Unknown/absent severity falls back to a plain `note`.
+_SEVERITY_CONVENTIONAL = {
+    "critical": ("issue", "blocking"),
+    "high": ("issue", "blocking"),
+    "medium": ("suggestion", "non-blocking"),
+    "low": ("nitpick", "non-blocking"),
+}
+_DEFAULT_CONVENTIONAL = ("note", "")
+
+
+def conventional_prefix(finding: dict) -> str:
+    """Build a Conventional Comments prefix, e.g. ``issue (blocking)``.
+
+    A finding may set its own ``label`` and ``decoration``; invalid or missing
+    values fall back to the severity-derived defaults, so the returned prefix is
+    always a valid conventionalcomments.org label. The trailing ``:`` and
+    subject are added by callers.
+    """
+    sev_key = finding.get("severity", "")
+    def_label, def_decoration = _SEVERITY_CONVENTIONAL.get(sev_key, _DEFAULT_CONVENTIONAL)
+    label = str(finding.get("label", "")).strip().lower()
+    if label not in CONVENTIONAL_LABELS:
+        label = def_label
+    decoration = str(finding.get("decoration", "")).strip().lower()
+    if decoration not in CONVENTIONAL_DECORATIONS:
+        decoration = def_decoration
+    return f"{label} ({decoration})" if decoration else label
+
 SECTION_ICONS = {
     "bug": ":bug:",
     "checklist": ":clipboard:",
@@ -536,9 +576,11 @@ def fetch_acknowledged_findings(pr_url: str, current_user: str = "") -> set[tupl
             continue
         body = c.get("body", "")
         path = c.get("path", "")
-        # Extract severity from our formatted inline comments
+        # Extract severity from our formatted inline comments. Match both the
+        # current Conventional Comments badge (`` `CRITICAL` ``) and the legacy
+        # bold form (`**CRITICAL`) so replies to older reviews still resolve.
         for sev in ("CRITICAL", "HIGH", "MEDIUM", "LOW"):
-            if f"**{sev}" in body:
+            if f"`{sev}`" in body or f"**{sev}" in body:
                 our_comment_ids[c["id"]] = (path, sev.lower())
                 break
 
@@ -1000,15 +1042,12 @@ class ReviewFormatter:
             line_num = f.get("line", "")
             # Check if this finding was acknowledged
             is_acked = (path, sev_key) in self.acknowledged if self.acknowledged else False
-            # Build the finding line
-            if sev and title:
-                prefix = f"{icon} **{sev}: {title}**"
-            elif sev:
-                prefix = f"{icon} **{sev}**"
-            elif title:
-                prefix = f"**{title}**"
-            else:
-                prefix = ""
+            # Build the finding line, led by the Conventional Comments label.
+            cc = conventional_prefix(f)
+            subject = title or sev or "comment"
+            prefix = f"{icon} **{cc}:** {subject}".strip()
+            if sev and subject != sev:
+                prefix += f" `{sev}`"
             if is_acked:
                 prefix = f"~~{prefix}~~ *(acknowledged)*"
             # Add file location if available
@@ -1067,25 +1106,23 @@ class ReviewFormatter:
         return comments
 
     def _format_inline_body(self, finding: dict) -> str:
+        # Conventional Comments header: `**label (decoration):** subject`, with
+        # the severity kept as a trailing badge for at-a-glance triage.
         sev_key = finding.get("severity", "")
         sev = SEVERITY_LABELS.get(sev_key, "")
-        icon = SEVERITY_ICONS.get(sev_key, "")
         alert = SEVERITY_ALERT.get(sev_key, "")
         title = finding.get("title", "")
         body_text = finding.get("body", "") or finding.get("message", "")
+        prefix = conventional_prefix(finding)
+        subject = title or sev or "comment"
+        header = f"**{prefix}:** {subject}"
+        if sev and subject != sev:
+            header += f" `{sev}`"
         lines = []
-        if sev and title:
-            header = f"{icon} **{sev}: {title}**"
-        elif sev:
-            header = f"{icon} **{sev}**"
-        elif title:
-            header = f"**{title}**"
-        else:
-            header = ""
-        if header and alert:
+        if alert:
             lines.append(f"> [!{alert}]")
             lines.append(f"> {header}")
-        elif header:
+        else:
             lines.append(header)
         if body_text:
             lines.append("")
