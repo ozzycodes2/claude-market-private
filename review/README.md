@@ -1,10 +1,11 @@
 # review
 
 Comprehensive, language-agnostic PR review. One orchestrator skill coordinates a
-change analysis, a 3-pass deep code review, security scanning, test-gap analysis,
-documentation-drift checks, optional test execution, and code-fix generation — then
+change analysis, a 3-pass deep code review, security scanning,
+documentation-drift checks, and code-fix generation — then
 posts a single unified GitHub review (summary + inline comments). Rust and Machinify
-`mac-ui` changes get first-class, tailored checks.
+`mac-ui` changes get first-class, tailored checks. Test execution and coverage
+analysis are intentionally left to CI.
 
 ## Usage
 
@@ -29,19 +30,16 @@ keeping a human in the loop).
 | `review` | Orchestrator — runs all phases and posts the unified review. |
 | `analyze` | Detects languages, frameworks, test setup, and impact/security sensitivity. |
 | `security-scan` | Runs available static analyzers (semgrep, linters, dependency audits); degrades gracefully when tools aren't installed. |
-| `test-gaps` | Assesses coverage and recommends new tests for the change. |
 | `docs-drift` | Detects docs (ADRs, OpenAPI, rendered artifacts, READMEs, comments) that have drifted out of sync with the changed code, plus doc-completeness gaps. |
-| `run-tests` | Executes the suite in a sandboxed, timeout-limited way — only when analysis deems it safe. |
 | `codegen` | Drafts tests, docstrings, and CHANGELOG entries to fill surfaced gaps (human review required before committing). |
 | `monitor-pr` | Continuously watches a PR (drive with `/loop`) for CI failures and new review comments, tracks findings in a scratch file, dispatches subagents to fix them (in parallel when independent), and resolves/acknowledges each comment once its fix is pushed. |
 
-**Rust & mac-ui tailoring:** `analyze` detects Rust (cargo/just/nextest/llvm-cov)
-and `@vlognow/mac-ui` (Machinify Web Components) usage. When present, `security-scan`,
-`test-gaps`, and `docs-drift` adapt automatically — running cargo supply-chain tools
-and Rust correctness/PHI checks, mapping Rust's in-file tests to real `llvm-cov`
-coverage, and fetching mac-ui's **live** authority docs (`ai-behavior-spec`,
-`ai-code-audit`, `ai-testing-guide`, per-component `mac-*.md`) at review time since
-the framework changes.
+**Rust & mac-ui tailoring:** `analyze` detects Rust (cargo/just/nextest)
+and `@vlognow/mac-ui` (Machinify Web Components) usage. When present, `security-scan`
+and `docs-drift` adapt automatically — running cargo supply-chain tools
+and Rust correctness/PHI checks, and fetching mac-ui's **live** authority docs
+(`ai-behavior-spec`, `ai-code-audit`, `ai-testing-guide`, per-component `mac-*.md`)
+at review time since the framework changes.
 
 Each sub-skill can also be invoked standalone (e.g. `/review:security-scan <PR_URL>`).
 
@@ -71,8 +69,8 @@ handled and CI is green. It never merges or force-pushes — that stays with you
 /review:review <PR_URL>
   │
   ├─ Phase 1  analyze  →  deep code review (3 parallel bug-finder passes, inline)
-  ├─ Phase 2  test-gaps · security-scan · docs-drift   (parallel)
-  ├─ Phase 3  run-tests (if safe) · codegen            (conditional)
+  ├─ Phase 2  security-scan · docs-drift               (parallel)
+  ├─ Phase 3  codegen
   └─ Phase 4  synthesize → merge recommendation → post unified review
 ```
 
@@ -92,6 +90,6 @@ found by multiple passes as high-confidence.
 ## Notes
 
 - Generated code (from `codegen`) is for review only — never auto-committed.
-- `run-tests` executes repository code; it only runs when `analyze` marks the setup
-  safe, otherwise it falls back to recommending a manual command.
-- Cost: roughly ~$5–10 per PR (3-pass deep review + the analysis/execution skills).
+- Test execution and coverage/test-gap analysis are intentionally out of scope —
+  CI already runs the suite and measures coverage, so the review doesn't duplicate it.
+- Cost: roughly ~$4–8 per PR (3-pass deep review + the analysis/generation skills).

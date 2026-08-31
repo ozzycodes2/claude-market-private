@@ -1,6 +1,6 @@
 ---
 name: review
-description: Orchestrates comprehensive PR review combining analysis, code review, testing, security, and documentation checks. Use when you want a full automated review of a GitHub PR posted as a single unified comment.
+description: Orchestrates comprehensive PR review combining analysis, code review, security, and documentation checks. Use when you want a full automated review of a GitHub PR posted as a single unified comment.
 allowed-tools: Bash Read Write Skill Task
 disable-model-invocation: true
 ---
@@ -18,18 +18,16 @@ Workflow:
 2. Deep code review (3-pass bug hunting)
 
 **Phase 2: Quality Checks** (parallel)
-3. Test analysis (coverage, recommendations)
-4. Security scanning
-5. Documentation validation
+3. Security scanning
+4. Documentation validation
 
-**Phase 3: Execution** (conditional)
-6. Run tests (if safe)
-7. Generate code/docs (simple fixes)
+**Phase 3: Generation**
+5. Generate code/docs (simple fixes)
 
 **Phase 4: Synthesis**
-8. Combine all findings
-9. Determine merge recommendation
-10. Post comprehensive review to PR
+6. Combine all findings
+7. Determine merge recommendation
+8. Post comprehensive review to PR
 
 ## Usage
 
@@ -100,7 +98,6 @@ Read tool: $OUTPUT_DIR/pr-analysis-<PR_NUMBER>.json
 
 Store key findings:
 - `primary_language`
-- `test_setup.can_run_safely`
 - `security_sensitive`
 - `impact_analysis`
 
@@ -160,21 +157,7 @@ Return a JSON array of findings, each: {"severity":"critical|high|medium","label
 
 With foundation ready (analysis + code review), run quality checks in parallel:
 
-### 4.1 Launch Test Analysis (Sonnet subagent)
-
-Run test-gap analysis in a **Task subagent pinned to a lower model** — assessing coverage and recommending tests is moderate reasoning over diff and existing tests, well within Sonnet's range.
-```
-Use Task tool:
-- subagent_type: "general-purpose"
-- model: "sonnet"   # mid-tier is sufficient for coverage/gap analysis; far cheaper than opus. Do not omit.
-- description: "Test-gap analysis (sonnet)"
-- prompt: |
-    Invoke the Skill tool with skill "review:test-gaps" and args "<PR_URL> <OUTPUT_DIR>".
-    Follow that skill exactly and write its output JSON to <OUTPUT_DIR> as the skill specifies
-    ($OUTPUT_DIR/test-analysis-<PR_NUMBER>.json). Return a one-line summary of coverage and gaps.
-```
-
-### 4.2 Launch Security Scanner (Sonnet subagent)
+### 4.1 Launch Security Scanner (Sonnet subagent)
 
 Run security scanning in a **Task subagent pinned to a lower model** — mostly running tools (semgrep, linters, dependency checkers) and summarizing their output, which doesn't need the orchestrator's frontier model.
 ```
@@ -188,7 +171,7 @@ Use Task tool:
     ($OUTPUT_DIR/security-scan-<PR_NUMBER>.json). Return a one-line summary of the finding counts.
 ```
 
-### 4.3 Launch Documentation Validator (Haiku subagent)
+### 4.2 Launch Documentation Validator (Haiku subagent)
 
 Run docs drift/completeness check in a **Task subagent pinned to the cheapest model** — cross-file claim matching, not deep reasoning.
 ```
@@ -202,42 +185,16 @@ Use Task tool:
     ($OUTPUT_DIR/docs-drift-<PR_NUMBER>.json). Return a one-line summary.
 ```
 
-**All three Phase 2 checks run in parallel as subagents on lower models** — test analysis (4.1) and security (4.2) on Sonnet, docs (4.3) on Haiku. Send the three Task calls in ONE message so they run concurrently, let them run while Step 5 proceeds, collect in Step 6. They're independent (all consume same analysis JSON) and none needs the orchestrator's frontier model.
+**Both Phase 2 checks run in parallel as subagents on lower models** — security (4.1) on Sonnet, docs (4.2) on Haiku. Send the two Task calls in ONE message so they run concurrently, let them run while Step 5 proceeds, collect in Step 6. They're independent (all consume same analysis JSON) and none needs the orchestrator's frontier model.
 
 **If any skill fails:**
 - Log the error
 - Continue with other skills
 - Note in review: "⚠️ <skill> failed: <reason>"
 
-## Step 5: Phase 3 - Test Execution and Code Generation (Conditional)
+## Step 5: Phase 3 - Code Generation
 
-### 5.1 Test Execution (if safe)
-
-**Check if tests can run safely from analysis JSON:**
-```bash
-CAN_RUN=$(jq -r '.test_setup.can_run_safely' "$OUTPUT_DIR/pr-analysis-${PR_NUMBER}.json")
-```
-
-**If tests can run safely:**
-```
-Use Skill tool:
-- skill: "review:run-tests"
-- args: "<PR_URL> <OUTPUT_DIR>"
-```
-
-**Wait for completion** and read results:
-```bash
-Read tool: $OUTPUT_DIR/test-results-<PR_NUMBER>.json
-```
-
-**If tests cannot run safely:**
-- Skip test execution
-- Note in review: "Tests cannot be run automatically (requires manual execution)"
-- Provide test command from analysis JSON for manual execution
-
-### 5.2 Code Generation (always run)
-
-After test execution (or skip), generate code/docs:
+Generate code/docs:
 
 ```
 Use Skill tool:
@@ -263,11 +220,9 @@ Read tool: $OUTPUT_DIR/code-generation-<PR_NUMBER>.json
 
 **Wait for all skills to complete:**
 - deep code review — 3 passes (Step 3)
-- test-gaps (Step 4.1)
-- security-scan (Step 4.2)
-- docs-drift (Step 4.3)
-- run-tests (Step 5.1) - if ran
-- codegen (Step 5.2)
+- security-scan (Step 4.1)
+- docs-drift (Step 4.2)
+- codegen (Step 5)
 
 **Parse results from each skill:**
 
@@ -276,28 +231,17 @@ Read tool: $OUTPUT_DIR/code-generation-<PR_NUMBER>.json
 - High findings count
 - Medium findings count
 
-**test-gaps** (Step 4.1) - Read `$OUTPUT_DIR/test-analysis-<PR_NUMBER>.json`:
-- Coverage percentage
-- Untested areas count
-- Test quality issues
-
-**security-scan** (Step 4.2) - Read `$OUTPUT_DIR/security-scan-<PR_NUMBER>.json`:
+**security-scan** (Step 4.1) - Read `$OUTPUT_DIR/security-scan-<PR_NUMBER>.json`:
 - Critical security findings
 - High security findings
 - Dependency vulnerabilities
 
-**docs-drift** (Step 4.3) - Read `$OUTPUT_DIR/docs-drift-<PR_NUMBER>.json`:
+**docs-drift** (Step 4.2) - Read `$OUTPUT_DIR/docs-drift-<PR_NUMBER>.json`:
 - Documentation status
 - Missing docs count
 - Required updates
 
-**run-tests** (Step 5.1) - Read `$OUTPUT_DIR/test-results-<PR_NUMBER>.json` (if ran):
-- Test execution status (passed/failed/timeout/skipped)
-- Test counts (total, passed, failed)
-- Execution time
-- Failure details
-
-**codegen** (Step 5.2) - Read `$OUTPUT_DIR/code-generation-<PR_NUMBER>.json`:
+**codegen** (Step 5) - Read `$OUTPUT_DIR/code-generation-<PR_NUMBER>.json`:
 - Tests generated count
 - Docstrings generated count
 - CHANGELOG entries
@@ -323,10 +267,6 @@ ELIF (High findings > 3) OR (security_sensitive AND high_security_findings > 0):
   RECOMMENDATION = "REQUEST CHANGES"
   RATIONALE = "Multiple high-severity issues require fixes"
 
-ELIF (test_coverage < 60%) AND (new_features_added):
-  RECOMMENDATION = "REQUEST CHANGES"
-  RATIONALE = "Insufficient test coverage for new features (target: 80%)"
-
 ELIF (High findings > 0) OR (missing_critical_docs):
   RECOMMENDATION = "COMMENT"
   RATIONALE = "Issues should be addressed (manual review required)"
@@ -350,11 +290,9 @@ Build the review formatter input JSON with findings from all review stages. Map 
 
 1. **Change Analysis** — body only (languages, frameworks, impact areas). No inline findings.
 2. **Code Review Results (3 Passes)** — findings with `path`, `line`, `severity` from the 3-pass deep review (Step 3). These become inline comments.
-3. **Test Analysis** — body only (coverage %, gaps, recommended tests). No inline findings.
-4. **Security Analysis** — findings with `path`, `line`, `severity` where available (semgrep/bandit findings). These become inline comments. Non-line findings go in body.
-5. **Documentation Check** — body only (README status, CHANGELOG, code comments). No inline findings.
-6. **Test Execution Results** — body only (pass/fail counts, failures list). No inline findings.
-7. **Code Generation** — body only (generated test suggestions, docstrings). No inline findings.
+3. **Security Analysis** — findings with `path`, `line`, `severity` where available (semgrep/bandit findings). These become inline comments. Non-line findings go in body.
+4. **Documentation Check** — body only (README status, CHANGELOG, code comments). No inline findings.
+5. **Code Generation** — body only (generated test suggestions, docstrings). No inline findings.
 
 Set `review_metadata.model` to your own exact model ID (e.g. `claude-opus-4-8`), so the footer records which model orchestrated the review. Use the model ID from your environment context. Omit the field if you cannot determine it. Because the 3-pass code review ran on three different models, note the pass models (`claude-opus-4-8`, `claude-sonnet-5`, `claude-haiku-4-5`) in the "Code Review Results" section `body` so readers know the passes were model-diverse.
 
@@ -397,11 +335,6 @@ Apply these to every `body`, `summary_line`, `rationale`, `required_actions`, an
       "findings": [<code review finding objects with path, line, severity>]
     },
     {
-      "title": "Test Analysis",
-      "summary_line": "<coverage>% coverage (<tested>/<changed> lines)",
-      "body": "<Test analysis — bullets: gaps + recommended tests>"
-    },
-    {
       "title": "Security Analysis",
       "summary_line": "X Critical, Y High, Z Medium, W Low",
       "body": "<Security summary — bullets>",
@@ -411,11 +344,6 @@ Apply these to every `body`, `summary_line`, `rationale`, `required_actions`, an
       "title": "Documentation Check",
       "summary_line": "<Complete|Needs Updates|Incomplete>",
       "body": "<Documentation check — bullets>"
-    },
-    {
-      "title": "Test Execution Results",
-      "summary_line": "<X passed, Y failed, Z skipped>",
-      "body": "<Test execution results — bullets>"
     },
     {
       "title": "Code Generation",
@@ -428,7 +356,7 @@ Apply these to every `body`, `summary_line`, `rationale`, `required_actions`, an
     "review_title": "Review",
     "tool_version": "<read from .claude-plugin/plugin.json — do not hardcode>",
     "model": "<your exact model ID, e.g. claude-opus-4-8>",
-    "stages": ["Change Analysis", "Code Review", "Test Analysis", "Security", "Documentation", "Test Execution", "Code Generation"]
+    "stages": ["Change Analysis", "Code Review", "Security", "Documentation", "Code Generation"]
   }
 }
 ```
@@ -453,7 +381,7 @@ cat "$OUTPUT_DIR/review-payload.json" | python3 scripts/review_formatter.py --dr
 
 The formatter will:
 - Post inline comments on specific lines where code review and security findings have `path` + `line`
-- Post a collapsible summary with up to 7 sections as the top-level review body
+- Post a collapsible summary with up to 5 sections as the top-level review body
 - Use the correct GitHub review event (REQUEST_CHANGES or COMMENT)
 
 **Note:** Always default to COMMENT (not APPROVE) to maintain human-in-the-loop approval.
@@ -468,10 +396,8 @@ Comprehensive Review Complete
 Summary:
 - Languages: <primary> (<percentage>%)
 - Code Review: <X Critical, Y High, Z Medium>
-- Test Coverage: <percentage>% (target: 80%)
 - Security: <X Critical, Y High findings>
 - Documentation: <Complete | Needs Updates>
-- Tests Executed: <Passed | Failed | Skipped>
 - Code Generated: <count> tests, <count> docstrings, <count> docs
 - Recommendation: <REQUEST CHANGES | COMMENT>
 
@@ -502,8 +428,9 @@ View full review: <PR_URL>
 ## Notes
 
 - Entry point for comprehensive reviews
-- Runs a model-diverse 3-pass deep code review (opus + sonnet + haiku) and coordinates 6 skills: analyze, test-gaps, security-scan (sonnet subagent), docs-drift (haiku subagent), run-tests, codegen
+- Runs a model-diverse 3-pass deep code review (opus + sonnet + haiku) and coordinates 4 skills: analyze, security-scan (sonnet subagent), docs-drift (haiku subagent), codegen
+- Test execution and coverage/test-gap analysis are intentionally left to CI, not duplicated here
 - Designed to be extended as new skills are added
 - Always maintains human-in-the-loop (never auto-approves/merges)
 - Generated code requires human review before committing
-- Cost: ~$3-7 per PR (model-diverse 3-pass deep review — one opus + one sonnet + one haiku — plus 6 analysis/execution skills; cheaper and higher-signal than three opus passes)
+- Cost: ~$3-6 per PR (model-diverse 3-pass deep review — one opus + one sonnet + one haiku — plus 4 analysis/generation skills; cheaper and higher-signal than three opus passes)

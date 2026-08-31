@@ -85,7 +85,7 @@ Writes analysis to `<OUTPUT_DIR>/pr-analysis-<PR_NUMBER>.json`:
 }
 ```
 
-`uses_mac_ui` (see Step 4) tells `security-scan`, `test-gaps`, and `docs-drift`
+`uses_mac_ui` (see Step 4) tells `security-scan` and `docs-drift`
 to fetch mac-ui's live authority docs. `mac_ui_ref_repo` is the repo they fetch
 from. Downstream skills read both from this JSON.
 

@@ -19,8 +19,6 @@ Everything it emits is a *draft for human review*, never auto-committed.
 - **OUTPUT_DIR** (optional) — defaults to a private `mktemp -d`.
 - **Analysis JSON** — `analyze` at `$OUTPUT_DIR/pr-analysis-<number>.json`
   (languages, frameworks, `test_setup.framework`, `uses_mac_ui`).
-- **Test Analysis JSON** — `test-gaps` at `$OUTPUT_DIR/test-analysis-<number>.json`
-  (`untested_areas`, `recommended_tests`).
 - **Docs Drift JSON** — `docs-drift` at `$OUTPUT_DIR/docs-drift-<number>.json`
   (completeness findings — `facet: "completeness"`, `drift_class: "missing-doc"`
   — name the missing docstring / CHANGELOG / API-doc surfaces).
@@ -43,7 +41,6 @@ PR_NUMBER=$(echo "$PR_URL" | grep -oE 'pull/[0-9]+' | grep -oE '[0-9]+')
 
 ```bash
 cat "$OUTPUT_DIR/pr-analysis-${PR_NUMBER}.json"
-cat "$OUTPUT_DIR/test-analysis-${PR_NUMBER}.json"
 cat "$OUTPUT_DIR/docs-drift-${PR_NUMBER}.json"
 ```
 
@@ -56,8 +53,9 @@ API docs for new endpoints, trivial lint fixes.
 **Never generate:** business logic, DB migrations, endpoint implementations,
 auth/authz logic, or anything needing domain knowledge.
 
-Parse the inputs: untested simple functions from test-gaps; completeness gaps
-from docs-drift; language/framework/`uses_mac_ui` from analysis.
+Parse the inputs: identify simple, untested functions directly from the PR diff
+(cross-checking the changed files for an existing test); completeness gaps from
+docs-drift; language/framework/`uses_mac_ui` from analysis.
 
 ## Step 2: Generate tests (conservative)
 
@@ -66,8 +64,8 @@ accessors — under 20 lines, no external deps, no existing test. Use the
 skeletons in `references/generation-templates.md` (Python/JS/Go/Java/**Rust**).
 
 Rules: max 3 tests per function (happy + ≤2 edge/error cases); skip complex,
-side-effecting, or already-tested functions. For Rust, prefer filling the exact
-untested branch/arm test-gaps named (e.g. an env-parse `unset|blank|invalid`
+side-effecting, or already-tested functions. For Rust, prefer filling an exact
+untested branch/arm visible in the diff (e.g. an env-parse `unset|blank|invalid`
 arm) over a bare happy path, and place tests in the file's `#[cfg(test)] mod
 tests` block.
 
@@ -152,7 +150,7 @@ reason and a manual-write recommendation (example in
 
 ## Integration & notes
 
-Called by `review` in Phase 3 after `run-tests`. Conservative by design: only
+Called by `review` in Phase 3. Conservative by design: only
 easy, well-established patterns; skip anything ambiguous. Cost ~$0.50-1.50/PR.
 
 ## Files

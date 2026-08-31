@@ -91,5 +91,5 @@ Brief description.
 
 > **mac-ui:** codegen does not hand-write mac-ui component code. If a doc/test
 > for a `mac-*` component is needed, defer to the live mac-ui authority docs
-> (see the `docs-drift`/`test-gaps` mac-ui references) rather than templating a
+> (see the `docs-drift` mac-ui references) rather than templating a
 > component from memory — the framework changes.

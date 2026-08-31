@@ -44,5 +44,5 @@ fetch_macui () {  # $1 = path within the mac-ui repo
    is drift class #1/#2.
 
 > This skill checks *documentation* drift. Auditing changed `.ts` source against
-> the Violation Catalog is `security-scan`/`test-gaps`' job (they fetch the same
+> the Violation Catalog is `security-scan`'s job (it fetches the same
 > docs). Don't duplicate the source audit here.
