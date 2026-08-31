@@ -1,7 +1,7 @@
 ---
 name: review
 description: Orchestrates comprehensive PR review combining analysis, code review, testing, security, and documentation checks. Use when you want a full automated review of a GitHub PR posted as a single unified comment.
-allowed-tools: Bash Read Skill Task
+allowed-tools: Bash Read Write Skill Task
 disable-model-invocation: true
 ---
 
