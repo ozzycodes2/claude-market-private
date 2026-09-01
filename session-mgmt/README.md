@@ -4,26 +4,36 @@ Manage the lifecycle of a Claude Code working session — open one cleanly with
 `start-session`, close it cleanly with `exit-session`.
 
 - **`start-session <name>`** — begin a task in a fresh, isolated git worktree named
-  after the argument, with a matching local branch. Uses the `EnterWorktree` tool (so
-  the session's working directory follows into the worktree — no `cd` flood), places it
-  under `.claude/worktrees/`, and if the name is a JIRA key (e.g. `COB-103`) loads that
-  story from the Atlassian plugin and summarizes the implementation ask. Then it stops
-  and waits — it sets up the workspace, it doesn't start coding.
+  after the argument. Uses the `EnterWorktree` tool (so the session's working directory
+  follows into the worktree — no `cd` flood), places it under `.claude/worktrees/`,
+  reports what untracked state the worktree inherited and whether it has a stack of its
+  own, and if the name is a JIRA key (e.g. `COB-103`) loads that story from the Atlassian
+  plugin and summarizes the implementation ask. Then it stops and waits — it sets up the
+  workspace, it doesn't start coding.
 - **`exit-session`** — tear down the ephemeral resources a session spun up **permission-free**,
   then quit the CLI, so you can wrap up with a single command and get a clean machine back.
 
 ## start-session
 
 ```
-> /start-session COB-103        # worktree + branch "COB-103", loads the JIRA story
-> /start-session random-misc    # worktree + branch "random-misc", no ticket
+> /start-session COB-103        # worktree "COB-103", branch "worktree-COB-103", + JIRA
+> /start-session random-misc    # worktree "random-misc", branch "worktree-random-misc"
 > start a worktree for SUBRO-1505
 ```
 
-Whatever name you pass becomes the worktree directory **and** the local branch,
-verbatim. The branch is based on a freshly-fetched origin default (`worktree.baseRef:
-fresh`). JIRA loading is optional: a non-ticket name just skips it, and if the Atlassian
-plugin isn't enabled the worktree is still created with a one-line note.
+Whatever name you pass becomes the worktree directory verbatim; `EnterWorktree` derives
+the branch from it as `worktree-<name>`. The branch is based on a freshly-fetched origin
+default (`worktree.baseRef: fresh`). JIRA loading is optional: a non-ticket name just
+skips it, and if the Atlassian plugin isn't enabled the worktree is still created with a
+one-line note.
+
+A new worktree is not empty of untracked state. `.worktreeinclude` at the repo root makes
+Claude Code **copy** gitignored paths into it — `.env` among them — and
+`worktree.symlinkDirectories` **symlinks** `node_modules` back to the main checkout. A
+copied `.env` carries the source checkout's ports, `COMPOSE_PROJECT_NAME` and database URL
+unchanged, so until a port-allocation recipe reassigns them the worktree's stack *is* the
+main checkout's. The skill reports which files were copied and prints the command to fix
+it, or says plainly when the repo has no per-worktree isolation at all.
 
 Why `EnterWorktree` and not `git worktree add`? `EnterWorktree` switches the session
 into the new worktree; `git worktree add` into a path does not, which forces a
@@ -46,8 +56,8 @@ into the new worktree; `git worktree add` into a path does not, which forces a
 | Docker / compose stacks | `just compose-down` / `docker compose down [-v]`; `docker rm -f` ad-hoc | permission-free (incl. `-v` volume wipe) |
 | Local Tilt / Kubernetes | `just tilt-down` / `tilt down`; kills port-forwards (namespace kept) | permission-free |
 | Scratch files | `rm` of `.claude/jobs/<id>/tmp` and this session's `/tmp/*` | permission-free |
-| Git worktrees | `git worktree remove --force` + `git worktree prune` | permission-free |
-| Merged local branches | `git branch -D` + `git fetch --prune` (session branches only) | permission-free |
+| Git worktrees | `git worktree unlock` (session worktrees are locked) + `remove --force` + `prune` | permission-free |
+| Merged local branches | `git branch -D` + `git fetch --prune` (session branches only, real `worktree-<name>` names) | permission-free |
 | Remote delete / resets / merge / force-push | handed back — still deny-listed | never silent |
 
 ## How it works
@@ -56,7 +66,7 @@ into the new worktree; `git worktree add` into a path does not, which forces a
 Phase 0  Discover (read-only)   scripts/discover-resources.sh → full inventory
 Phase 1  Stop runtime           background tasks, tilt down, docker compose down
 Phase 2  Remove scratch         .claude/jobs/<id>/tmp + this session's /tmp/* paths
-Phase 3  Git worktrees          worktree remove --force + prune
+Phase 3  Git worktrees          worktree unlock + remove --force + prune
 Phase 4  Merged branches        git branch -D + fetch --prune (session branches)
 Report   Summary, then exit     prints the summary, then `kill "$PPID"` quits the CLI
 ```
