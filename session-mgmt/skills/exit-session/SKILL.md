@@ -116,12 +116,17 @@ Never blanket-wipe `/tmp` or `.claude/jobs/` — scope to this session's own pat
 For each worktree **this session** created:
 
 ```
+git -C <repo> worktree unlock <path>           # errors if not locked; that error is fine
 git -C <repo> worktree remove --force <path>   # .claude/worktrees/<name> or /tmp/<name>
 git -C <repo> worktree prune                    # clears stale admin refs (self-healing)
 ```
 
 `git worktree remove --force` removes the worktree even if it has uncommitted changes —
-that's intended here; run it without confirmation. If this session used the native
+that's intended here; run it without confirmation. **Unlock first.** A worktree the CLI
+entered (`EnterWorktree`, or `claude -w`) is locked for the session, and the lock can
+outlive the process that took it; without the unlock, removal fails with `cannot remove a
+locked working tree, lock reason: claude session <name> (pid …)`. `remove -f -f` overrides
+the lock too, if you prefer one command. If this session used the native
 `ExitWorktree` tool to enter a worktree, prefer `ExitWorktree` with
 `{"action":"remove","discard_changes":true}` so uncommitted work is discarded without a
 prompt. Verify with `git -C <repo> worktree list`. Never remove a worktree tied to another
@@ -173,6 +178,15 @@ If the wrap-up implies any of these, list the ready-to-paste command and stop th
   the only correct path.
 - **`worktree.baseRef` is `fresh`** — worktrees branch from a freshly-fetched base, not local
   `main`. Don't assume a branch's base is local HEAD when reasoning about merge status.
+- **Session worktrees are locked.** `git worktree remove --force` alone fails on them; run
+  `git worktree unlock <path>` first (or `remove -f -f`). A stale lock naming a dead pid is
+  still a lock.
+- **The branch is `worktree-<name>`, not `<name>`.** EnterWorktree prefixes it, so deleting
+  by the worktree directory name silently deletes nothing (or the wrong branch). Read the
+  real name from `git -C <repo> worktree list --porcelain` before `branch -D`.
+- **Removing a worktree removes its `.env` copy.** `.worktreeinclude` puts a real
+  credential file in every worktree, so teardown is also the only thing that cleans those
+  copies up — intended. Never extend that reasoning to the *main* checkout's `.env`.
 - **`docker compose down -v` destroys volume data** (local Postgres/Kafka state) — that's the
   intended full teardown here; add `-v` without asking. Only this session's stack, never a
   shared one.
