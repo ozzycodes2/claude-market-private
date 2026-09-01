@@ -4,15 +4,16 @@ description: >-
   Open a Claude Code working session in a fresh, isolated git worktree, so the
   user can start a task with a single /start-session <name>. Use at the START of a
   session when the user says "start session", "start a worktree", "spin up a
-  worktree for COB-103", "begin work on <ticket>", "set up a workspace", or passes
-  a name/ticket to work under. Creates and ENTERS a worktree via the EnterWorktree
-  tool (never `git worktree add`) under .claude/worktrees/, named exactly after the
-  argument, with a matching local branch. If the argument is a JIRA issue key (e.g.
+  worktree for COB-103", "begin work on <ticket>", or passes a name/ticket to work
+  under. Creates and ENTERS a worktree via the EnterWorktree tool (never `git
+  worktree add`) under .claude/worktrees/, named exactly after the argument, on a
+  local branch `worktree-<argument>`. Reports what the worktree inherited
+  (`.worktreeinclude` copies, symlinked node_modules) and whether its `.env` still
+  points at the main checkout's stack. If the argument is a JIRA key (e.g.
   COB-103, SUBRO-1505), also loads that story from the Atlassian plugin when
   available and summarizes the implementation ask. Also renames the session to the
   argument (the same effect as `/rename <NAME>`) so it's easy to find in `/resume`.
-  Then stops and waits for the user's instructions — it sets up the workspace and
-  context, it does not start implementing.
+  Then stops and waits — it sets up the workspace and context, it does not implement.
 license: MIT
 compatibility: >-
   Requires a git repo (EnterWorktree branches off a fresh origin default; honors
@@ -39,8 +40,9 @@ user types another word.
    call, forcing a `cd …/worktree &&` prefix on every command for rest of the
    session. This skill exists to prevent that. Use the tool.
 2. **The argument is the name — verbatim.** Whatever the user passes (`COB-103`,
-   `random-misc`) is the worktree directory name *and* the local branch name. Do not
-   rename, slugify, or prefix it. EnterWorktree names the branch after the worktree.
+   `random-misc`) is the worktree directory name. Do not rename, slugify, or prefix it.
+   EnterWorktree derives the branch as `worktree-<NAME>` — that prefix is the tool's, not
+   yours to add or strip. Report the branch it actually created; do not claim `<NAME>`.
 3. **Load context, don't act.** Create the worktree, load the story if there is one,
    report, then **stop and wait**. Do not read the codebase for an implementation plan,
    do not write code, do not enter plan mode — unless the user asks next.
@@ -87,13 +89,13 @@ user types another word.
 
 1. Load the deferred tool: `ToolSearch` with query `select:EnterWorktree`.
 2. Call `EnterWorktree({ name: "<NAME>" })`. This creates `.claude/worktrees/<NAME>` on
-   a new branch `<NAME>`, based on a freshly-fetched origin default branch
+   a new branch `worktree-<NAME>`, based on a freshly-fetched origin default branch
    (`worktree.baseRef: fresh`), and switches the session cwd into it.
 3. Do **not** run `git worktree add`, `git checkout -b`, or any `cd`. The tool does all
    of it; the branch is created for you.
 
 **Fallback (only if EnterWorktree unavailable):** create the worktree at the
-conventional path — `git worktree add .claude/worktrees/<NAME> -b <NAME> origin/<default>`
+conventional path — `git worktree add .claude/worktrees/<NAME> -b worktree-<NAME> origin/<default>`
 — then re-run `ToolSearch select:EnterWorktree` and call `EnterWorktree({ path:
 ".claude/worktrees/<NAME>" })` to enter it. If EnterWorktree truly cannot be loaded,
 warn the user that the session cwd will not follow the worktree and that subsequent
@@ -167,6 +169,41 @@ Notes:
   that in-memory state); the pid-file mirror above is the closest live-visible
   approximation.
 
+### Phase 2.6 — Report what the worktree inherited (read-only)
+
+A fresh worktree is not empty of untracked state, and the state it gets can make it look
+ready while pointing at another checkout's resources. Establish both, in the new cwd:
+
+- **`.worktreeinclude`** at the *main checkout's* root: every non-comment line is a
+  gitignored path Claude Code **copies** into the new worktree — usually `.env`. Read the
+  file, then confirm what landed (`ls -la` each path in the worktree). Paths absent from
+  the main checkout are skipped silently, so absence is not an error.
+- **`worktree.symlinkDirectories`** in user settings: those directories (`node_modules`
+  and friends) are **symlinked** back to the main checkout, not copied — so no install
+  step is needed, and none should be run.
+
+Then answer the question that decides whether the workspace is usable: **does this
+worktree have its own stack, or is it borrowing the main checkout's?** A copied `.env`
+carries the source checkout's ports, `COMPOSE_PROJECT_NAME`, and `PGURL`/`DATABASE_URL`
+verbatim. Until something reassigns them, `docker compose`, `just migrate`, `just test`,
+and `just psql` run from this worktree reach the **main checkout's** containers and
+database — silently, with no error to notice.
+
+- **Repo allocates per-worktree ports** (look for it: `just --list | grep -i 'worktree.*port'`):
+  say so and print the exact command, e.g. `just setup_worktree_ports 6320`. **Do not run
+  it.** It claims a range of sequential ports, and only the user knows what their other
+  worktrees already hold.
+- **Repo has no such recipe:** say plainly that no per-worktree isolation exists — the
+  stack has to be run from one checkout at a time, and starting it here will collide with
+  or hijack whatever is already up.
+- **No `.worktreeinclude` at the main root:** the worktree has no `.env`. Name the repo's
+  bootstrap (`just setup`, `cp env.example .env`), or, when there is no `env.example`, say
+  the file has to be reconstructed by hand — and note that a missing dotenv file is
+  usually *silent*, leaving recipes with empty variables and hardcoded fallbacks rather
+  than an error.
+
+All read-only. Do not run `docker`, `just migrate`, or any stack command to determine this.
+
 ### Phase 3 — Load the JIRA story (only if `NAME` is a ticket)
 
 1. Load the deferred Atlassian tools: `ToolSearch` with query
@@ -189,8 +226,14 @@ Notes:
 
 This is the *only* narration Phases 0-3 produce. Print a short summary, then wait:
 
-- Worktree: `.claude/worktrees/<NAME>` · branch `<NAME>` · based on `origin/<default>`.
+- Worktree: `.claude/worktrees/<NAME>` · branch `worktree-<NAME>` · based on
+  `origin/<default>`.
 - Session renamed to `<NAME>` (or a one-line note if the rename was skipped).
+- Inherited environment, from Phase 2.6: which `.worktreeinclude` paths were copied, which
+  directories were symlinked, and — when the copied `.env` still points at the main
+  checkout's stack — the exact port-allocation command to run before anything else. Put
+  this above the handoff line. It is the one item that, if missed, sends `just migrate` or
+  `just test` at the wrong database.
 - If a ticket was loaded: the story summary and implementation ask from Phase 3.
 - If not a ticket, or JIRA skipped: say so in one line.
 - End with an explicit handoff, e.g. *"Workspace ready. What would you like to build?"*
@@ -223,7 +266,18 @@ end-to-end without prompts, add to `permissions.allow`:
   with the user rather than silently mangling the name.
 - **`baseRef: fresh` needs the remote.** The base is a freshly-fetched origin default;
   if offline or the remote unreachable, EnterWorktree may fail — report it plainly.
-- **Don't pre-create the branch.** EnterWorktree makes the branch; a prior
-  `git checkout -b <NAME>` will collide with it.
+- **Don't pre-create the branch.** EnterWorktree makes `worktree-<NAME>` itself; a prior
+  `git checkout -b` of that name will collide with it.
+- **`.worktreeinclude` is read from the main checkout's working tree**, not from the branch
+  being checked out. One that exists only on a feature branch copies nothing, so a repo
+  where it is still in review behaves as if the file were absent.
+- **Copies, not symlinks.** Rotating `.env` in the main checkout does not reach worktrees
+  that already exist, and each worktree is one more on-disk copy of real credentials.
+- **Symlinked `node_modules` is shared, not private.** An install inside a worktree writes
+  through to the main checkout's `node_modules`; a dependency bump here changes it there.
+- **EnterWorktree locks the worktree**, and the lock can outlive the process that took it
+  (`git worktree list --porcelain` shows `locked claude session <name> (pid …)`). Teardown
+  needs `git worktree unlock <path>` first — plain `git worktree remove --force` fails with
+  "cannot remove a locked working tree".
 - **JIRA is optional.** A non-ticket name (`random-misc`) is a perfectly valid session;
   just skip Phase 3.
