@@ -10,16 +10,16 @@ description: >-
   local branch `worktree-<argument>`. Reports what the worktree inherited
   (`.worktreeinclude` copies, symlinked node_modules) and whether its `.env` still
   points at the main checkout's stack. If the argument is a JIRA key (e.g.
-  COB-103, SUBRO-1505), also loads that story from the Atlassian plugin when
+  COB-103, SUBRO-1505), also loads that story with the Atlassian CLI (`acli`) when
   available and summarizes the implementation ask. Also renames the session to the
   argument (the same effect as `/rename <NAME>`) so it's easy to find in `/resume`.
   Then stops and waits — it sets up the workspace and context, it does not implement.
 license: MIT
 compatibility: >-
   Requires a git repo (EnterWorktree branches off a fresh origin default; honors
-  worktree.baseRef: fresh). JIRA loading is optional and needs the Atlassian plugin
-  (atlassian@machinify-plugins) enabled. EnterWorktree and the Atlassian MCP tools
-  are deferred — load them via ToolSearch before calling.
+  worktree.baseRef: fresh). JIRA loading is optional and needs the Atlassian CLI
+  (`acli`) installed and authenticated (`acli auth login`). EnterWorktree is
+  deferred — load it via ToolSearch before calling.
 argument-hint: "<worktree/branch name — a JIRA key like COB-103, or any slug like random-misc>"
 disable-model-invocation: true
 ---
@@ -47,7 +47,7 @@ user types another word.
    report, then **stop and wait**. Do not read the codebase for an implementation plan,
    do not write code, do not enter plan mode — unless the user asks next.
 4. **Degrade gracefully.** JIRA loading is a bonus, not a gate. If the argument isn't a
-   ticket, or the Atlassian plugin isn't available, skip that step with a one-line note
+   ticket, or `acli` is missing or unauthenticated, skip that step with a one-line note
    and still deliver the worktree.
 5. **Rename the session to `NAME`.** `/rename` is a user-typed command with no callable
    tool. What actually makes a name show up in `/resume` is a `custom-title` record
@@ -206,21 +206,29 @@ All read-only. Do not run `docker`, `just migrate`, or any stack command to dete
 
 ### Phase 3 — Load the JIRA story (only if `NAME` is a ticket)
 
-1. Load the deferred Atlassian tools: `ToolSearch` with query
-   `select:mcp__plugin_atlassian_atlassian__getJiraIssue`. If nothing resolves, the
-   plugin isn't available — note "Atlassian plugin not enabled; skipping story load"
-   and go to Phase 4.
-2. If `getJiraIssue` needs a `cloudId`, resolve it once via
-   `getAccessibleAtlassianResources` (use the single/first site) — load it with
-   `ToolSearch select:mcp__plugin_atlassian_atlassian__getAccessibleAtlassianResources`.
-3. Call `getJiraIssue` with the uppercased issue key.
-4. Read the issue and distill it — do not dump the raw payload. Summarize:
+1. Fetch the story with the Atlassian CLI, uppercased key, one call:
+
+   ```bash
+   acli jira workitem view <KEY> --json \
+     --fields "summary,issuetype,status,assignee,priority,description,parent,issuelinks"
+   ```
+
+   Do **not** reach for the Atlassian MCP server — it is disabled, and
+   `mcp__plugin_atlassian_atlassian__*` tools no longer exist.
+2. If the command fails, note it in one line and go to Phase 4 — never block the
+   worktree on it:
+   - `command not found` → "acli not installed; skipping story load".
+   - `unauthorized: use 'acli auth login'` → "acli not authenticated; skipping story
+     load — run `! acli auth login`". Do not run `acli auth login` yourself; it is an
+     interactive browser flow.
+   - Unknown key or permissions → report the error verbatim in one line.
+3. Read the issue and distill it — do not dump the raw payload. The `description` comes
+   back as Atlassian Document Format (ADF) JSON, so read the text out of the node tree
+   rather than pasting it. Summarize:
    - **Title / type / status** (one line).
    - **The implementation ask** — what the ticket wants built or changed, in your words.
    - **Acceptance criteria** if present, as a short checklist.
    - Notable links (design, parent epic, blocked-by) if any.
-   If the fetch fails (permissions, unknown key), report the error in one line and
-   continue — the worktree still stands.
 
 ### Phase 4 — Report once, then stop
 
@@ -249,7 +257,8 @@ below is still gated by the *user's own* `settings.json` (project or
 end-to-end without prompts, add to `permissions.allow`:
 
 - `EnterWorktree`, `ExitWorktree` — the worktree lifecycle tools Phase 2 calls directly.
-- `ToolSearch` — loads deferred tools (`EnterWorktree`, the Atlassian tools); read-only.
+- `ToolSearch` — loads deferred tools (`EnterWorktree`); read-only.
+- `Bash(acli jira workitem view *)` — Phase 3's story fetch; read-only.
 - `Bash(git rev-parse *)`, `Bash(git worktree list)` — Phase 1's read-only preconditions
   (covered already if you blanket-allow `Bash(git *)`).
 - Phase 2.5's rename scripts run under `python3`. There's no way to allowlist just
@@ -259,8 +268,11 @@ end-to-end without prompts, add to `permissions.allow`:
 
 ## Gotchas
 
-- **EnterWorktree and the Atlassian tools are deferred.** Calling them without a prior
-  `ToolSearch select:<name>` fails with InputValidationError. Always load first.
+- **EnterWorktree is deferred.** Calling it without a prior `ToolSearch
+  select:EnterWorktree` fails with InputValidationError. Always load it first.
+- **`acli` is a shell command, not a tool.** There is nothing to ToolSearch for; the
+  Atlassian MCP server is disabled and its `mcp__plugin_atlassian_atlassian__*` tools do
+  not exist.
 - **Already in a worktree → EnterWorktree refuses** a new `name`. Don't nest; surface it.
 - **Name rules are strict.** Spaces, `@`, `:` and other punctuation are rejected. Fix
   with the user rather than silently mangling the name.

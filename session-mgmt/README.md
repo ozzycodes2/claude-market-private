@@ -7,9 +7,9 @@ Manage the lifecycle of a Claude Code working session — open one cleanly with
   after the argument. Uses the `EnterWorktree` tool (so the session's working directory
   follows into the worktree — no `cd` flood), places it under `.claude/worktrees/`,
   reports what untracked state the worktree inherited and whether it has a stack of its
-  own, and if the name is a JIRA key (e.g. `COB-103`) loads that story from the Atlassian
-  plugin and summarizes the implementation ask. Then it stops and waits — it sets up the
-  workspace, it doesn't start coding.
+  own, and if the name is a JIRA key (e.g. `COB-103`) loads that story with the Atlassian
+  CLI (`acli`) and summarizes the implementation ask. Then it stops and waits — it sets up
+  the workspace, it doesn't start coding.
 - **`exit-session`** — tear down the ephemeral resources a session spun up **permission-free**,
   then quit the CLI, so you can wrap up with a single command and get a clean machine back.
 
@@ -24,8 +24,8 @@ Manage the lifecycle of a Claude Code working session — open one cleanly with
 Whatever name you pass becomes the worktree directory verbatim; `EnterWorktree` derives
 the branch from it as `worktree-<name>`. The branch is based on a freshly-fetched origin
 default (`worktree.baseRef: fresh`). JIRA loading is optional: a non-ticket name just
-skips it, and if the Atlassian plugin isn't enabled the worktree is still created with a
-one-line note.
+skips it, and if `acli` is missing or not authenticated (`acli auth login`) the worktree
+is still created with a one-line note.
 
 A new worktree is not empty of untracked state. `.worktreeinclude` at the repo root makes
 Claude Code **copy** gitignored paths into it — `.env` among them — and
