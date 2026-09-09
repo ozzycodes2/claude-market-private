@@ -17,13 +17,38 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   exit 0
 fi
 
-REPO="${1:-$PWD}"
+ARG="${1:-$PWD}"
 have() { command -v "$1" >/dev/null 2>&1; }
 section() { printf '\n=== %s ===\n' "$1"; }
 note() { printf 'note: %s\n' "$1" >&2; }
 
+# Resolve the argument to the MAIN checkout even when handed a linked worktree.
+# Callers routinely pass their own worktree; the on-disk scans below look under
+# $REPO/.claude/worktrees, which for a worktree is a nested path that cannot exist,
+# so the whole inventory would come back empty.
+REPO="$ARG"
+SELF_WORKTREE=""
+if have git && git -C "$ARG" rev-parse --git-dir >/dev/null 2>&1; then
+  gitdir="$(cd "$ARG" && git rev-parse --absolute-git-dir 2>/dev/null)"
+  commondir="$(cd "$ARG" && cd "$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || echo .)" && pwd)"
+  if [[ -n "$commondir" && "$gitdir" != "$commondir" ]]; then
+    SELF_WORKTREE="$(cd "$ARG" && git rev-parse --show-toplevel 2>/dev/null)"
+    REPO="$(dirname "$commondir")"
+  fi
+fi
+
 printf 'exit-session resource inventory\n'
 printf 'repo: %s\n' "$REPO"
+
+section "THIS SESSION'S OWN WORKTREE"
+if [[ -n "$SELF_WORKTREE" ]]; then
+  printf 'SELF_WORKTREE: %s\n' "$SELF_WORKTREE"
+  printf 'branch:        %s\n' "$(git -C "$SELF_WORKTREE" branch --show-current 2>/dev/null)"
+  printf 'main repo:     %s\n' "$REPO"
+  printf 'ACTION: remove unconditionally in Phase 3a (ExitWorktree remove/discard_changes).\n'
+else
+  printf 'none — running from the main checkout; no self-worktree to tear down.\n'
+fi
 
 # --- Git worktrees ---------------------------------------------------------
 section "GIT WORKTREES"

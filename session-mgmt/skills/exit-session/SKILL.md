@@ -10,8 +10,9 @@ description: >-
   unless they scope it). Runs teardown permission-free: stops background processes
   and dev servers, Docker/compose stacks, local Tilt/Kubernetes, git worktrees,
   merged local branches, and temp/scratch files without prompting, then exits the
-  CLI. Strictly session-scoped — never touches resources belonging to other
-  sessions, and still confirms before destroying data (volume wipes, uncommitted work).
+  CLI. Always removes the worktree the session is running in, determined from git
+  rather than from recall. Strictly session-scoped — never touches resources belonging
+  to other sessions.
 license: MIT
 compatibility: >-
   Assumes a git repo with optional worktrees under .claude/worktrees/ or /tmp;
@@ -37,17 +38,28 @@ directly without stopping for confirmation, except for the two operations that d
    sessions' worktrees, branches, containers, and background processes are off-limits —
    list them under "left untouched," never remove them. When you can't attribute a
    resource to this session, preserve it and say so.
-2. **Discover, then execute — no plan-gate.** Do one read-only discovery pass to build
+2. **Attribute mechanically first, from memory second.** For the one resource that is
+   *knowable with certainty* — the worktree this session is sitting in — ask git, not your
+   recollection (Phase 0a). Conversation history is the fallback for genuinely ambiguous
+   resources (which container, which scratch path), never the primary test for the
+   session's own worktree. By the time a real working session reaches teardown its context
+   has usually compacted, so the `EnterWorktree` call that created the worktree is long
+   gone — and "I don't remember creating it" then silently becomes "it must be someone
+   else's," which is how a session leaks its own worktree on every single run.
+3. **Discover, then execute — no plan-gate.** Do one read-only discovery pass to build
    the inventory, then tear down immediately. Teardown is pre-authorized; you do **not**
    pause for a "confirm the plan" step. Show the inventory as you go so progress is visible.
-3. **Fully permission-free — no data-loss gate.** Every teardown of a resource this
+4. **Fully permission-free — no data-loss gate.** Every teardown of a resource this
    session created runs without a prompt, including `docker compose down -v` (wipes
    volumes / local DB state) and removing a worktree that still has **uncommitted** changes.
    The only thing you never do is run the still-denied remote/history ops (Phase 4) — those
    aren't teardown; hand them back.
-4. **Preserve on doubt.** For anything you can't attribute to this session, default to
-   leaving it and flagging it — a missed cleanup is cheap, a wrong deletion is not.
-5. **No leading `cd`.** Use `git -C <path>` and absolute paths. A leading `cd` triggers a
+5. **Preserve on doubt — except where git already answered.** For anything you can't
+   attribute to this session, default to leaving it and flagging it: a missed cleanup is
+   cheap, a wrong deletion is not. This does **not** apply to the worktree Phase 0a
+   identifies as the session's own — that one is settled by `git rev-parse`, so there is no
+   doubt to preserve on, and skipping it is the failure mode this rule is blamed for.
+6. **No leading `cd`.** Use `git -C <path>` and absolute paths. A leading `cd` triggers a
    permission prompt (per the user's global CLAUDE.md) and defeats the point of a
    permission-free sweep.
 
@@ -55,7 +67,36 @@ directly without stopping for confirmation, except for the two operations that d
 
 Work the phases in order. Create a todo per phase so progress is visible.
 
-### Phase 0 — Discover (read-only)
+### Phase 0a — Identify this session's own worktree (read-only, deterministic)
+
+**Do this first, before the discovery script.** It is three read-only commands and it
+settles the question the rest of the sweep keeps getting wrong: *is the directory I am
+sitting in a worktree that should be torn down?*
+
+```
+git -C <cwd> rev-parse --git-dir           # linked worktree -> <main>/.git/worktrees/<name>
+git -C <cwd> rev-parse --git-common-dir    # linked worktree -> <main>/.git   (differs!)
+git -C <cwd> rev-parse --show-toplevel     # linked worktree -> the worktree path itself
+```
+
+- **`--git-dir` and `--git-common-dir` differ** → the session is inside a **linked
+  worktree**. `--show-toplevel` is `SELF_WORKTREE`, and the parent of `--git-common-dir`
+  is `MAIN_REPO`. `SELF_WORKTREE` is a teardown target **unconditionally** — do not ask
+  whether you remember creating it. A session lands in a worktree because it was put
+  there (`/start-session`, `EnterWorktree`, `claude -w`), so by construction it is this
+  session's. Read the real branch from `git -C <MAIN_REPO> worktree list --porcelain`
+  (it is `worktree-<name>`, not `<name>`).
+- **They are the same** → the session is in the main checkout. There is no self-worktree;
+  every worktree in the list belongs to some other session, so none of them are yours to
+  remove. Say so in the report rather than reaping them.
+
+`MAIN_REPO` — not `SELF_WORKTREE` — is the `<repo-root>` argument for everything that
+follows. The bundled script resolves this itself and prints a `THIS SESSION'S OWN WORKTREE`
+section, but pass `MAIN_REPO` anyway: handing a worktree path to a hand-rolled scan makes
+it look at `<worktree>/.claude/worktrees`, a nested path that cannot exist, so the on-disk
+worktree section comes back empty and the sweep silently has nothing to do.
+
+### Phase 0b — Discover (read-only)
 
 Build an inventory before touching anything. Run the bundled discovery script, which
 gathers the whole picture in one read-only pass. Pass the repo root as an argument —
@@ -83,10 +124,16 @@ unavailable, gather the same signals by hand (all read-only, all with `git -C`, 
 - **Scratch:** `.claude/jobs/<id>/tmp` dirs and `/tmp/*` paths this session created (PR
   bodies, commit-msg files, review worktrees).
 
-**Attribute each resource to this session or not.** Use the conversation history as the
-source of truth for what this session started. Anything you didn't start goes in the
-"left untouched" list. If the user passed a scope arg (e.g. `worktree`), limit the sweep
-to that resource type.
+**Attribute each resource to this session or not.** `SELF_WORKTREE` from Phase 0a is
+already attributed — it is yours, and no amount of not remembering it changes that. For
+everything else (containers, ports, scratch paths, extra worktrees), use the conversation
+history as the source of truth for what this session started; anything you didn't start
+goes in the "left untouched" list. If the user passed a scope arg (e.g. `worktree`), limit
+the sweep to that resource type.
+
+A compacted or `/clear`ed context is the normal case here, not an edge case. When history
+is thin, that is a reason to lean harder on Phase 0a's mechanical answer — never a reason
+to downgrade `SELF_WORKTREE` to "probably another session's."
 
 ### Phase 1 — Stop ephemeral runtime (permission-free)
 
@@ -113,12 +160,28 @@ Never blanket-wipe `/tmp` or `.claude/jobs/` — scope to this session's own pat
 
 ### Phase 3 — Git worktrees (permission-free)
 
-For each worktree **this session** created:
+Two kinds of worktree get torn down here, and the first one is the whole point of the phase.
+
+**3a. `SELF_WORKTREE` — the worktree this session is in (from Phase 0a).** Remove it
+unconditionally. You are inside it, so use the native tool, which relocates the session
+back to `MAIN_REPO` as it goes:
 
 ```
-git -C <repo> worktree unlock <path>           # errors if not locked; that error is fine
-git -C <repo> worktree remove --force <path>   # .claude/worktrees/<name> or /tmp/<name>
-git -C <repo> worktree prune                    # clears stale admin refs (self-healing)
+ExitWorktree({"action":"remove","discard_changes":true})
+```
+
+`discard_changes: true` is correct and deliberate: uncommitted work in a session worktree
+is teardown scope, not a data-loss gate to stop on (Principle 4). If `ExitWorktree` is
+unavailable, fall back to the `git` sequence below run against `MAIN_REPO`. If it refuses,
+report what it said — do not leave the worktree standing silently.
+
+**3b. Any other worktree this session created** — throwaway checkouts under `/tmp`,
+review clones, a second worktree spun up mid-task:
+
+```
+git -C <MAIN_REPO> worktree unlock <path>           # errors if not locked; that error is fine
+git -C <MAIN_REPO> worktree remove --force <path>   # .claude/worktrees/<name> or /tmp/<name>
+git -C <MAIN_REPO> worktree prune                   # clears stale admin refs (self-healing)
 ```
 
 `git worktree remove --force` removes the worktree even if it has uncommitted changes —
@@ -126,11 +189,12 @@ that's intended here; run it without confirmation. **Unlock first.** A worktree 
 entered (`EnterWorktree`, or `claude -w`) is locked for the session, and the lock can
 outlive the process that took it; without the unlock, removal fails with `cannot remove a
 locked working tree, lock reason: claude session <name> (pid …)`. `remove -f -f` overrides
-the lock too, if you prefer one command. If this session used the native
-`ExitWorktree` tool to enter a worktree, prefer `ExitWorktree` with
-`{"action":"remove","discard_changes":true}` so uncommitted work is discarded without a
-prompt. Verify with `git -C <repo> worktree list`. Never remove a worktree tied to another
-active session.
+the lock too, if you prefer one command.
+
+Verify with `git -C <MAIN_REPO> worktree list` and confirm `SELF_WORKTREE` is gone from it.
+A run that ends with the session's own worktree still listed has failed this phase, even if
+every other line of the report is green. Never remove a worktree tied to another active
+session.
 
 ### Phase 4 — Merged local branches (permission-free) + destructive git (hand back)
 
@@ -178,6 +242,16 @@ If the wrap-up implies any of these, list the ready-to-paste command and stop th
   the only correct path.
 - **`worktree.baseRef` is `fresh`** — worktrees branch from a freshly-fetched base, not local
   `main`. Don't assume a branch's base is local HEAD when reasoning about merge status.
+- **A compacted context is not evidence of innocence.** The `EnterWorktree` call that
+  created this session's worktree is usually gone from context by teardown time — long
+  sessions compact repeatedly. Reasoning "I see no worktree creation in my history, so this
+  worktree must be another session's" is the single most common way this skill leaves its
+  own worktree behind. Phase 0a exists precisely so this judgement is never made from
+  memory.
+- **Give the discovery script `MAIN_REPO`, never the worktree.** Its on-disk scan looks at
+  `<arg>/.claude/worktrees`. Pass a worktree path and that becomes
+  `<worktree>/.claude/worktrees` — nonexistent — so the section is empty and the sweep
+  concludes there is nothing to remove.
 - **Session worktrees are locked.** `git worktree remove --force` alone fails on them; run
   `git worktree unlock <path>` first (or `remove -f -f`). A stale lock naming a dead pid is
   still a lock.
@@ -209,7 +283,8 @@ Session teardown complete.
   Docker:    <stacks / containers brought down>
   Tilt/k8s:  <tilt down; port-forwards killed> (namespace left in place)
   Scratch:   <paths removed>
-  Worktrees: <paths removed + pruned>
+  Worktree:  <SELF_WORKTREE removed — this session's own> (or: none; ran from the main checkout)
+  Worktrees: <other paths removed + pruned>
   Branches:  <merged local branches deleted>
   Left for you (still denied): <git push origin --delete / reset --hard / gh pr merge, if any>
   Left untouched (other sessions): <worktrees/branches/containers preserved>
