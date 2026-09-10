@@ -10,8 +10,9 @@ Manage the lifecycle of a Claude Code working session — open one cleanly with
   own, and if the name is a JIRA key (e.g. `COB-103`) loads that story with the Atlassian
   CLI (`acli`) and summarizes the implementation ask. Then it stops and waits — it sets up
   the workspace, it doesn't start coding.
-- **`exit-session`** — tear down the ephemeral resources a session spun up **permission-free**,
-  then quit the CLI, so you can wrap up with a single command and get a clean machine back.
+- **`exit-session`** — tear down the ephemeral resources a session spun up **permission-free**
+  (in accept-edits mode — see [Permission mode](#permission-mode)), then quit the CLI, so you
+  can wrap up with a single command and get a clean machine back.
 
 ## start-session
 
@@ -63,23 +64,27 @@ into the new worktree; `git worktree add` into a path does not, which forces a
 ## How it works
 
 ```
-Phase 0  Discover (read-only)   scripts/discover-resources.sh → full inventory
-Phase 1  Stop runtime           background tasks, tilt down, docker compose down
-Phase 2  Remove scratch         .claude/jobs/<id>/tmp + this session's /tmp/* paths
-Phase 3  Git worktrees          worktree unlock + remove --force + prune
-Phase 4  Merged branches        git branch -D + fetch --prune (session branches)
-Report   Summary, then exit     prints the summary, then `kill "$PPID"` quits the CLI
+Phase 0   Permission mode       gate hook keeps the sweep out of auto / plan mode
+Phase 0a  Own worktree          git rev-parse → is this session sitting in a worktree?
+Phase 0b  Discover (read-only)  scripts/discover-resources.sh → full inventory
+Phase 1   Stop runtime          background tasks, tilt down, docker compose down
+Phase 2   Remove scratch        .claude/jobs/<id>/tmp + this session's /tmp/* paths
+Phase 3   Git worktrees         own worktree first, then unlock + remove --force + prune
+Phase 4   Merged branches       git branch -D + fetch --prune (session branches)
+Report    Summary, then exit    prints the summary, then `kill "$PPID"` quits the CLI
 ```
 
 Two hard rules:
 
 - **Session-scoped.** Only tears down what *this* session created. Other sessions'
   worktrees, branches, containers, and processes are listed as "left untouched," never removed.
-- **Fully permission-free teardown.** Teardown verbs are allow-listed, so the entire sweep
-  runs without prompts — including `docker compose down -v` (volume/data wipe) and force-removing
-  a worktree with uncommitted changes — and the CLI exits itself at the end. No mid-run
-  confirmations. The only things it won't do are the still-denied remote/history ops
-  (`git push origin --delete`, `git reset --hard`, `gh pr merge`, force-push), which are handed back.
+- **Fully permission-free teardown — in accept-edits mode.** Teardown verbs are
+  allow-listed, so the entire sweep runs without prompts — including
+  `docker compose down -v` (volume/data wipe) and force-removing a worktree with
+  uncommitted changes — and the CLI exits itself at the end. No mid-run confirmations. The
+  only things it won't do are the still-denied remote/history ops
+  (`git push origin --delete`, `git reset --hard`, `gh pr merge`, force-push), which are
+  handed back.
 
 ## Discovery script
 
@@ -87,6 +92,22 @@ Two hard rules:
 reports worktrees, current branch + PR/merge status, listening ports and candidate session
 processes, Docker containers, Tilt sessions, scratch dirs, and teardown-shaped `just` recipes.
 Missing tools are skipped with a note on stderr. `--help` for usage.
+
+## Permission mode
+
+The sweep needs **accept-edits** mode (`default` and `bypassPermissions` also work). It does
+**not** work in `auto` mode: entering `auto` strips every `Bash(...)` allow rule from
+settings and routes each command through the auto-mode classifier instead, and destructive
+teardown verbs are exactly what that classifier stops on — so an `auto`-mode sweep prompts
+on `pkill`, on the scratch `rm`, on `docker compose down -v`, and on
+`git worktree remove --force`. `plan` mode blocks the mutating tools outright.
+
+`hooks/require-accept-edits.sh` (a `UserPromptSubmit` hook) therefore blocks
+`/exit-session` in `auto` and `plan` mode and asks you to Shift+Tab into "accept edits on"
+and re-run, rather than letting the sweep start and stall halfway through a half-torn-down
+stack. The plugin can't flip the mode for you — no hook output field sets the permission
+mode, and the `setMode` permission update is reachable only from the SDK permission bridge
+— so the keystroke is the only lever.
 
 ## Permissions
 

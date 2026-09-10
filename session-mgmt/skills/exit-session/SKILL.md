@@ -18,7 +18,10 @@ compatibility: >-
   Assumes a git repo with optional worktrees under .claude/worktrees/ or /tmp;
   Docker + docker compose; optional Tilt (rancher-desktop/k3d); optional `just`
   task runner. Teardown verbs are allow-listed in settings.json so the sweep runs
-  without prompts; the final self-exit uses `kill "$PPID"` (the CLI process).
+  without prompts — which requires accept-edits (or default) mode, since `auto` mode
+  strips Bash allow rules; the bundled UserPromptSubmit hook blocks the invocation and
+  asks for the mode switch instead. The final self-exit uses `kill "$PPID"` (the CLI
+  process).
 argument-hint: "[optional: resource to scope to, e.g. worktree | docker | tilt | scratch]"
 disable-model-invocation: true
 ---
@@ -28,9 +31,11 @@ disable-model-invocation: true
 Teardown of everything a working session spun up: background processes, Docker/compose
 stacks, local Tilt/Kubernetes, git worktrees, merged local branches, and scratch files —
 leaving the machine as clean as before the session started — then quit the CLI. Designed
-to run **permission-free**: the teardown verbs are allow-listed, so you execute the sweep
-directly without stopping for confirmation, except for the two operations that destroy
-*data* rather than just tear down ephemeral resources.
+to run **permission-free in accept-edits mode**: the teardown verbs are allow-listed there,
+so you execute the sweep directly without stopping for confirmation — including the two
+operations that destroy *data* rather than just tear down ephemeral resources. In `auto`
+mode those allow rules do not exist (Phase 0), which is why the sweep refuses to start in
+it.
 
 ## Core principles
 
@@ -49,11 +54,11 @@ directly without stopping for confirmation, except for the two operations that d
 3. **Discover, then execute — no plan-gate.** Do one read-only discovery pass to build
    the inventory, then tear down immediately. Teardown is pre-authorized; you do **not**
    pause for a "confirm the plan" step. Show the inventory as you go so progress is visible.
-4. **Fully permission-free — no data-loss gate.** Every teardown of a resource this
-   session created runs without a prompt, including `docker compose down -v` (wipes
-   volumes / local DB state) and removing a worktree that still has **uncommitted** changes.
-   The only thing you never do is run the still-denied remote/history ops (Phase 4) — those
-   aren't teardown; hand them back.
+4. **Fully permission-free — no data-loss gate.** Once Phase 0 settles the mode, every
+   teardown of a resource this session created runs without a prompt, including
+   `docker compose down -v` (wipes volumes / local DB state) and removing a worktree that
+   still has **uncommitted** changes. The only thing you never do is run the still-denied
+   remote/history ops (Phase 4) — those aren't teardown; hand them back.
 5. **Preserve on doubt — except where git already answered.** For anything you can't
    attribute to this session, default to leaving it and flagging it: a missed cleanup is
    cheap, a wrong deletion is not. This does **not** apply to the worktree Phase 0a
@@ -66,6 +71,30 @@ directly without stopping for confirmation, except for the two operations that d
 ## Workflow
 
 Work the phases in order. Create a todo per phase so progress is visible.
+
+### Phase 0 — Permission mode (preflight)
+
+The sweep is only prompt-free in **accept-edits** mode (or `default`, or
+`bypassPermissions`). It is *not* prompt-free in `auto` mode: entering `auto` strips every
+Bash allow rule from settings — the debug log says `Ignoring dangerous permission <rule>
+from <source> (bypasses classifier)` — and routes each command through the auto-mode
+classifier instead. Destructive teardown verbs are precisely what that classifier stops on,
+so a sweep started in `auto` prompts on `pkill`, on the scratch `rm`, on
+`docker compose down -v`, and on `git worktree remove --force`, and a half-answered sweep
+leaves a half-torn-down stack.
+
+The bundled `UserPromptSubmit` hook (`hooks/require-accept-edits.sh`) blocks
+`/exit-session` in `auto` and `plan` mode before you ever see the prompt, and tells the
+user to Shift+Tab into "accept edits on" and re-run. **So if you are reading this, the mode
+is already fine** — the hook let the invocation through. Proceed straight to Phase 0a.
+
+Nothing here can flip the mode for the user, so do not try: no hook output field sets it
+(`PreToolUse` returns only `permissionDecision` / `permissionDecisionReason` /
+`updatedInput` / `additionalContext`), and the `setMode` permission update is reachable
+only from the SDK permission bridge. The keystroke is the only lever. If the hook is not
+installed and prompts start landing on allow-listed verbs, stop the sweep, report what has
+already been torn down, and ask for the mode switch — do not grind through the sweep one
+confirmation at a time.
 
 ### Phase 0a — Identify this session's own worktree (read-only, deterministic)
 
@@ -223,8 +252,9 @@ If the wrap-up implies any of these, list the ready-to-paste command and stop th
 
 ## Confirmation gating
 
-- **Permission-free (run directly, no prompt — the whole sweep):** stopping tasks/servers,
-  `tilt down`, `docker compose down` **including `-v`** (volume/data wipe), scratch `rm`,
+- **Permission-free in accept-edits mode (run directly, no prompt — the whole sweep):**
+  stopping tasks/servers, `tilt down`, `docker compose down` **including `-v`**
+  (volume/data wipe), scratch `rm`,
   `git worktree remove --force` **including worktrees with uncommitted changes**,
   `git worktree prune`, `git branch -d/-D` for merged/throwaway session branches,
   `git fetch --prune`. No `AskUserQuestion` gate anywhere in teardown.
@@ -237,6 +267,10 @@ If the wrap-up implies any of these, list the ready-to-paste command and stop th
   `docker compose/stop/rm`, `pkill`, `kill`, `rm -rf /tmp/*`, and `tilt down` run without a
   prompt. `just -f <repo>/justfile compose-down` / `tilt-down` is the house convention —
   check the `justfile` before falling back to raw commands.
+- **`auto` mode has no allow rules.** Mode entry strips every `Bash(...)` allow rule and
+  hands each command to the classifier, so "it's allow-listed" stops being true the moment
+  the user Shift+Tabs into `auto`. The gate hook keeps the sweep out of that mode; never
+  work around it by starting the sweep anyway.
 - **Still deny-listed:** `git push origin --delete`, `git reset --hard`, force-push to main,
   and `gh pr merge`. Attempting them wastes a turn on a guaranteed denial. Print-for-user is
   the only correct path.
