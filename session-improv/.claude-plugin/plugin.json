@@ -1,6 +1,6 @@
 {
   "name": "session-improv",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Query Claude Code session history and conversation data with SQL (DuckDB) via cc-query. Provides the reflect skill for session analysis, token usage, tool patterns, and agent activity, and plugin-curation for evidence-based keep/consolidate/prune audits of installed plugins, skills, and MCP servers.",
   "repository": "https://github.com/ozzycodes2/claude-market-private",
   "license": "MIT",
