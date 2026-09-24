@@ -1,7 +1,7 @@
 {
   "name": "technical-writing",
-  "version": "0.2.0",
-  "description": "Human-facing developer writing done well. writing-design-docs produces problem-statement design docs before committing to a non-obvious technical direction.",
+  "version": "0.3.0",
+  "description": "Human-facing developer writing done well. writing-design-docs produces problem-statement design docs before committing to a non-obvious technical direction. Ships the laconic output style: write the conclusion, not the path to it.",
   "repository": "https://github.com/ozzycodes2/claude-market-private",
   "license": "MIT",
   "author": {
@@ -14,6 +14,8 @@
     "problem-statement",
     "documentation",
     "planning",
+    "output-style",
+    "laconic",
     "development"
   ]
 }

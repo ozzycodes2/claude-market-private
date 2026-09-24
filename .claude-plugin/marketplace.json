@@ -157,8 +157,8 @@
     },
     {
       "name": "technical-writing",
-      "version": "0.2.0",
-      "description": "Human-facing developer writing done well. writing-design-docs produces problem-statement design docs before committing to a non-obvious technical direction. Adapted from ceej-skills under MIT.",
+      "version": "0.3.0",
+      "description": "Human-facing developer writing done well. writing-design-docs produces problem-statement design docs before committing to a non-obvious technical direction. Ships the laconic output style: write the conclusion, not the path to it. Adapted from ceej-skills and pertinent under MIT.",
       "category": "development",
       "repository": "https://github.com/ozzycodes2/claude-market-private",
       "license": "MIT",
@@ -172,6 +172,8 @@
         "problem-statement",
         "documentation",
         "planning",
+        "output-style",
+        "laconic",
         "development"
       ],
       "source": "./technical-writing"
