@@ -1,11 +1,13 @@
 # review
 
 Comprehensive, language-agnostic PR review. One orchestrator skill coordinates a
-change analysis, a 3-pass deep code review, security scanning,
-documentation-drift checks, and code-fix generation — then
-posts a single unified GitHub review (summary + inline comments). Rust and Machinify
-`mac-ui` changes get first-class, tailored checks. Test execution and coverage
-analysis are intentionally left to CI.
+change analysis (with **risk_class** routing + light PR hygiene), a 3-pass deep
+code review (expanded concurrency), risk-gated principal-engineer passes
+(`domain-architecture`, `data-contracts`, `ops-reliability`, `change-evolution`),
+security scanning (OWASP deepen), documentation-drift checks (light DX fold), and
+code-fix generation — then posts a single unified GitHub review (summary +
+inline comments). Rust and Machinify `mac-ui` changes get first-class, tailored
+checks. Test execution and coverage analysis are intentionally left to CI.
 
 ## Usage
 
@@ -28,11 +30,24 @@ keeping a human in the loop).
 | Skill | What it does |
 |-------|--------------|
 | `review` | Orchestrator — runs all phases and posts the unified review. |
-| `analyze` | Detects languages, frameworks, test setup, and impact/security sensitivity. |
-| `security-scan` | Runs available static analyzers (semgrep, linters, dependency audits); degrades gracefully when tools aren't installed. |
-| `docs-drift` | Detects docs (ADRs, OpenAPI, rendered artifacts, READMEs, comments) that have drifted out of sync with the changed code, plus doc-completeness gaps. |
+| `analyze` | Detects languages, frameworks, test setup, impact/security sensitivity, **`risk_class`**, and light PR hygiene (size / one-concern / description map). |
+| `domain-architecture` | PE pass — domain model, architecture dependency rules, team/org boundaries (taxonomy cats 1, 2, 15). Risk-gated on `domain`. |
+| `data-contracts` | PE pass — data consistency + API/event contracts (cats 7, 11). Risk-gated on `data` / `api`. |
+| `ops-reliability` | PE pass — reliability, performance, concurrency leftovers (cats 8, 10 + leftovers). Risk-gated on `ops` / `concurrency`. |
+| `change-evolution` | PE pass — CD readiness + design quality YAGNI/deep modules (cats 5, 4). Gated on size/mixed/CD/design or hygiene flags. |
+| `security-scan` | Runs available static analyzers; deepens OWASP authz/IDOR, business-logic abuse, SSRF, PII-in-logs; degrades gracefully when tools aren't installed. |
+| `docs-drift` | Detects docs drift (ADRs, OpenAPI, rendered artifacts, READMEs, comments) plus light DX fold (runbooks / caller migration) and completeness gaps. |
 | `codegen` | Drafts tests, docstrings, and CHANGELOG entries to fill surfaced gaps (human review required before committing). |
 | `monitor-pr` | Continuously watches a PR (drive with `/loop`) for CI failures and new review comments, tracks findings in a scratch file, dispatches subagents to fix them (in parallel when independent), and resolves/acknowledges each comment once its fix is pushed. |
+
+**Anti-patterns:** each pass reads **only** its matching slice under
+`references/anti-patterns/` (never one shared dump). Shared severity and
+routing live in `references/severity-rubric.md` and
+`references/risk-class-routing.md`. Taxonomy source:
+`references/principal-engineer-pr-review-taxonomy.md`.
+
+**Clean Code:** craft issues that hit correctness, invariants, or maintainability
+on shared/hot paths are **blockers**, not deferred to nits.
 
 **Rust & mac-ui tailoring:** `analyze` detects Rust (cargo/just/nextest)
 and `@vlognow/mac-ui` (Machinify Web Components) usage. When present, `security-scan`
@@ -41,7 +56,8 @@ and Rust correctness/PHI checks, and fetching mac-ui's **live** authority docs
 (`ai-behavior-spec`, `ai-code-audit`, `ai-testing-guide`, per-component `mac-*.md`)
 at review time since the framework changes.
 
-Each sub-skill can also be invoked standalone (e.g. `/review:security-scan <PR_URL>`).
+Each sub-skill can also be invoked standalone (e.g. `/review:security-scan <PR_URL>`,
+`/review:domain-architecture <PR_URL>`).
 
 ## Monitor a PR (post-open)
 
@@ -68,16 +84,19 @@ handled and CI is green. It never merges or force-pushes — that stays with you
 ```
 /review:review <PR_URL>
   │
-  ├─ Phase 1  analyze  →  deep code review (3 parallel bug-finder passes, inline)
+  ├─ Phase 1  analyze → risk_class + hygiene
+  │            ├─ 3-pass bug-finder (parallel, model-diverse)
+  │            └─ PE passes gated by risk_class / hygiene (parallel Task)
   ├─ Phase 2  security-scan · docs-drift               (parallel)
   ├─ Phase 3  codegen
   └─ Phase 4  synthesize → merge recommendation → post unified review
 ```
 
 The deep code review is self-contained: the orchestrator spawns three independent
-bug-finders (NPE/lifecycle tracing, resource leaks, security sinks, race conditions,
-control-flow, architectural consistency) and merges their findings, flagging any issue
-found by multiple passes as high-confidence.
+bug-finders (NPE/lifecycle tracing, resource leaks, security sinks, races,
+deadlocks, TOCTOU, async cancellation, concurrent idempotency, DLQ/poison,
+control-flow, architectural consistency) and merges their findings, flagging any
+issue found by multiple passes as high-confidence.
 
 ## Requirements
 
@@ -92,4 +111,5 @@ found by multiple passes as high-confidence.
 - Generated code (from `codegen`) is for review only — never auto-committed.
 - Test execution and coverage/test-gap analysis are intentionally out of scope —
   CI already runs the suite and measures coverage, so the review doesn't duplicate it.
-- Cost: roughly ~$4–8 per PR (3-pass deep review + the analysis/generation skills).
+- Cost: roughly ~$4–10 per PR depending on how many PE passes gate on
+  (3-pass deep review + analysis/generation + zero-to-four PE skills).

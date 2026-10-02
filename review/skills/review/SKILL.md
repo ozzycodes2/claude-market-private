@@ -1,6 +1,6 @@
 ---
 name: review
-description: Orchestrates comprehensive PR review combining analysis, code review, security, and documentation checks. Use when you want a full automated review of a GitHub PR posted as a single unified comment.
+description: Orchestrates comprehensive PR review combining analysis, code review, security, documentation, and risk-gated principal-engineer passes. Use when you want a full automated review of a GitHub PR posted as a single unified comment.
 allowed-tools: Bash Read Write Skill Task
 disable-model-invocation: true
 ---
@@ -14,19 +14,19 @@ Master orchestrator. Runs comprehensive PR review by coordinating specialized sk
 Workflow:
 
 **Phase 1: Foundation**
-1. Analyze changes (detect languages, frameworks, impact)
-2. Deep code review (3-pass bug hunting)
+1. Analyze changes (languages, frameworks, impact, **risk_class**, hygiene preflight)
+2. Deep code review (3-pass bug hunting — expanded concurrency) **in parallel with** risk-gated PE passes
 
 **Phase 2: Quality Checks** (parallel)
-3. Security scanning
-4. Documentation validation
+3. Security scanning (OWASP deepen; reads only `anti-patterns/security-scan.md`)
+4. Documentation validation (incl. light DX fold)
 
 **Phase 3: Generation**
 5. Generate code/docs (simple fixes)
 
 **Phase 4: Synthesis**
-6. Combine all findings
-7. Determine merge recommendation
+6. Combine all findings (bug-finder + PE passes + security + docs)
+7. Determine merge recommendation (Clean Code blockers count as critical/high)
 8. Post comprehensive review to PR
 
 ## Usage
@@ -58,30 +58,15 @@ Or for enterprise: gh auth login --hostname <host>
 
 ### 1.2 Extract PR Number and Create Session Directory
 
-Extract PR number from URL:
 ```bash
 PR_NUMBER=$(echo "$PR_URL" | grep -oE 'pull/[0-9]+' | grep -oE '[0-9]+')
-```
-
-Create unique output directory for this session:
-```bash
 SESSION_ID=$(uuidgen | tr '[:upper:]' '[:lower:]' | cut -d'-' -f1)
 OUTPUT_DIR="/tmp/pr-review-${PR_NUMBER}-${SESSION_ID}"
-mkdir -p "$OUTPUT_DIR" && chmod 700 "$OUTPUT_DIR"  # restrict to current user
-
+mkdir -p "$OUTPUT_DIR" && chmod 700 "$OUTPUT_DIR"
 echo "Session output directory: $OUTPUT_DIR" >&2
 ```
 
-**Why unique directory?**
-- Prevents collisions when running multiple reviews concurrently
-- All artifacts for one review grouped together
-- Easy cleanup at end
-- Clean isolation between sessions
-
-If PR URL not found, ask user:
-```
-What's the PR URL? (e.g., https://github.com/org/repo/pull/123)
-```
+If PR URL not found, ask user for it.
 
 ## Step 2: Run Change Analysis (Foundation)
 
@@ -100,101 +85,123 @@ Store key findings:
 - `primary_language`
 - `security_sensitive`
 - `impact_analysis`
+- `risk_class` (array)
+- `hygiene` (size / one_concern / description_map)
 
-**If analysis fails:**
-- Log error
-- Continue with limited information
-- Note in final review: "⚠️ Change analysis failed"
+**If analysis fails:** continue with limited info; note in final review.
 
-## Step 3: Run Deep Code Review (3 parallel passes, one model each)
+## Step 3: Deep Code Review + Risk-Gated PE Passes (parallel Tasks)
 
-Run deep code review inline — **spawn 3 independent bug-finders in parallel** with Task tool. Each pass analyzes same diff but may catch different issues; findings confirmed by multiple passes are high-confidence.
+### 3.1 Three-pass bug-finder (always)
 
-**Give each pass a different model.** Same model three times shares same blind spots — three different models give independent perspectives, so a finding confirmed across models is far stronger signal, and the mix costs less than three deep-model passes. Assign models as:
+Spawn **3 independent bug-finders in parallel** with Task tool. Different models per pass:
 
-| Pass | `model` value | Model ID | Role |
-|------|---------------|----------|------|
-| 1 | `opus` | `claude-opus-4-8` | Deepest reasoning — subtle logic, races, security data-flow |
-| 2 | `sonnet` | `claude-sonnet-5` | Strong, different model family — diversifies findings |
-| 3 | `haiku` | `claude-haiku-4-5` | Fast breadth pass — cheap third independent perspective |
+| Pass | `model` | Role |
+|------|---------|------|
+| 1 | `opus` | Deepest reasoning — subtle logic, races, security data-flow |
+| 2 | `sonnet` | Strong, diversifies findings |
+| 3 | `haiku` | Fast breadth — cheap third perspective |
 
-**Send ONE message with THREE Task tool calls.** For each:
+**Send ONE message with THREE Task tool calls.** Each:
 - `subagent_type`: `general-purpose`
-- `model`: the pass's model from table above (`opus`, `sonnet`, `haiku` respectively). **Do not omit this** — omitted `model` makes pass inherit session model, collapsing all three passes onto one model and defeating the diversity.
+- `model`: from table (**do not omit**)
 - `description`: `Bug hunter pass [1 opus / 2 sonnet / 3 haiku]`
-- `prompt`: the Bug-Finder Prompt below, with PR diff (from Step 2 / `gh pr diff <FULL_URL>`) inserted in place of `{{DIFF}}`.
+- `prompt`: Bug-Finder Prompt below, with PR diff inserted as `{{DIFF}}`.
 
-**Don't wait for completion yet** — let these run while Step 4 proceeds; collect results in Step 6.
+Each bug-finder pass must **read only** `references/anti-patterns/bug-finder.md` (do not load other anti-pattern files).
 
-### Bug-Finder Prompt (use for all 3 passes)
+### Bug-Finder Prompt (all 3 passes)
 
 ```
 You are a bug hunter. Find bugs that will crash production or create security vulnerabilities. Trace, don't scan.
 
+Before reviewing, read ONLY references/anti-patterns/bug-finder.md (no other anti-pattern files).
+
 ## Critical Checks
 - **NPE / null-deref:** for every dereference, trace the variable's lifecycle (declared? assigned? set null in cleanup/error paths? nulled by another thread?). Show the full trace for each risk.
 - **Resource leaks:** every opened resource (connection, stream, file, cursor) — is it closed on all paths, including exceptions?
-- **Security:** trace every external input (params, headers, API/DB reads) to dangerous sinks (SQL, HTML, shell, file paths, logs) without sanitization. Also flag hardcoded secrets, sensitive data in logs, missing auth checks.
-- **Race conditions:** shared mutable state accessed without synchronization; check-then-act gaps.
+- **Security:** trace every external input to dangerous sinks (SQL, HTML, shell, file paths, logs) without sanitization. Also flag hardcoded secrets, sensitive data in logs, missing auth checks.
+- **Race conditions:** shared mutable state without synchronization; check-then-act gaps.
+- **Concurrency (expanded):** deadlocks / lock ordering; TOCTOU (filesystem/authz); async cancellation / lost wakeups / unstructured concurrency; concurrent idempotency (handler unsafe under parallel retries; missing unique constraints); poison messages / missing DLQ isolation.
 - **Control flow:** missing returns after cleanup/error handling, early exits that skip cleanup, unreachable code.
 - **Architectural:** inconsistent patterns (mixing two APIs for one purpose), wrappers/utilities removed without justification.
+- **Clean Code (blocking):** silent catch / swallowed errors, shared mutable globals, or craft issues that hit correctness/invariants on shared/hot paths — emit as critical/high, not nits. Style-only → omit or nitpick.
 
 ## Output
 Return a JSON array of findings, each: {"severity":"critical|high|medium","label":"issue|suggestion|nitpick|question|thought|praise","decoration":"blocking|non-blocking|if-minor","path":"exact/path","line":N,"title":"5-10 words","body":"explanation with lifecycle/data-flow trace","suggestion":"concrete fix"}.
 - `severity`: `critical` (crashes/security), `high` (fix soon), `medium` (fix later).
-- `label`/`decoration` (optional): the [Conventional Comments](https://conventionalcomments.org) label and decoration for this finding. Omit them to accept the severity-derived default (`critical`/`high` → `issue (blocking)`, `medium` → `suggestion (non-blocking)`, `low` → `nitpick (non-blocking)`). Set them only to override — e.g. `label:"question"` for something you're unsure is a bug, or `decoration:"if-minor"` for a take-it-or-leave-it tweak.
-- `path`/`line` required when the issue maps to a diff location (`line` = NEW-file line, right side of diff); add `start_line` for multi-line. Omit both for general/architectural findings.
-- Formatting for `title`, `body`, `suggestion`: wrap **every** code reference — identifiers, function/method/type names, file paths, config keys, literals, SQL — in `` `backticks` ``, and use fenced ```` ``` ```` blocks for multi-line snippets; never leave code as bare prose. Keep `body` to 1–2 terse sentences (or a couple of short bullets), not a paragraph.
+- `label`/`decoration` optional — omit for severity defaults (`critical`/`high` → `issue (blocking)`, `medium` → `suggestion (non-blocking)`).
+- `path`/`line` required when mapped to diff (`line` = NEW-file line); omit for general findings.
+- Wrap code refs in backticks; keep `body` to 1–2 terse sentences.
 - After the JSON, add a 1-2 sentence summary. Focus on crashes and vulnerabilities, not style.
 
 ## Code to Review
 {{DIFF}}
 ```
 
-**Merge (in Step 6):** group findings by `path` + `line`; prepend "[Found by N/3 models]" to any found by 2+ passes; take highest severity. A finding surfaced by more than one model family is especially high-confidence — weight it accordingly in Step 7.
+**Merge (Step 6):** group by `path`+`line`; prepend "[Found by N/3 models]" when 2+ passes agree; take highest severity.
+
+### 3.2 Risk-gated PE passes (parallel with bug-finder)
+
+Read `references/risk-class-routing.md`. From `risk_class` + `hygiene`, decide which of these skills to run:
+
+| Gate | Skill |
+|---|---|
+| `domain` ∈ risk_class | `review:domain-architecture` |
+| `data` or `api` ∈ risk_class | `review:data-contracts` |
+| `ops` or `concurrency` ∈ risk_class | `review:ops-reliability` |
+| Large/mixed/CD/design signals **or** hygiene flags (unreviewable size, !one_concern, weak description_map) | `review:change-evolution` |
+
+For each selected skill, spawn a Task (prefer `sonnet` unless domain/architecture needs `opus`):
+
+```
+Use Task tool:
+- subagent_type: "general-purpose"
+- model: "sonnet"   # use "opus" for domain-architecture when risk is high
+- description: "PE pass <name>"
+- prompt: |
+    Invoke Skill "review:<name>" with args "<PR_URL> <OUTPUT_DIR>".
+    Follow that skill exactly. It must read ONLY
+    references/anti-patterns/<name>.md (no other anti-pattern files).
+    Write $OUTPUT_DIR/<name>-<PR_NUMBER>.json. Return a one-line finding-count summary.
+```
+
+**Send bug-finder Tasks + PE Tasks in as few messages as possible** so they run concurrently. Do not wait yet — collect in Step 6.
+
+If `risk_class` is empty and hygiene is clean, skip PE passes (bug-finder still runs).
 
 ## Step 4: Run Phase 2 Skills (Parallel)
 
-With foundation ready (analysis + code review), run quality checks in parallel:
+### 4.1 Security Scanner (Sonnet subagent)
 
-### 4.1 Launch Security Scanner (Sonnet subagent)
-
-Run security scanning in a **Task subagent pinned to a lower model** — mostly running tools (semgrep, linters, dependency checkers) and summarizing their output, which doesn't need the orchestrator's frontier model.
 ```
 Use Task tool:
 - subagent_type: "general-purpose"
-- model: "sonnet"   # mid-tier: enough to interpret injection/crypto traces, far cheaper than opus. Do not omit.
+- model: "sonnet"
 - description: "Security scan (sonnet)"
 - prompt: |
-    Invoke the Skill tool with skill "review:security-scan" and args "<PR_URL> <OUTPUT_DIR>".
-    Follow that skill exactly and write its output JSON to <OUTPUT_DIR> as the skill specifies
-    ($OUTPUT_DIR/security-scan-<PR_NUMBER>.json). Return a one-line summary of the finding counts.
+    Invoke Skill "review:security-scan" with args "<PR_URL> <OUTPUT_DIR>".
+    Read ONLY references/anti-patterns/security-scan.md for anti-patterns
+    (plus the skill's own references/*). Deepen OWASP authz/IDOR, business-logic
+    abuse, SSRF, PII-in-logs. Write security-scan-<PR_NUMBER>.json. One-line summary.
 ```
 
-### 4.2 Launch Documentation Validator (Haiku subagent)
+### 4.2 Documentation Validator (Haiku subagent)
 
-Run docs drift/completeness check in a **Task subagent pinned to the cheapest model** — cross-file claim matching, not deep reasoning.
 ```
 Use Task tool:
 - subagent_type: "general-purpose"
-- model: "haiku"    # cheapest tier is sufficient for doc claim/completeness matching. Do not omit.
+- model: "haiku"
 - description: "Docs drift check (haiku)"
 - prompt: |
-    Invoke the Skill tool with skill "review:docs-drift" and args "<PR_URL> <OUTPUT_DIR>".
-    Follow that skill exactly and write its output JSON to <OUTPUT_DIR> as the skill specifies
-    ($OUTPUT_DIR/docs-drift-<PR_NUMBER>.json). Return a one-line summary.
+    Invoke Skill "review:docs-drift" with args "<PR_URL> <OUTPUT_DIR>".
+    Include light DX fold (ADR/runbook/caller migration) per that skill.
+    Write docs-drift-<PR_NUMBER>.json. One-line summary.
 ```
 
-**Both Phase 2 checks run in parallel as subagents on lower models** — security (4.1) on Sonnet, docs (4.2) on Haiku. Send the two Task calls in ONE message so they run concurrently, let them run while Step 5 proceeds, collect in Step 6. They're independent (all consume same analysis JSON) and none needs the orchestrator's frontier model.
-
-**If any skill fails:**
-- Log the error
-- Continue with other skills
-- Note in review: "⚠️ <skill> failed: <reason>"
+Send both Task calls in ONE message. Continue to Step 5; collect in Step 6.
 
 ## Step 5: Phase 3 - Code Generation
-
-Generate code/docs:
 
 ```
 Use Skill tool:
@@ -202,203 +209,117 @@ Use Skill tool:
 - args: "<PR_URL> <OUTPUT_DIR>"
 ```
 
-**Wait for completion** and read results:
-```bash
-Read tool: $OUTPUT_DIR/code-generation-<PR_NUMBER>.json
-```
-
-**Code generation provides:**
-- Test suggestions (code ready to add)
-- Missing docstrings (ready to insert)
-- CHANGELOG entry (ready to paste)
-- API documentation (ready to add)
-- Lint fixes (ready to apply)
-
-**Note:** Generated code is for review only - not automatically committed.
+Wait and read `$OUTPUT_DIR/code-generation-<PR_NUMBER>.json`. Generated code is for review only — never auto-committed.
 
 ## Step 6: Collect Results
 
-**Wait for all skills to complete:**
-- deep code review — 3 passes (Step 3)
-- security-scan (Step 4.1)
-- docs-drift (Step 4.2)
-- codegen (Step 5)
+Wait for: bug-finder ×3, PE passes (if any), security-scan, docs-drift, codegen.
 
-**Parse results from each skill:**
-
-**Deep code review** — 3 passes (Step 3):
-- Critical findings count
-- High findings count
-- Medium findings count
-
-**security-scan** (Step 4.1) - Read `$OUTPUT_DIR/security-scan-<PR_NUMBER>.json`:
-- Critical security findings
-- High security findings
-- Dependency vulnerabilities
-
-**docs-drift** (Step 4.2) - Read `$OUTPUT_DIR/docs-drift-<PR_NUMBER>.json`:
-- Documentation status
-- Missing docs count
-- Required updates
-
-**codegen** (Step 5) - Read `$OUTPUT_DIR/code-generation-<PR_NUMBER>.json`:
-- Tests generated count
-- Docstrings generated count
-- CHANGELOG entries
-- API docs sections
-- Lint fixes
-
-**change-analysis** (Step 2):
-- Languages detected
-- Frameworks found
-- Impact areas
-- Security sensitivity
+Parse:
+- `$OUTPUT_DIR/pr-analysis-*.json` — risk_class, hygiene
+- Bug-finder merged findings
+- `$OUTPUT_DIR/domain-architecture-*.json`, `data-contracts-*.json`, `ops-reliability-*.json`, `change-evolution-*.json` — each `findings` array
+- `$OUTPUT_DIR/security-scan-*.json`
+- `$OUTPUT_DIR/docs-drift-*.json`
+- `$OUTPUT_DIR/code-generation-*.json`
 
 ## Step 7: Determine Merge Recommendation
 
-Apply enhanced decision logic with Phase 2 findings:
-
 ```
-IF (Critical code findings > 0) OR (Critical security findings > 0):
+IF (Critical code/PE/security findings > 0) OR (Clean Code blockers on correctness/invariants/hot paths):
   RECOMMENDATION = "REQUEST CHANGES"
-  RATIONALE = "Critical issues must be fixed before merge"
 
 ELIF (High findings > 3) OR (security_sensitive AND high_security_findings > 0):
   RECOMMENDATION = "REQUEST CHANGES"
-  RATIONALE = "Multiple high-severity issues require fixes"
 
-ELIF (High findings > 0) OR (missing_critical_docs):
+ELIF (High findings > 0) OR (missing_critical_docs) OR (hygiene.unreviewable):
   RECOMMENDATION = "COMMENT"
-  RATIONALE = "Issues should be addressed (manual review required)"
 
 ELIF (security_sensitive === true):
   RECOMMENDATION = "COMMENT"
-  RATIONALE = "Security-sensitive changes require manual review"
 
 ELSE:
   RECOMMENDATION = "COMMENT"
-  RATIONALE = "Review completed - findings noted for consideration"
 ```
 
-**Note:** Always default to COMMENT (not APPROVE) to maintain human-in-the-loop approval.
+Always default to COMMENT (never APPROVE) — human-in-the-loop.
 
 ## Step 8: Build structured JSON for shared formatter
 
-Build the review formatter input JSON with findings from all review stages. Map the 7 review sections to formatter sections:
+### Sections
 
-### Construct the sections array
+1. **Change Analysis** — body: languages, impact, `risk_class`, hygiene summary. No inline findings.
+2. **Code Review Results (3 Passes)** — bug-finder findings (inline when path+line).
+3. **Domain & Architecture** — from `domain-architecture` (omit if skipped/empty).
+4. **Data & Contracts** — from `data-contracts` (omit if skipped/empty).
+5. **Ops & Reliability** — from `ops-reliability` (omit if skipped/empty).
+6. **Change & Evolution** — from `change-evolution` (omit if skipped/empty).
+7. **Security Analysis** — security-scan findings.
+8. **Documentation Check** — docs-drift body (+ inline if path+line).
+9. **Code Generation** — codegen body.
 
-1. **Change Analysis** — body only (languages, frameworks, impact areas). No inline findings.
-2. **Code Review Results (3 Passes)** — findings with `path`, `line`, `severity` from the 3-pass deep review (Step 3). These become inline comments.
-3. **Security Analysis** — findings with `path`, `line`, `severity` where available (semgrep/bandit findings). These become inline comments. Non-line findings go in body.
-4. **Documentation Check** — body only (README status, CHANGELOG, code comments). No inline findings.
-5. **Code Generation** — body only (generated test suggestions, docstrings). No inline findings.
+Set `review_metadata.model` to your model ID. Note bug-finder pass models in Code Review body. Set `tool_version` from `.claude-plugin/plugin.json` (do not hardcode).
 
-Set `review_metadata.model` to your own exact model ID (e.g. `claude-opus-4-8`), so the footer records which model orchestrated the review. Use the model ID from your environment context. Omit the field if you cannot determine it. Because the 3-pass code review ran on three different models, note the pass models (`claude-opus-4-8`, `claude-sonnet-5`, `claude-haiku-4-5`) in the "Code Review Results" section `body` so readers know the passes were model-diverse.
+### Conventional Comments
 
-### Conventional Comments (enforced by the formatter)
+Formatter applies `<label> [decoration]: <subject>`. Finding fields match bug-finder schema. Severity defaults per `references/severity-rubric.md`. **Clean Code on correctness/invariants/shared hot paths → blocking.**
 
-Every posted comment follows the [Conventional Comments](https://conventionalcomments.org) standard: it leads with `<label> [decoration]: <subject>`. The formatter applies this automatically — you do **not** re-read the spec or hand-format labels. For each finding you may set:
+### Formatting rules
 
-- `label` — one of `praise`, `nitpick`, `suggestion`, `issue`, `thought`, `question`.
-- `decoration` — one of `blocking`, `non-blocking`, `if-minor`.
+- Code refs in backticks; bullets not paragraphs; lead with takeaway.
 
-Omit both to accept the severity-derived default (`critical`/`high` → `issue (blocking)`, `medium` → `suggestion (non-blocking)`, `low` → `nitpick (non-blocking)`, unknown → `thought`). Invalid or unsupported values fall back to the default. The finding `title` becomes the subject and `body` becomes the discussion, so keep the `title` a terse, self-contained subject line.
-
-### Formatting rules for all prose (bodies, summary lines, rationale, actions)
-
-Apply these to every `body`, `summary_line`, `rationale`, `required_actions`, and `optional_improvements` string:
-
-- **Code references always in backticks.** Wrap identifiers, function/method/type names, file paths, config keys, literals, and SQL in `` `backticks` ``; use fenced ```` ``` ```` blocks for multi-line snippets. Never leave code as bare prose.
-- **Bullets, not paragraphs.** Write each section `body` as a short markdown bullet list — one idea per bullet, laconic. Avoid runaway multi-sentence paragraphs; if a point needs two clauses, split it into two bullets.
-- **Lead with the takeaway.** Each bullet states the conclusion first, supporting detail second.
-
-### Build the JSON
+### Build JSON
 
 ```json
 {
   "pr_url": "<FULL_PR_URL>",
   "recommendation": "<REQUEST_CHANGES|COMMENT>",
   "rationale": "<Brief summary from Step 7>",
-  "required_actions": ["<action1>", "<action2>"],
+  "required_actions": ["<action1>"],
   "optional_improvements": ["<suggestion1>"],
   "sections": [
-    {
-      "title": "Change Analysis",
-      "summary_line": "<X files, Y+ Z- lines, primary language>",
-      "body": "<Change analysis — bullets>"
-    },
-    {
-      "title": "Code Review Results (3 Passes)",
-      "summary_line": "X Critical, Y High, Z Medium",
-      "body": "<Consensus analysis — bullets>",
-      "findings": [<code review finding objects with path, line, severity>]
-    },
-    {
-      "title": "Security Analysis",
-      "summary_line": "X Critical, Y High, Z Medium, W Low",
-      "body": "<Security summary — bullets>",
-      "findings": [<security finding objects with path, line where available>]
-    },
-    {
-      "title": "Documentation Check",
-      "summary_line": "<Complete|Needs Updates|Incomplete>",
-      "body": "<Documentation check — bullets>"
-    },
-    {
-      "title": "Code Generation",
-      "summary_line": "<X tests, Y docstrings, Z docs generated>",
-      "body": "<Code generation suggestions — bullets>\n\n**All generated code requires human review before committing.**"
-    }
+    {"title": "Change Analysis", "summary_line": "...", "body": "..."},
+    {"title": "Code Review Results (3 Passes)", "summary_line": "...", "body": "...", "findings": []},
+    {"title": "Domain & Architecture", "summary_line": "...", "body": "...", "findings": []},
+    {"title": "Data & Contracts", "summary_line": "...", "body": "...", "findings": []},
+    {"title": "Ops & Reliability", "summary_line": "...", "body": "...", "findings": []},
+    {"title": "Change & Evolution", "summary_line": "...", "body": "...", "findings": []},
+    {"title": "Security Analysis", "summary_line": "...", "body": "...", "findings": []},
+    {"title": "Documentation Check", "summary_line": "...", "body": "..."},
+    {"title": "Code Generation", "summary_line": "...", "body": "..."}
   ],
   "review_metadata": {
     "tool_name": "review",
     "review_title": "Review",
-    "tool_version": "<read from .claude-plugin/plugin.json — do not hardcode>",
-    "model": "<your exact model ID, e.g. claude-opus-4-8>",
-    "stages": ["Change Analysis", "Code Review", "Security", "Documentation", "Code Generation"]
+    "tool_version": "<from plugin.json>",
+    "model": "<orchestrator model ID>",
+    "stages": ["Change Analysis", "Code Review", "PE Passes", "Security", "Documentation", "Code Generation"]
   }
 }
 ```
 
-**Note:** Omit sections that were skipped or failed. The formatter automatically omits empty sections.
-
-**Note:** Set `review_metadata.tool_version` to the `version` field read from `.claude-plugin/plugin.json` so the posted review always reflects the installed version. Do not hardcode it.
+Omit skipped/failed/empty PE sections. Formatter omits empty sections.
 
 ## Step 9: Post review via shared formatter
-
-Write the JSON to the session directory (`$OUTPUT_DIR/review-payload.json`) and pipe it to the formatter:
 
 ```bash
 cat "$OUTPUT_DIR/review-payload.json" | python3 scripts/review_formatter.py --post
 ```
 
-If `--post` fails, fall back to `--dry-run` and show the formatted body to the user:
-
-```bash
-cat "$OUTPUT_DIR/review-payload.json" | python3 scripts/review_formatter.py --dry-run
-```
-
-The formatter will:
-- Post inline comments on specific lines where code review and security findings have `path` + `line`
-- Post a collapsible summary with up to 5 sections as the top-level review body
-- Use the correct GitHub review event (REQUEST_CHANGES or COMMENT)
-
-**Note:** Always default to COMMENT (not APPROVE) to maintain human-in-the-loop approval.
+On failure, `--dry-run` and show the user.
 
 ## Step 10: Provide User Summary
-
-Display concise summary:
 
 ```
 Comprehensive Review Complete
 
 Summary:
-- Languages: <primary> (<percentage>%)
+- Languages: <primary>
+- Risk classes: <list or none>
 - Code Review: <X Critical, Y High, Z Medium>
-- Security: <X Critical, Y High findings>
-- Documentation: <Complete | Needs Updates>
-- Code Generated: <count> tests, <count> docstrings, <count> docs
+- PE passes: <which ran>
+- Security: <counts>
+- Documentation: <status>
 - Recommendation: <REQUEST CHANGES | COMMENT>
 
 View full review: <PR_URL>
@@ -406,31 +327,18 @@ View full review: <PR_URL>
 
 ## Error Handling
 
-### If analyze fails:
-- Continue with the deep code review only
-- Omit Change Analysis section from JSON
-- Note in rationale: "Change analysis unavailable"
-
-### If the deep code review fails:
-- Omit Code Review section from JSON
-- Base recommendation on other findings only
-- Recommend manual code review in rationale
-
-### If both fail:
-- Error message: "Could not complete review - please check PR access and try again"
-- Do not post incomplete review
-
-### If PR posting fails:
-- Use `--dry-run` to show formatted review to user
-- Suggest manual copy/paste
-- Save review JSON to `$OUTPUT_DIR/review-<PR_NUMBER>.json`
+- analyze fails → continue; omit Change Analysis; note in rationale
+- bug-finder fails → omit Code Review section; recommend manual review
+- a PE pass fails → omit that section; continue
+- both analyze and bug-finder fail → do not post incomplete review
+- post fails → dry-run + save JSON under `$OUTPUT_DIR`
 
 ## Notes
 
 - Entry point for comprehensive reviews
-- Runs a model-diverse 3-pass deep code review (opus + sonnet + haiku) and coordinates 4 skills: analyze, security-scan (sonnet subagent), docs-drift (haiku subagent), codegen
-- Test execution and coverage/test-gap analysis are intentionally left to CI, not duplicated here
-- Designed to be extended as new skills are added
-- Always maintains human-in-the-loop (never auto-approves/merges)
-- Generated code requires human review before committing
-- Cost: ~$3-6 per PR (model-diverse 3-pass deep review — one opus + one sonnet + one haiku — plus 4 analysis/generation skills; cheaper and higher-signal than three opus passes)
+- Model-diverse 3-pass bug-finder (opus+sonnet+haiku) + risk-gated PE skills (`domain-architecture`, `data-contracts`, `ops-reliability`, `change-evolution`) + security-scan + docs-drift + codegen
+- Each pass reads **only** its matching `references/anti-patterns/<name>.md`
+- Clean Code craft issues that hit correctness/invariants/shared hot paths are **blockers**, not nits
+- Test execution/coverage left to CI
+- Never auto-approves/merges
+- Cost: higher when PE passes gate on; still prefer gated runs over always-on four extras

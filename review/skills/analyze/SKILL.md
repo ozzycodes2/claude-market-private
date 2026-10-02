@@ -1,14 +1,14 @@
 ---
 name: analyze
-description: Analyze PR changes to detect languages, frameworks, test setup, and impact areas. Use when starting a PR review and you need to understand what changed before deeper analysis.
+description: Analyze PR changes to detect languages, frameworks, test setup, impact areas, risk classes, and light PR hygiene. Use when starting a PR review and you need to understand what changed before deeper analysis.
 allowed-tools: Bash Read Grep Glob
 ---
 
 # Analyze PR Changes
 
-Analyze a pull request: what changed, which languages/frameworks involved, how to test it, what impact areas need review.
+Analyze a pull request: what changed, which languages/frameworks involved, how to test it, what impact areas need review, which **risk classes** should gate deeper passes, and light **PR hygiene** preflight.
 
-**Foundation** for other review skills - produces structured analysis driving test recommendations, security scanning, documentation validation.
+**Foundation** for other review skills — produces structured analysis driving test recommendations, security scanning, documentation validation, and principal-engineer pass routing (`references/risk-class-routing.md`).
 
 ## Inputs
 
@@ -81,9 +81,36 @@ Writes analysis to `<OUTPUT_DIR>/pr-analysis-<PR_NUMBER>.json`:
   "security_sensitive": true,
   "needs_security_review": true,
   "uses_mac_ui": false,
-  "mac_ui_ref_repo": "vlognow/mac-ui"
+  "mac_ui_ref_repo": "vlognow/mac-ui",
+  "risk_class": ["domain", "auth", "api"],
+  "hygiene": {
+    "size": {
+      "files_changed": 15,
+      "additions": 450,
+      "deletions": 120,
+      "unreviewable": false,
+      "note": "Within ~100–300 LOC conceptual guideline"
+    },
+    "one_concern": {
+      "ok": true,
+      "concerns": ["feature"],
+      "note": "Single concern: auth feature"
+    },
+    "description_map": {
+      "has_why": true,
+      "has_risks": true,
+      "has_alternatives": false,
+      "ok": false,
+      "note": "Missing alternatives considered"
+    }
+  }
 }
 ```
+
+`risk_class` is an array of zero or more of: `domain`, `auth`, `data`, `api`, `concurrency`, `ops`.
+The orchestrator uses it to gate PE passes (see `references/risk-class-routing.md`).
+
+`hygiene` is a **light** PR hygiene preflight (size, one-concern, description map for why/risks/alts) — not a full process audit.
 
 `uses_mac_ui` (see Step 4) tells `security-scan` and `docs-drift`
 to fetch mac-ui's live authority docs. `mac_ui_ref_repo` is the repo they fetch
@@ -111,10 +138,10 @@ echo "PR number: $PR_NUMBER" >&2
 ## Step 1: Fetch PR Metadata
 
 ```bash
-gh pr view "$PR_URL" --json number,title,url,baseRefName,headRefName,author,state,additions,deletions
+gh pr view "$PR_URL" --json number,title,url,baseRefName,headRefName,author,state,additions,deletions,body
 ```
 
-Store in variables for later use.
+Store in variables for later use (body needed for hygiene description_map).
 
 ## Step 2: Get Changed Files
 
@@ -207,69 +234,13 @@ Look for:
 
 ### 5.2 Determine Test Command
 
-**Python:**
-```bash
-# Check for common patterns
-if [ -f "pytest.ini" ] || grep -q "pytest" requirements.txt; then
-  echo "pytest"
-elif [ -f "setup.py" ]; then
-  echo "python setup.py test"
-elif [ -f "Makefile" ] && grep -q "^test:" Makefile; then
-  echo "make test"
-fi
-```
-
-**JavaScript:**
-```bash
-# Check package.json for test script
-if [ -f "package.json" ]; then
-  npm run | grep "test"
-  # Usually: npm test
-fi
-```
-
-**Go:**
-```bash
-echo "go test ./..."
-```
+Infer from config: Python → `pytest` / `python setup.py test` / `make test`; JS → `npm test`; Go → `go test ./...`; Rust → `just` recipes or `cargo nextest` / `cargo test`. Prefer the command CI actually runs.
 
 ### 5.3 Safety Assessment
 
-Determine if tests can run safely.
+`can_run_safely` when: standard framework, no external deps, no destructive ops, reasonable runtime (<5min).
 
-**Safe indicators:**
-- Standard test frameworks (pytest, jest, go test, junit)
-- No network calls in test names
-- No database migrations
-- Tests in isolated `tests/` or `__tests__/` directories
-
-**Unsafe indicators:**
-- Tests named `integration_test`, `e2e_test`
-- Database setup required
-- External service dependencies
-- Docker/docker-compose required
-- Tests modify filesystem outside /tmp
-
-**Rust safety:** workspace suite is safe to run ONLY if it needs no live
-infra. Mark unsafe when tests gate on env like `PGURL`, `KAFKA_BOOTSTRAP_SERVERS`,
-`RUN_KAFKA_TESTS`, or a `just compose-up` stack — those need Postgres/Kafka/
-LocalStack up, and coverage gates (`--fail-under-lines`) only pass with them
-running. A unit-only subset (`cargo nextest run -E 'not test(/integration/)'`)
-is usually safe; record it as the safe command.
-
-**mac-ui safety:** web-component tests often need a browser/headless Chromium
-(web-test-runner) that may be absent in a sandbox — default to unsafe unless the
-package's `test` script is jsdom/vitest-only.
-
-**Decision:**
-```
-can_run_safely = (
-  uses_standard_framework AND
-  no_external_dependencies AND
-  no_destructive_operations AND
-  execution_time_reasonable (<5min)
-)
-```
+Mark **unsafe** for integration/e2e, DB/docker requirements, or tests that hit live network. **Rust:** unsafe when gated on `PGURL` / Kafka / compose; unit-only nextest filter is usually safe. **mac-ui:** default unsafe unless package `test` is jsdom/vitest-only (needs Chromium otherwise).
 
 ## Step 6: Detect Build System
 
@@ -304,15 +275,7 @@ Look for build config files.
 - `lerna.json`/`pnpm-workspace.yaml`/`package.json` `workspaces` → monorepo;
   commands run per-package (`npm -w <pkg> test`)
 
-**Extract common commands:**
-```json
-{
-  "install": "<dependency install command>",
-  "test": "<test execution command>",
-  "lint": "<linter command>",
-  "build": "<build command>"
-}
-```
+Record `install` / `test` / `lint` / `build` commands in the build_system JSON (prefer `justfile` / package scripts over guesses).
 
 ## Step 7: Impact Analysis
 
@@ -373,6 +336,39 @@ security_sensitive = (
 )
 ```
 
+## Step 8b: Emit `risk_class` array
+
+Build `risk_class` as a JSON array of applicable classes (may be empty). Include a class when the diff/title/body/paths strongly suggest it — prefer false-positive inclusion over missing a PE pass.
+
+| Class | Include when |
+|---|---|
+| `domain` | Domain model, aggregates, bounded-context, ownership/CODEOWNERS cross-boundary, layering/hex/ports changes |
+| `auth` | Authn/z, sessions, tokens, IDOR-prone ID lookups, permission/role changes |
+| `data` | Migrations, schema, serializers, caches as SoT, dual-write, retention/delete |
+| `api` | Public/internal HTTP/RPC/event/webhook contracts, OpenAPI/Protobuf/Avro, versioning |
+| `concurrency` | Locks, atomics, shared mutable state, async cancel, queues/consumers, idempotent handlers |
+| `ops` | Timeouts, retries, circuit breakers, metrics/traces on new paths, pools, pagination limits, hot-path perf |
+
+Map from impact_analysis + path heuristics. Example: auth+API endpoint change → `["auth","api"]` (and often `domain` if model touched).
+
+## Step 8c: Light PR hygiene preflight
+
+Emit `hygiene` object (not a full process review):
+
+**size**
+- Record `files_changed`, `additions`, `deletions`.
+- Set `unreviewable: true` when conceptually huge (e.g. ≫300 LOC behavior change without clear stacking, or dozens of unrelated files). Soft guideline ~100–300 LOC (Google/Shopify); do not hard-fail tiny refactors miscounted by generated files — note generated noise in `note`.
+
+**one_concern**
+- Classify concerns present: `feature`, `refactor`, `deps`, `docs`, `infra`.
+- `ok: false` when feature+refactor or feature+unrelated deps mixed without separation.
+
+**description_map** (Shopify-style PR map)
+- `has_why` — why this change / who benefits
+- `has_risks` — what could go wrong / rollout / rollback
+- `has_alternatives` — alternatives considered (or explicit "n/a")
+- `ok: true` only when non-trivial PRs have why + risks at minimum; trivial doc-only may set ok true with a note
+
 ## Step 9: Generate Analysis JSON
 
 Combine all findings into structured JSON, write to `$OUTPUT_DIR/pr-analysis-<PR_NUMBER>.json`.
@@ -393,6 +389,8 @@ jq -n \
   --argjson needs_security_review "$NEEDS_SECURITY_REVIEW" \
   --argjson uses_mac_ui "${USES_MAC_UI:-false}" \
   --arg mac_ui_ref_repo "vlognow/mac-ui" \
+  --argjson risk_class "$RISK_CLASS_JSON" \
+  --argjson hygiene "$HYGIENE_JSON" \
   '{
     pr: $pr,
     changes: $changes,
@@ -405,7 +403,9 @@ jq -n \
     security_sensitive: $security_sensitive,
     needs_security_review: $needs_security_review,
     uses_mac_ui: $uses_mac_ui,
-    mac_ui_ref_repo: $mac_ui_ref_repo
+    mac_ui_ref_repo: $mac_ui_ref_repo,
+    risk_class: $risk_class,
+    hygiene: $hygiene
   }' > "$OUTPUT_DIR/pr-analysis-${PR_NUMBER}.json"
 ```
 
@@ -439,6 +439,9 @@ Impact Areas:
   - 🟡 Medium: API endpoints
   - 🟢 Low: documentation
 
+Risk classes: domain, auth, api
+Hygiene: size OK; one_concern OK; description_map gaps: alternatives
+
 Security: ⚠️  Requires security review
 
 Analysis saved to: $OUTPUT_DIR/pr-analysis-123.json
@@ -457,6 +460,7 @@ Error: Could not fetch PR. Check:
 **If analysis is incomplete:**
 - Still generate JSON with available data
 - Mark missing fields as `null`
+- Prefer `risk_class: []` and a hygiene object with `"ok": null` notes over omitting keys
 - Note in summary which analysis steps failed
 
 ## Notes
@@ -465,3 +469,4 @@ Error: Could not fetch PR. Check:
 - All analysis read-only (safe to run on any PR)
 - Output JSON designed to be consumed by other skills
 - Can be run standalone or as part of review
+- Routing consumers: orchestrator + `references/risk-class-routing.md`

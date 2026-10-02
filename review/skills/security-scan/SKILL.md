@@ -1,6 +1,6 @@
 ---
 name: security-scan
-description: Run security scans using semgrep, linters, and dependency checkers to find vulnerabilities. Use when reviewing a PR that touches security-sensitive code or you need to surface injection, crypto, secrets, or dependency CVE risks.
+description: Run security scans using semgrep, linters, and dependency checkers to find vulnerabilities, including OWASP authz/IDOR, business-logic abuse, SSRF, and PII-in-logs. Use when reviewing a PR that touches security-sensitive code or you need to surface injection, crypto, secrets, or dependency CVE risks.
 allowed-tools: Bash Read Grep Glob
 ---
 
@@ -33,6 +33,9 @@ Writes security findings to `$OUTPUT_DIR/security-scan-<PR_NUMBER>.json`:
     "injection": 2,
     "crypto": 1,
     "auth": 2,
+    "business_logic": 0,
+    "ssrf": 0,
+    "pii_logging": 0,
     "secrets": 0,
     "dependencies": 5,
     "code_quality": 8
@@ -105,6 +108,15 @@ echo "PR number: $PR_NUMBER" >&2
 ```bash
 cat "$OUTPUT_DIR/pr-analysis-${PR_NUMBER}.json"
 ```
+
+## Step 0b: Load anti-patterns (this pass only)
+
+Read **only** `references/anti-patterns/security-scan.md`.
+Do **not** load other files under `references/anti-patterns/`.
+
+Also skim `references/severity-rubric.md` for Clean Code blocking rules
+(security-adjacent craft issues — swallowed auth errors, flag params disabling
+authz — are blockers, not nits).
 
 ## Step 1: Check Tool Availability
 
@@ -342,6 +354,18 @@ done
 
 Read `references/common-vulnerabilities.md` before grepping changed files for injection, auth, crypto patterns per language.
 
+### OWASP dimensions to deepen (historically thin)
+
+- **Authorization / IDOR** — Server-side ownership checks on object IDs; default deny;
+  function-level authz on new endpoints; no client-trusted roles/prices.
+- **Business-logic abuse** — Workflow step skipping; race-to-privilege; quota/coupon
+  bypass via parallel requests; state-machine transitions enforced server-side.
+- **SSRF / unsafe egress** — User-controlled URLs; webhook/preview/importer fetches;
+  block private/metadata ranges; allowlists where feasible.
+- **PII in logs / telemetry** — No PII/secrets in logs, metrics labels, traces, or
+  exception messages; no debug body dumps with credentials/PHI.
+
+
 ## Step 6: Analyze Dependencies
 
 Read `references/dependency-analysis.md` before checking known CVEs and outdated packages per language.
@@ -358,6 +382,7 @@ Group findings by category:
 
 **Authentication/Authorization:**
 - Missing authentication
+- IDOR / missing object-level authorization
 - Weak password hashing
 - Insecure session management
 - Hardcoded credentials
@@ -372,6 +397,20 @@ Group findings by category:
 - Known CVEs
 - Outdated packages
 - Unmaintained packages
+
+**Business Logic (`business_logic`):**
+- Workflow step skipping / race-to-privilege
+- Quota, coupon, or rate-limit bypass via parallel requests
+- State-machine transitions not enforced server-side
+
+**SSRF (`ssrf`):**
+- User-controlled URL fetches (webhooks, previews, importers)
+- Access to private/metadata IP ranges
+- Missing egress allowlists
+
+**PII in Logs (`pii_logging`):**
+- PII/secrets in logs, metrics labels, traces, or exception messages
+- Debug body dumps containing credentials/PHI
 
 **Code Quality (Security-Adjacent):**
 - Missing input validation
@@ -496,3 +535,5 @@ Analysis saved to: $OUTPUT_DIR/security-scan-123.json
 ## Error Handling and Notes
 
 Read `references/error-handling-and-notes.md` when tools fail, no tools installed, no findings, or need scan caveats.
+
+Anti-patterns for this skill live only in `references/anti-patterns/security-scan.md`.
