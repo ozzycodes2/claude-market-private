@@ -1,18 +1,18 @@
 ---
 name: change-evolution
-description: Reviews PR diffs for CD readiness, reversibility, and design-quality risks such as YAGNI, deep modules, and complexity budget. Use when a PR is large, mixes refactor with behavior, introduces flags/migrations/stranglers, or when analyze hygiene flags size or description gaps.
+description: Reviews PR diffs for CD readiness, reversibility, and design-quality risks such as YAGNI, deep modules, and complexity budget. Use when a PR is large, mixes refactor with behavior, or introduces flags/migrations/stranglers.
 allowed-tools: Bash Read Grep Glob
 ---
 
 # Change & Evolution Review
 
-Principal-engineer pass covering taxonomy categories **5 Change & evolution (CD)** and **4 Design quality**. Emits Conventional Comment findings in the bug-finder schema.
+Quality Review pass covering taxonomy categories **5 Change & evolution (CD)** and **4 Design quality**. Emits Conventional Comment findings in the bug-finder schema.
 
 ## Inputs
 
 - **PR URL**: Full GitHub/Enterprise PR URL
 - **OUTPUT_DIR** (optional): Defaults to private `mktemp -d`
-- **Analysis JSON** (optional): `$OUTPUT_DIR/pr-analysis-<PR_NUMBER>.json` (hygiene preflight fields help gate this pass)
+- **Analysis JSON** (optional): `$OUTPUT_DIR/pr-analysis-<PR_NUMBER>.json`
 
 ## Outputs
 
@@ -51,7 +51,7 @@ PR_NUMBER=$(echo "$PR_URL" | grep -oE 'pull/[0-9]+' | grep -oE '[0-9]+')
 1. Read **only** `references/anti-patterns/change-evolution.md`.
 2. Read `references/checklist.md` in this skill.
 3. Optionally skim `references/severity-rubric.md`.
-4. If present, read analysis JSON — especially `hygiene` (size, one_concern, description_map).
+4. If present, read analysis JSON for impact and `risk_class`.
 
 ## Step 2: Fetch PR diff
 
@@ -71,8 +71,6 @@ Prioritize:
 3. Refactor mixed with behavior; PR size / one concern
 4. Speculative generality and complexity budget on shared modules
 
-If hygiene preflight already flagged size/description gaps, turn those into explicit findings with actionable split/description suggestions rather than repeating them as nits.
-
 ## Step 4: Emit JSON
 
 ```bash
@@ -87,6 +85,6 @@ jq -n \
 ## Notes
 
 - Standalone: `/review:change-evolution <PR_URL> [OUTPUT_DIR]`
-- Orchestrator runs on large/mixed/CD/design signals or hygiene flags (see `risk-class-routing.md`)
+- Orchestrator runs on large/mixed/CD/design signals (see `risk-class-routing.md`)
 
 Paths like `references/...` are relative to the `review` plugin root.

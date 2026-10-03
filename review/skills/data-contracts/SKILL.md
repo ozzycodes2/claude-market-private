@@ -6,7 +6,7 @@ allowed-tools: Bash Read Grep Glob
 
 # Data & Contracts Review
 
-Principal-engineer pass covering taxonomy categories **7 Data & consistency** and **11 API / contract design**. Emits Conventional Comment findings in the bug-finder schema.
+Quality Review pass covering taxonomy categories **7 Data & consistency** and **11 API / contract design**. Emits Conventional Comment findings in the bug-finder schema.
 
 ## Inputs
 

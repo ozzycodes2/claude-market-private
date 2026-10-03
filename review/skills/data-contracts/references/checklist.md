@@ -1,38 +1,38 @@
 # Checklist — Data & API contracts
 
-Dimensions from taxonomy cats **7** and **11**.
+Dimensions from taxonomy categories **7 Data & consistency** and **11 API / contract design**.
 
 ## 7. Data & consistency
 
-- [ ] **Schema design** — Types, nullability, constraints, indexes match access patterns. `[B]` if integrity gaps
-- [ ] **Migrations** — Expand/contract; backward/forward compatible deploys; locking risk. `[B]`
-- [ ] **Transactional boundaries** — What commits together; avoid multi-resource tx without saga/outbox. `[B]`
-- [ ] **Idempotency** — Writes/handlers safe under retry/at-least-once. `[B]` for payments/fulfillment/side effects
-- [ ] **Exactly-once illusions** — Prefer at-least-once + idempotent consumer; document. `[Q]`
-- [ ] **Eventual consistency UX** — Stale reads, conflict resolution. `[B]` if user-visible corruption risk
-- [ ] **Caching** — TTL, invalidation, stampede, poison cache. `[S]`/`[B]`
-- [ ] **Data retention / deletion** — Delete paths; soft-delete semantics. `[B]` for privacy requirements
-- [ ] **Serialization compatibility** — Protobuf/JSON/Avro evolution rules. `[B]`
-- [ ] **PII storage minimization** — Store only what's needed. `[B]`
-- [ ] **Backfills** — Rate limits, observability, resume, correctness checks. `[S]`/`[B]`
-- [ ] **Dual-write hazards** — Two stores updated; failure modes. `[B]` without outbox/CDC plan
+- [ ] **Schema design** — Types, nullability, constraints, indexes match access patterns. `issue (blocking)` if integrity gaps
+- [ ] **Migrations** — Expand/contract; backward/forward compatible deploys; locking risk. `issue (blocking)`
+- [ ] **Transactional boundaries** — What commits together; avoid multi-resource tx without saga/outbox. `issue (blocking)`
+- [ ] **Idempotency** — Writes/handlers safe under retry/at-least-once. `issue (blocking)` for payments/fulfillment/side effects
+- [ ] **Exactly-once illusions** — Prefer at-least-once + idempotent consumer; document. `question`
+- [ ] **Eventual consistency UX** — Stale reads, conflict resolution. `issue (blocking)` if user-visible corruption risk
+- [ ] **Caching** — TTL, invalidation, stampede, poison cache. `suggestion (non-blocking)`/`issue (blocking)`
+- [ ] **Data retention / deletion** — Delete paths; soft-delete semantics. `issue (blocking)` for privacy requirements
+- [ ] **Serialization compatibility** — Protobuf/JSON/Avro evolution rules. `issue (blocking)`
+- [ ] **PII storage minimization** — Store only what's needed. `issue (blocking)`
+- [ ] **Backfills** — Rate limits, observability, resume, correctness checks. `suggestion (non-blocking)`/`issue (blocking)`
+- [ ] **Dual-write hazards** — Two stores updated; failure modes. `issue (blocking)` without outbox/CDC plan
 
 ## 11. API / contract design
 
-- [ ] **Backward compatibility** — Additive preferred; no silent renames/type changes. `[B]`
-- [ ] **Versioning strategy** — Explicit; encapsulate breaks. `[B]` if break without version story
-- [ ] **Error shapes** — Stable codes; no sensitive leak. `[S]`/`[B]`
-- [ ] **Idempotency keys** — For mutating public APIs. `[B]` for payment-like APIs
-- [ ] **Pagination/filtering/sorting** — Consistent, documented. `[S]`
-- [ ] **Pagination tokens vs offset** — Stability under concurrent writes. `[S]`
-- [ ] **Authn/z at API boundary** — Consistent with codebase. `[B]`
-- [ ] **Payload minimization** — Don't over-expose fields. `[S]`/`[B]` privacy
-- [ ] **Event / webhook contracts** — Signature verification, versioning, at-least-once. `[B]`
-- [ ] **Client SDK impact** — Generated clients / breaking field changes. `[S]`
-- [ ] **Deprecation policy** — Timeline, dual-run, docs. `[S]`/`[B]`
-- [ ] **Public vs internal API** — Different stability bars. `[Q]`
+- [ ] **Backward compatibility** — Additive preferred; no silent renames/type changes. `issue (blocking)`
+- [ ] **Versioning strategy** — Explicit; encapsulate breaks. `issue (blocking)` if break without version story
+- [ ] **Error shapes** — Stable codes; no sensitive leak. `suggestion (non-blocking)`/`issue (blocking)`
+- [ ] **Idempotency keys** — For mutating public APIs. `issue (blocking)` for payment-like APIs
+- [ ] **Pagination/filtering/sorting** — Consistent, documented. `suggestion (non-blocking)`
+- [ ] **Pagination tokens vs offset** — Stability under concurrent writes. `suggestion (non-blocking)`
+- [ ] **Authn/z at API boundary** — Consistent with codebase. `issue (blocking)`
+- [ ] **Payload minimization** — Don't over-expose fields. `suggestion (non-blocking)`/`issue (blocking)` privacy
+- [ ] **Event / webhook contracts** — Signature verification, versioning, at-least-once. `issue (blocking)`
+- [ ] **Client SDK impact** — Generated clients / breaking field changes. `suggestion (non-blocking)`
+- [ ] **Deprecation policy** — Timeline, dual-run, docs. `suggestion (non-blocking)`/`issue (blocking)`
+- [ ] **Public vs internal API** — Different stability bars. `question`
 
-## Clean Code (cat 3) — blocking overlay
+## Clean Code (category 3 Code craft) — blocking overlay
 
 - [ ] ORM entities leaked as API DTOs → **Blocker**
 - [ ] Swallowed errors on write/migration paths → **Blocker**

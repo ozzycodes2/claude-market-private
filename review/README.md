@@ -1,8 +1,8 @@
 # review
 
 Comprehensive, language-agnostic PR review. One orchestrator skill coordinates a
-change analysis (with **risk_class** routing + light PR hygiene), a 3-pass deep
-code review (expanded concurrency), risk-gated principal-engineer passes
+change analysis (with **risk_class** routing), a 3-pass deep
+code review (expanded concurrency), risk-gated quality-review passes
 (`domain-architecture`, `data-contracts`, `ops-reliability`, `change-evolution`),
 security scanning (OWASP deepen), documentation-drift checks (light DX fold), and
 code-fix generation — then posts a single unified GitHub review (summary +
@@ -30,11 +30,11 @@ keeping a human in the loop).
 | Skill | What it does |
 |-------|--------------|
 | `review` | Orchestrator — runs all phases and posts the unified review. |
-| `analyze` | Detects languages, frameworks, test setup, impact/security sensitivity, **`risk_class`**, and light PR hygiene (size / one-concern / description map). |
-| `domain-architecture` | PE pass — domain model, architecture dependency rules, team/org boundaries (taxonomy cats 1, 2, 15). Risk-gated on `domain`. |
-| `data-contracts` | PE pass — data consistency + API/event contracts (cats 7, 11). Risk-gated on `data` / `api`. |
-| `ops-reliability` | PE pass — reliability, performance, concurrency leftovers (cats 8, 10 + leftovers). Risk-gated on `ops` / `concurrency`. |
-| `change-evolution` | PE pass — CD readiness + design quality YAGNI/deep modules (cats 5, 4). Gated on size/mixed/CD/design or hygiene flags. |
+| `analyze` | Detects languages, frameworks, test setup, impact/security sensitivity, and **`risk_class`**. |
+| `domain-architecture` | QR pass — domain model, architecture dependency rules, team/org boundaries (taxonomy categories 1 Domain, 2 Architecture, 15 Team / org boundaries). Risk-gated on `domain`. |
+| `data-contracts` | QR pass — data consistency + API/event contracts (categories 7 Data & consistency, 11 API / contract design). Risk-gated on `data` / `api`. |
+| `ops-reliability` | QR pass — reliability, performance, concurrency leftovers (categories 8 Reliability & operability, 10 Performance & scalability, plus concurrency leftovers). Risk-gated on `ops` / `concurrency`. |
+| `change-evolution` | QR pass — CD readiness + design quality YAGNI/deep modules (categories 5 Change & evolution, 4 Design quality). Gated on size/mixed/CD/design. |
 | `security-scan` | Runs available static analyzers; deepens OWASP authz/IDOR, business-logic abuse, SSRF, PII-in-logs; degrades gracefully when tools aren't installed. |
 | `docs-drift` | Detects docs drift (ADRs, OpenAPI, rendered artifacts, READMEs, comments) plus light DX fold (runbooks / caller migration) and completeness gaps. |
 | `codegen` | Drafts tests, docstrings, and CHANGELOG entries to fill surfaced gaps (human review required before committing). |
@@ -44,7 +44,7 @@ keeping a human in the loop).
 `references/anti-patterns/` (never one shared dump). Shared severity and
 routing live in `references/severity-rubric.md` and
 `references/risk-class-routing.md`. Taxonomy source:
-`references/principal-engineer-pr-review-taxonomy.md`.
+`references/quality-review-pr-review-taxonomy.md`.
 
 **Clean Code:** craft issues that hit correctness, invariants, or maintainability
 on shared/hot paths are **blockers**, not deferred to nits.
@@ -84,9 +84,9 @@ handled and CI is green. It never merges or force-pushes — that stays with you
 ```
 /review:review <PR_URL>
   │
-  ├─ Phase 1  analyze → risk_class + hygiene
+  ├─ Phase 1  analyze → risk_class
   │            ├─ 3-pass bug-finder (parallel, model-diverse)
-  │            └─ PE passes gated by risk_class / hygiene (parallel Task)
+  │            └─ QR passes gated by risk_class (parallel Task)
   ├─ Phase 2  security-scan · docs-drift               (parallel)
   ├─ Phase 3  codegen
   └─ Phase 4  synthesize → merge recommendation → post unified review
@@ -111,5 +111,5 @@ issue found by multiple passes as high-confidence.
 - Generated code (from `codegen`) is for review only — never auto-committed.
 - Test execution and coverage/test-gap analysis are intentionally out of scope —
   CI already runs the suite and measures coverage, so the review doesn't duplicate it.
-- Cost: roughly ~$4–10 per PR depending on how many PE passes gate on
-  (3-pass deep review + analysis/generation + zero-to-four PE skills).
+- Cost: roughly ~$4–10 per PR depending on how many QR passes gate on
+  (3-pass deep review + analysis/generation + zero-to-four QR skills).

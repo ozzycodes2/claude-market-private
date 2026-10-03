@@ -6,7 +6,7 @@ allowed-tools: Bash Read Grep Glob
 
 # Ops & Reliability Review
 
-Principal-engineer pass covering taxonomy categories **8 Reliability & operability**, **10 Performance & scalability**, plus concurrency leftovers beyond the bug-finder's race focus (DLQ/poison, async cancellation leftovers, ordering). Emits Conventional Comment findings in the bug-finder schema.
+Quality Review pass covering taxonomy categories **8 Reliability & operability**, **10 Performance & scalability**, plus concurrency leftovers beyond the bug-finder's race focus (DLQ/poison, async cancellation leftovers, ordering). Emits Conventional Comment findings in the bug-finder schema.
 
 ## Inputs
 

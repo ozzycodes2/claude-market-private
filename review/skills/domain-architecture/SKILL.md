@@ -6,7 +6,7 @@ allowed-tools: Bash Read Grep Glob
 
 # Domain & Architecture Review
 
-Principal-engineer pass covering taxonomy categories **1 Domain**, **2 Architecture**, and **15 Team/org boundaries**. Emits Conventional Comment findings in the same schema as the bug-finder.
+Quality Review pass covering taxonomy categories **1 Domain**, **2 Architecture**, and **15 Team/org boundaries**. Emits Conventional Comment findings in the same schema as the bug-finder.
 
 ## Inputs
 

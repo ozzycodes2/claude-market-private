@@ -1,14 +1,14 @@
 ---
 name: analyze
-description: Analyze PR changes to detect languages, frameworks, test setup, impact areas, risk classes, and light PR hygiene. Use when starting a PR review and you need to understand what changed before deeper analysis.
+description: Analyze PR changes to detect languages, frameworks, test setup, impact areas, and risk classes. Use when starting a PR review and you need to understand what changed before deeper analysis.
 allowed-tools: Bash Read Grep Glob
 ---
 
 # Analyze PR Changes
 
-Analyze a pull request: what changed, which languages/frameworks involved, how to test it, what impact areas need review, which **risk classes** should gate deeper passes, and light **PR hygiene** preflight.
+Analyze a pull request: what changed, which languages/frameworks involved, how to test it, what impact areas need review, which **risk classes** should gate deeper passes.
 
-**Foundation** for other review skills — produces structured analysis driving test recommendations, security scanning, documentation validation, and principal-engineer pass routing (`references/risk-class-routing.md`).
+**Foundation** for other review skills — produces structured analysis driving test recommendations, security scanning, documentation validation, and quality-review pass routing (`references/risk-class-routing.md`).
 
 ## Inputs
 
@@ -82,35 +82,12 @@ Writes analysis to `<OUTPUT_DIR>/pr-analysis-<PR_NUMBER>.json`:
   "needs_security_review": true,
   "uses_mac_ui": false,
   "mac_ui_ref_repo": "vlognow/mac-ui",
-  "risk_class": ["domain", "auth", "api"],
-  "hygiene": {
-    "size": {
-      "files_changed": 15,
-      "additions": 450,
-      "deletions": 120,
-      "unreviewable": false,
-      "note": "Within ~100–300 LOC conceptual guideline"
-    },
-    "one_concern": {
-      "ok": true,
-      "concerns": ["feature"],
-      "note": "Single concern: auth feature"
-    },
-    "description_map": {
-      "has_why": true,
-      "has_risks": true,
-      "has_alternatives": false,
-      "ok": false,
-      "note": "Missing alternatives considered"
-    }
-  }
+  "risk_class": ["domain", "auth", "api"]
 }
 ```
 
 `risk_class` is an array of zero or more of: `domain`, `auth`, `data`, `api`, `concurrency`, `ops`.
-The orchestrator uses it to gate PE passes (see `references/risk-class-routing.md`).
-
-`hygiene` is a **light** PR hygiene preflight (size, one-concern, description map for why/risks/alts) — not a full process audit.
+The orchestrator uses it to gate QR passes (see `references/risk-class-routing.md`).
 
 `uses_mac_ui` (see Step 4) tells `security-scan` and `docs-drift`
 to fetch mac-ui's live authority docs. `mac_ui_ref_repo` is the repo they fetch
@@ -141,7 +118,7 @@ echo "PR number: $PR_NUMBER" >&2
 gh pr view "$PR_URL" --json number,title,url,baseRefName,headRefName,author,state,additions,deletions,body
 ```
 
-Store in variables for later use (body needed for hygiene description_map).
+Store in variables for later use.
 
 ## Step 2: Get Changed Files
 
@@ -338,7 +315,7 @@ security_sensitive = (
 
 ## Step 8b: Emit `risk_class` array
 
-Build `risk_class` as a JSON array of applicable classes (may be empty). Include a class when the diff/title/body/paths strongly suggest it — prefer false-positive inclusion over missing a PE pass.
+Build `risk_class` as a JSON array of applicable classes (may be empty). Include a class when the diff/title/body/paths strongly suggest it — prefer false-positive inclusion over missing a QR pass.
 
 | Class | Include when |
 |---|---|
@@ -350,24 +327,6 @@ Build `risk_class` as a JSON array of applicable classes (may be empty). Include
 | `ops` | Timeouts, retries, circuit breakers, metrics/traces on new paths, pools, pagination limits, hot-path perf |
 
 Map from impact_analysis + path heuristics. Example: auth+API endpoint change → `["auth","api"]` (and often `domain` if model touched).
-
-## Step 8c: Light PR hygiene preflight
-
-Emit `hygiene` object (not a full process review):
-
-**size**
-- Record `files_changed`, `additions`, `deletions`.
-- Set `unreviewable: true` when conceptually huge (e.g. ≫300 LOC behavior change without clear stacking, or dozens of unrelated files). Soft guideline ~100–300 LOC (Google/Shopify); do not hard-fail tiny refactors miscounted by generated files — note generated noise in `note`.
-
-**one_concern**
-- Classify concerns present: `feature`, `refactor`, `deps`, `docs`, `infra`.
-- `ok: false` when feature+refactor or feature+unrelated deps mixed without separation.
-
-**description_map** (Shopify-style PR map)
-- `has_why` — why this change / who benefits
-- `has_risks` — what could go wrong / rollout / rollback
-- `has_alternatives` — alternatives considered (or explicit "n/a")
-- `ok: true` only when non-trivial PRs have why + risks at minimum; trivial doc-only may set ok true with a note
 
 ## Step 9: Generate Analysis JSON
 
@@ -390,7 +349,6 @@ jq -n \
   --argjson uses_mac_ui "${USES_MAC_UI:-false}" \
   --arg mac_ui_ref_repo "vlognow/mac-ui" \
   --argjson risk_class "$RISK_CLASS_JSON" \
-  --argjson hygiene "$HYGIENE_JSON" \
   '{
     pr: $pr,
     changes: $changes,
@@ -404,8 +362,7 @@ jq -n \
     needs_security_review: $needs_security_review,
     uses_mac_ui: $uses_mac_ui,
     mac_ui_ref_repo: $mac_ui_ref_repo,
-    risk_class: $risk_class,
-    hygiene: $hygiene
+    risk_class: $risk_class
   }' > "$OUTPUT_DIR/pr-analysis-${PR_NUMBER}.json"
 ```
 
@@ -440,7 +397,6 @@ Impact Areas:
   - 🟢 Low: documentation
 
 Risk classes: domain, auth, api
-Hygiene: size OK; one_concern OK; description_map gaps: alternatives
 
 Security: ⚠️  Requires security review
 
@@ -460,7 +416,7 @@ Error: Could not fetch PR. Check:
 **If analysis is incomplete:**
 - Still generate JSON with available data
 - Mark missing fields as `null`
-- Prefer `risk_class: []` and a hygiene object with `"ok": null` notes over omitting keys
+- Prefer `risk_class: []` over omitting the key
 - Note in summary which analysis steps failed
 
 ## Notes

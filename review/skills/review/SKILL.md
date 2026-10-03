@@ -1,6 +1,6 @@
 ---
 name: review
-description: Orchestrates comprehensive PR review combining analysis, code review, security, documentation, and risk-gated principal-engineer passes. Use when you want a full automated review of a GitHub PR posted as a single unified comment.
+description: Orchestrates comprehensive PR review combining analysis, code review, security, documentation, and risk-gated quality-review passes. Use when you want a full automated review of a GitHub PR posted as a single unified comment.
 allowed-tools: Bash Read Write Skill Task
 disable-model-invocation: true
 ---
@@ -14,8 +14,8 @@ Master orchestrator. Runs comprehensive PR review by coordinating specialized sk
 Workflow:
 
 **Phase 1: Foundation**
-1. Analyze changes (languages, frameworks, impact, **risk_class**, hygiene preflight)
-2. Deep code review (3-pass bug hunting — expanded concurrency) **in parallel with** risk-gated PE passes
+1. Analyze changes (languages, frameworks, impact, **risk_class**)
+2. Deep code review (3-pass bug hunting — expanded concurrency) **in parallel with** risk-gated QR passes
 
 **Phase 2: Quality Checks** (parallel)
 3. Security scanning (OWASP deepen; reads only `anti-patterns/security-scan.md`)
@@ -25,7 +25,7 @@ Workflow:
 5. Generate code/docs (simple fixes)
 
 **Phase 4: Synthesis**
-6. Combine all findings (bug-finder + PE passes + security + docs)
+6. Combine all findings (bug-finder + QR passes + security + docs)
 7. Determine merge recommendation (Clean Code blockers count as critical/high)
 8. Post comprehensive review to PR
 
@@ -86,11 +86,10 @@ Store key findings:
 - `security_sensitive`
 - `impact_analysis`
 - `risk_class` (array)
-- `hygiene` (size / one_concern / description_map)
 
 **If analysis fails:** continue with limited info; note in final review.
 
-## Step 3: Deep Code Review + Risk-Gated PE Passes (parallel Tasks)
+## Step 3: Deep Code Review + Risk-Gated QR Passes (parallel Tasks)
 
 ### 3.1 Three-pass bug-finder (always)
 
@@ -141,16 +140,16 @@ Return a JSON array of findings, each: {"severity":"critical|high|medium","label
 
 **Merge (Step 6):** group by `path`+`line`; prepend "[Found by N/3 models]" when 2+ passes agree; take highest severity.
 
-### 3.2 Risk-gated PE passes (parallel with bug-finder)
+### 3.2 Risk-gated QR passes (parallel with bug-finder)
 
-Read `references/risk-class-routing.md`. From `risk_class` + `hygiene`, decide which of these skills to run:
+Read `references/risk-class-routing.md`. From `risk_class`, decide which of these skills to run:
 
 | Gate | Skill |
 |---|---|
 | `domain` ∈ risk_class | `review:domain-architecture` |
 | `data` or `api` ∈ risk_class | `review:data-contracts` |
 | `ops` or `concurrency` ∈ risk_class | `review:ops-reliability` |
-| Large/mixed/CD/design signals **or** hygiene flags (unreviewable size, !one_concern, weak description_map) | `review:change-evolution` |
+| Large/mixed/CD/design signals | `review:change-evolution` |
 
 For each selected skill, spawn a Task (prefer `sonnet` unless domain/architecture needs `opus`):
 
@@ -158,7 +157,7 @@ For each selected skill, spawn a Task (prefer `sonnet` unless domain/architectur
 Use Task tool:
 - subagent_type: "general-purpose"
 - model: "sonnet"   # use "opus" for domain-architecture when risk is high
-- description: "PE pass <name>"
+- description: "QR pass <name>"
 - prompt: |
     Invoke Skill "review:<name>" with args "<PR_URL> <OUTPUT_DIR>".
     Follow that skill exactly. It must read ONLY
@@ -166,9 +165,9 @@ Use Task tool:
     Write $OUTPUT_DIR/<name>-<PR_NUMBER>.json. Return a one-line finding-count summary.
 ```
 
-**Send bug-finder Tasks + PE Tasks in as few messages as possible** so they run concurrently. Do not wait yet — collect in Step 6.
+**Send bug-finder Tasks + QR Tasks in as few messages as possible** so they run concurrently. Do not wait yet — collect in Step 6.
 
-If `risk_class` is empty and hygiene is clean, skip PE passes (bug-finder still runs).
+If `risk_class` is empty, skip QR passes (bug-finder still runs).
 
 ## Step 4: Run Phase 2 Skills (Parallel)
 
@@ -213,10 +212,10 @@ Wait and read `$OUTPUT_DIR/code-generation-<PR_NUMBER>.json`. Generated code is 
 
 ## Step 6: Collect Results
 
-Wait for: bug-finder ×3, PE passes (if any), security-scan, docs-drift, codegen.
+Wait for: bug-finder ×3, QR passes (if any), security-scan, docs-drift, codegen.
 
 Parse:
-- `$OUTPUT_DIR/pr-analysis-*.json` — risk_class, hygiene
+- `$OUTPUT_DIR/pr-analysis-*.json` — risk_class
 - Bug-finder merged findings
 - `$OUTPUT_DIR/domain-architecture-*.json`, `data-contracts-*.json`, `ops-reliability-*.json`, `change-evolution-*.json` — each `findings` array
 - `$OUTPUT_DIR/security-scan-*.json`
@@ -226,13 +225,13 @@ Parse:
 ## Step 7: Determine Merge Recommendation
 
 ```
-IF (Critical code/PE/security findings > 0) OR (Clean Code blockers on correctness/invariants/hot paths):
+IF (Critical code/QR/security findings > 0) OR (Clean Code blockers on correctness/invariants/hot paths):
   RECOMMENDATION = "REQUEST CHANGES"
 
 ELIF (High findings > 3) OR (security_sensitive AND high_security_findings > 0):
   RECOMMENDATION = "REQUEST CHANGES"
 
-ELIF (High findings > 0) OR (missing_critical_docs) OR (hygiene.unreviewable):
+ELIF (High findings > 0) OR (missing_critical_docs):
   RECOMMENDATION = "COMMENT"
 
 ELIF (security_sensitive === true):
@@ -248,7 +247,7 @@ Always default to COMMENT (never APPROVE) — human-in-the-loop.
 
 ### Sections
 
-1. **Change Analysis** — body: languages, impact, `risk_class`, hygiene summary. No inline findings.
+1. **Change Analysis** — body: languages, impact, `risk_class`. No inline findings.
 2. **Code Review Results (3 Passes)** — bug-finder findings (inline when path+line).
 3. **Domain & Architecture** — from `domain-architecture` (omit if skipped/empty).
 4. **Data & Contracts** — from `data-contracts` (omit if skipped/empty).
@@ -293,12 +292,12 @@ Formatter applies `<label> [decoration]: <subject>`. Finding fields match bug-fi
     "review_title": "Review",
     "tool_version": "<from plugin.json>",
     "model": "<orchestrator model ID>",
-    "stages": ["Change Analysis", "Code Review", "PE Passes", "Security", "Documentation", "Code Generation"]
+    "stages": ["Change Analysis", "Code Review", "QR Passes", "Security", "Documentation", "Code Generation"]
   }
 }
 ```
 
-Omit skipped/failed/empty PE sections. Formatter omits empty sections.
+Omit skipped/failed/empty QR sections. Formatter omits empty sections.
 
 ## Step 9: Post review via shared formatter
 
@@ -317,7 +316,7 @@ Summary:
 - Languages: <primary>
 - Risk classes: <list or none>
 - Code Review: <X Critical, Y High, Z Medium>
-- PE passes: <which ran>
+- QR passes: <which ran>
 - Security: <counts>
 - Documentation: <status>
 - Recommendation: <REQUEST CHANGES | COMMENT>
@@ -329,16 +328,16 @@ View full review: <PR_URL>
 
 - analyze fails → continue; omit Change Analysis; note in rationale
 - bug-finder fails → omit Code Review section; recommend manual review
-- a PE pass fails → omit that section; continue
+- a QR pass fails → omit that section; continue
 - both analyze and bug-finder fail → do not post incomplete review
 - post fails → dry-run + save JSON under `$OUTPUT_DIR`
 
 ## Notes
 
 - Entry point for comprehensive reviews
-- Model-diverse 3-pass bug-finder (opus+sonnet+haiku) + risk-gated PE skills (`domain-architecture`, `data-contracts`, `ops-reliability`, `change-evolution`) + security-scan + docs-drift + codegen
+- Model-diverse 3-pass bug-finder (opus+sonnet+haiku) + risk-gated QR skills (`domain-architecture`, `data-contracts`, `ops-reliability`, `change-evolution`) + security-scan + docs-drift + codegen
 - Each pass reads **only** its matching `references/anti-patterns/<name>.md`
 - Clean Code craft issues that hit correctness/invariants/shared hot paths are **blockers**, not nits
 - Test execution/coverage left to CI
 - Never auto-approves/merges
-- Cost: higher when PE passes gate on; still prefer gated runs over always-on four extras
+- Cost: higher when QR passes gate on; still prefer gated runs over always-on four extras

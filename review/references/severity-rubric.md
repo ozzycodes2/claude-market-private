@@ -1,19 +1,19 @@
 # Severity Rubric (Conventional Comments)
 
 Maps review severities to Conventional Comments labels/decorations and merge guidance.
-Aligns with Google “Nit:”, Microsoft scope discipline, and the principal-engineer taxonomy.
+Aligns with Google “Nit:”, Microsoft scope discipline, and the quality-review taxonomy.
 
 | Severity (JSON) | Conventional Comments | Merge rule | When to use |
 |---|---|---|---|
 | **critical** | `issue (blocking)` — Blocker | Must resolve or explicitly accept risk with owner | Correctness, security, data loss, broken invariant, non-releasable CI, unsafe concurrency, breaking contract without plan, missing critical tests on risky change |
-| **high** | `issue (blocking)` or `suggestion (blocking)` when cheap — Should-fix | Prefer fix in PR; allow follow-up if PE agrees & risk mitigated | Likely defect or significant maintainability/ops risk |
+| **high** | `issue (blocking)` or `suggestion (blocking)` when cheap — Should-fix | Prefer fix in PR; allow follow-up if QR agrees & risk mitigated | Likely defect or significant maintainability/ops risk |
 | **medium** | `suggestion (non-blocking)` | Optional; author judgment | Better design/readability/perf; alternative approach |
 | *(as label)* | `question` | Answer before merge if it could be a blocker | Missing context; possible issue unsure |
 | *(as label)* | `nitpick` / `chore` — Nit | Non-blocking; ideally automated | Style, minor consistency, process checklist |
 | *(as label)* | `thought` / `note` | Non-blocking | Future design, mentoring, cross-team idea |
 | *(as label)* | `praise` | N/A | Reinforce good practice |
 
-## Clean Code (taxonomy cat 3) — blocking policy
+## Clean Code (category 3 Code craft) — blocking policy
 
 Clean Code findings are **not** deferred to nits by default.
 
