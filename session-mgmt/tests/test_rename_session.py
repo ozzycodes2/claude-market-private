@@ -10,6 +10,7 @@ decides which files it touches. Run with:
 Python refuses a start directory that is not importable.
 """
 import json
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -30,6 +31,7 @@ class RenameSessionTest(unittest.TestCase):
         self.projects.mkdir(parents=True)
         self.sessions = self.home / ".claude" / "sessions"
         self.sessions.mkdir(parents=True)
+        self.addCleanup(shutil.rmtree, self.home, ignore_errors=True)
 
     def run_script(self, *args):
         """Return (returncode, stdout) with HOME pointed at this test's tree."""
