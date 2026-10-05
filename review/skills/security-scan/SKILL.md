@@ -111,10 +111,10 @@ cat "$OUTPUT_DIR/pr-analysis-${PR_NUMBER}.json"
 
 ## Step 0b: Load anti-patterns (this pass only)
 
-Read **only** `references/anti-patterns/security-scan.md`.
-Do **not** load other files under `references/anti-patterns/`.
+Read **only** `../../references/anti-patterns/security-scan.md`.
+Do **not** load other files under `../../references/anti-patterns/`.
 
-Also skim `references/severity-rubric.md` for Clean Code blocking rules
+Also skim `../../references/severity-rubric.md` for Clean Code blocking rules
 (security-adjacent craft issues — swallowed auth errors, flag params disabling
 authz — are blockers, not nits).
 
@@ -365,7 +365,6 @@ Read `references/common-vulnerabilities.md` before grepping changed files for in
 - **PII in logs / telemetry** — No PII/secrets in logs, metrics labels, traces, or
   exception messages; no debug body dumps with credentials/PHI.
 
-
 ## Step 6: Analyze Dependencies
 
 Read `references/dependency-analysis.md` before checking known CVEs and outdated packages per language.
@@ -536,4 +535,4 @@ Analysis saved to: $OUTPUT_DIR/security-scan-123.json
 
 Read `references/error-handling-and-notes.md` when tools fail, no tools installed, no findings, or need scan caveats.
 
-Anti-patterns for this skill live only in `references/anti-patterns/security-scan.md`.
+Anti-patterns for this skill live only in `../../references/anti-patterns/security-scan.md`.

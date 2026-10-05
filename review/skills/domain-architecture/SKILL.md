@@ -37,7 +37,7 @@ Writes `$OUTPUT_DIR/domain-architecture-<PR_NUMBER>.json`:
 }
 ```
 
-`path`/`line` required when the issue maps to a diff location (`line` = NEW-file line). Omit both for architectural findings. Omit `label`/`decoration` to accept severity defaults (see `references/severity-rubric.md`).
+`path`/`line` required when the issue maps to a diff location (`line` = NEW-file line). Omit both for architectural findings. Omit `label`/`decoration` to accept severity defaults (see `../../references/severity-rubric.md`).
 
 ## Step 0: Parse arguments
 
@@ -46,19 +46,13 @@ PR_URL="$1"
 OUTPUT_DIR="${2:-$(mktemp -d -t pr-review-XXXXXX)}"
 mkdir -p "$OUTPUT_DIR"
 PR_NUMBER=$(echo "$PR_URL" | grep -oE 'pull/[0-9]+' | grep -oE '[0-9]+')
-PLUGIN_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"  # review/ when installed as plugin skill
-# Fallback: locate references relative to this skill
-REF_ROOT="${PLUGIN_ROOT}/references"
-if [ ! -d "$REF_ROOT/anti-patterns" ]; then
-  REF_ROOT="$(cd "$(dirname "$0")/../../../references" 2>/dev/null && pwd)"
-fi
 ```
 
 ## Step 1: Load context (progressive disclosure)
 
-1. Read **only** `references/anti-patterns/domain-architecture.md` — do **not** read other anti-pattern files.
+1. Read **only** `../../references/anti-patterns/domain-architecture.md` — do **not** read other anti-pattern files.
 2. Read this skill's `references/checklist.md` for dimensions.
-3. Optionally skim `references/severity-rubric.md` for Clean Code blocking rules.
+3. Optionally skim `../../references/severity-rubric.md` for Clean Code blocking rules.
 4. If present, read `$OUTPUT_DIR/pr-analysis-${PR_NUMBER}.json` for impact hints.
 
 ## Step 2: Fetch PR diff
@@ -95,7 +89,5 @@ jq -n \
 ## Notes
 
 - Standalone: `/review:domain-architecture <PR_URL> [OUTPUT_DIR]`
-- Orchestrator gates this pass when `domain` ∈ `risk_class` (see `references/risk-class-routing.md`)
+- Orchestrator gates this pass when `domain` ∈ `risk_class` (see `../../references/risk-class-routing.md`)
 - Do not rubber-stamp large boundary-crossing PRs; prefer `question` when ownership is unclear
-
-Paths like `references/...` are relative to the `review` plugin root.

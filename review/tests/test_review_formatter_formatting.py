@@ -61,6 +61,10 @@ class SectionIconTest(unittest.TestCase):
             "Change Analysis": ":mag:",
             "Code Review Results (3 Passes)": ":bug:",
             "Test Analysis": ":test_tube:",
+            "Domain & Architecture": ":triangular_ruler:",
+            "Data & Contracts": ":handshake:",
+            "Ops & Reliability": ":gear:",
+            "Change & Evolution": ":seedling:",
             "Security Analysis": ":lock:",
             "Documentation Check": ":books:",
             "Test Execution Results": ":checkered_flag:",
@@ -68,7 +72,7 @@ class SectionIconTest(unittest.TestCase):
         }
         got = {t: self.f._auto_section_icon(t) for t in expected}
         self.assertEqual(got, expected)
-        # All seven categories render as distinct icons (no generic :memo:).
+        # Every category renders as a distinct icon (no generic :memo:).
         icons = list(expected.values())
         self.assertEqual(len(set(icons)), len(icons))
         self.assertNotIn(DEFAULT_SECTION_ICON, icons)
@@ -76,6 +80,11 @@ class SectionIconTest(unittest.TestCase):
     def test_execution_matches_before_test(self):
         """'Test Execution' must win the flag icon, not the generic test tube."""
         self.assertEqual(self.f._auto_section_icon("Test Execution Results"), ":checkered_flag:")
+
+    def test_evolution_matches_before_change(self):
+        """'Change & Evolution' must not collide with 'Change Analysis'."""
+        self.assertEqual(self.f._auto_section_icon("Change & Evolution"), ":seedling:")
+        self.assertEqual(self.f._auto_section_icon("Change Analysis"), ":mag:")
 
     def test_unknown_title_falls_back_to_default(self):
         self.assertEqual(self.f._auto_section_icon("Miscellaneous Notes"), DEFAULT_SECTION_ICON)

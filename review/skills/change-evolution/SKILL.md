@@ -48,9 +48,9 @@ PR_NUMBER=$(echo "$PR_URL" | grep -oE 'pull/[0-9]+' | grep -oE '[0-9]+')
 
 ## Step 1: Load context (progressive disclosure)
 
-1. Read **only** `references/anti-patterns/change-evolution.md`.
-2. Read `references/checklist.md` in this skill.
-3. Optionally skim `references/severity-rubric.md`.
+1. Read **only** `../../references/anti-patterns/change-evolution.md`.
+2. Read this skill's `references/checklist.md`.
+3. Optionally skim `../../references/severity-rubric.md`.
 4. If present, read analysis JSON for impact and `risk_class`.
 
 ## Step 2: Fetch PR diff
@@ -85,6 +85,6 @@ jq -n \
 ## Notes
 
 - Standalone: `/review:change-evolution <PR_URL> [OUTPUT_DIR]`
-- Orchestrator runs on large/mixed/CD/design signals (see `risk-class-routing.md`)
+- Orchestrator runs on large/mixed/CD/design signals (see `../../references/risk-class-routing.md`)
 
 Paths like `references/...` are relative to the `review` plugin root.

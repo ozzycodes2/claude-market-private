@@ -8,7 +8,7 @@ allowed-tools: Bash Read Grep Glob
 
 Analyze a pull request: what changed, which languages/frameworks involved, how to test it, what impact areas need review, which **risk classes** should gate deeper passes.
 
-**Foundation** for other review skills — produces structured analysis driving test recommendations, security scanning, documentation validation, and quality-review pass routing (`references/risk-class-routing.md`).
+**Foundation** for other review skills — produces structured analysis driving test recommendations, security scanning, documentation validation, and quality-review pass routing (`../../references/risk-class-routing.md`).
 
 ## Inputs
 
@@ -87,7 +87,7 @@ Writes analysis to `<OUTPUT_DIR>/pr-analysis-<PR_NUMBER>.json`:
 ```
 
 `risk_class` is an array of zero or more of: `domain`, `auth`, `data`, `api`, `concurrency`, `ops`.
-The orchestrator uses it to gate QR passes (see `references/risk-class-routing.md`).
+The orchestrator uses it to gate QR passes (see `../../references/risk-class-routing.md`).
 
 `uses_mac_ui` (see Step 4) tells `security-scan` and `docs-drift`
 to fetch mac-ui's live authority docs. `mac_ui_ref_repo` is the repo they fetch
@@ -315,7 +315,7 @@ security_sensitive = (
 
 ## Step 8b: Emit `risk_class` array
 
-Build `risk_class` as a JSON array of applicable classes (may be empty). Include a class when the diff/title/body/paths strongly suggest it — prefer false-positive inclusion over missing a QR pass.
+Set `RISK_CLASS_JSON` to a JSON array of applicable classes (`[]` is valid). Include a class when the diff/title/body/paths strongly suggest it — prefer false-positive inclusion over missing a QR pass.
 
 | Class | Include when |
 |---|---|
@@ -348,7 +348,7 @@ jq -n \
   --argjson needs_security_review "$NEEDS_SECURITY_REVIEW" \
   --argjson uses_mac_ui "${USES_MAC_UI:-false}" \
   --arg mac_ui_ref_repo "vlognow/mac-ui" \
-  --argjson risk_class "$RISK_CLASS_JSON" \
+  --argjson risk_class "${RISK_CLASS_JSON:-[]}" \
   '{
     pr: $pr,
     changes: $changes,
@@ -425,4 +425,4 @@ Error: Could not fetch PR. Check:
 - All analysis read-only (safe to run on any PR)
 - Output JSON designed to be consumed by other skills
 - Can be run standalone or as part of review
-- Routing consumers: orchestrator + `references/risk-class-routing.md`
+- Routing consumers: orchestrator + `../../references/risk-class-routing.md`

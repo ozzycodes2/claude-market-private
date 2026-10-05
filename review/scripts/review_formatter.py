@@ -167,6 +167,10 @@ _SECTION_TITLE_ICONS: list[tuple[str, str]] = [
     ("document", ":books:"),
     ("review", ":bug:"),
     ("test", ":test_tube:"),
+    ("architecture", ":triangular_ruler:"),
+    ("contract", ":handshake:"),
+    ("reliability", ":gear:"),
+    ("evolution", ":seedling:"),
     ("change", ":mag:"),
 ]
 

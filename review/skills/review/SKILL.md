@@ -18,7 +18,7 @@ Workflow:
 2. Deep code review (3-pass bug hunting — expanded concurrency) **in parallel with** risk-gated QR passes
 
 **Phase 2: Quality Checks** (parallel)
-3. Security scanning (OWASP deepen; reads only `anti-patterns/security-scan.md`)
+3. Security scanning (OWASP deepen)
 4. Documentation validation (incl. light DX fold)
 
 **Phase 3: Generation**
@@ -93,28 +93,29 @@ Store key findings:
 
 ### 3.1 Three-pass bug-finder (always)
 
-Spawn **3 independent bug-finders in parallel** with Task tool. Different models per pass:
+Spawn **3 independent bug-finders in parallel** with Task tool. Different models per pass — one model three times shares one set of blind spots, so a finding two models agree on is far stronger signal:
 
-| Pass | `model` | Role |
-|------|---------|------|
-| 1 | `opus` | Deepest reasoning — subtle logic, races, security data-flow |
-| 2 | `sonnet` | Strong, diversifies findings |
-| 3 | `haiku` | Fast breadth — cheap third perspective |
+| Pass | `model` | Model ID | Role |
+|------|---------|----------|------|
+| 1 | `opus` | `claude-opus-4-8` | Deepest reasoning — subtle logic, races, security data-flow |
+| 2 | `sonnet` | `claude-sonnet-5` | Strong, different family — diversifies findings |
+| 3 | `haiku` | `claude-haiku-4-5` | Fast breadth — cheap third perspective |
 
-**Send ONE message with THREE Task tool calls.** Each:
+Each:
 - `subagent_type`: `general-purpose`
-- `model`: from table (**do not omit**)
+- `model`: from table. **Do not omit** — an omitted `model` inherits the session model, collapsing all three passes onto one.
 - `description`: `Bug hunter pass [1 opus / 2 sonnet / 3 haiku]`
-- `prompt`: Bug-Finder Prompt below, with PR diff inserted as `{{DIFF}}`.
+- `prompt`: Bug-Finder Prompt below, with the PR diff inserted as `{{DIFF}}` and the contents of `../../references/anti-patterns/bug-finder.md` as `{{ANTI_PATTERNS}}`.
 
-Each bug-finder pass must **read only** `references/anti-patterns/bug-finder.md` (do not load other anti-pattern files).
+Read `../../references/anti-patterns/bug-finder.md` yourself and paste it into the prompt. These subagents run with the reviewed repo as their working directory, so they cannot resolve plugin-relative paths. Do not include any other anti-pattern slice.
 
 ### Bug-Finder Prompt (all 3 passes)
 
 ```
 You are a bug hunter. Find bugs that will crash production or create security vulnerabilities. Trace, don't scan.
 
-Before reviewing, read ONLY references/anti-patterns/bug-finder.md (no other anti-pattern files).
+## Anti-patterns
+{{ANTI_PATTERNS}}
 
 ## Critical Checks
 - **NPE / null-deref:** for every dereference, trace the variable's lifecycle (declared? assigned? set null in cleanup/error paths? nulled by another thread?). Show the full trace for each risk.
@@ -130,7 +131,7 @@ Before reviewing, read ONLY references/anti-patterns/bug-finder.md (no other ant
 Return a JSON array of findings, each: {"severity":"critical|high|medium","label":"issue|suggestion|nitpick|question|thought|praise","decoration":"blocking|non-blocking|if-minor","path":"exact/path","line":N,"title":"5-10 words","body":"explanation with lifecycle/data-flow trace","suggestion":"concrete fix"}.
 - `severity`: `critical` (crashes/security), `high` (fix soon), `medium` (fix later).
 - `label`/`decoration` optional — omit for severity defaults (`critical`/`high` → `issue (blocking)`, `medium` → `suggestion (non-blocking)`).
-- `path`/`line` required when mapped to diff (`line` = NEW-file line); omit for general findings.
+- `path`/`line` required when mapped to diff (`line` = NEW-file line); add `start_line` for a multi-line range. Omit both for general findings.
 - Wrap code refs in backticks; keep `body` to 1–2 terse sentences.
 - After the JSON, add a 1-2 sentence summary. Focus on crashes and vulnerabilities, not style.
 
@@ -142,7 +143,7 @@ Return a JSON array of findings, each: {"severity":"critical|high|medium","label
 
 ### 3.2 Risk-gated QR passes (parallel with bug-finder)
 
-Read `references/risk-class-routing.md`. From `risk_class`, decide which of these skills to run:
+Read `../../references/risk-class-routing.md`. From `risk_class`, decide which of these skills to run:
 
 | Gate | Skill |
 |---|---|
@@ -160,14 +161,15 @@ Use Task tool:
 - description: "QR pass <name>"
 - prompt: |
     Invoke Skill "review:<name>" with args "<PR_URL> <OUTPUT_DIR>".
-    Follow that skill exactly. It must read ONLY
-    references/anti-patterns/<name>.md (no other anti-pattern files).
+    Follow that skill exactly — it scopes its own anti-pattern slice.
     Write $OUTPUT_DIR/<name>-<PR_NUMBER>.json. Return a one-line finding-count summary.
 ```
 
-**Send bug-finder Tasks + QR Tasks in as few messages as possible** so they run concurrently. Do not wait yet — collect in Step 6.
+These invoke the skill, so they resolve its references themselves — unlike the bug-finders, they need nothing inlined.
 
 If `risk_class` is empty, skip QR passes (bug-finder still runs).
+
+Do not dispatch yet — Step 4's Tasks go out in the same message.
 
 ## Step 4: Run Phase 2 Skills (Parallel)
 
@@ -180,9 +182,8 @@ Use Task tool:
 - description: "Security scan (sonnet)"
 - prompt: |
     Invoke Skill "review:security-scan" with args "<PR_URL> <OUTPUT_DIR>".
-    Read ONLY references/anti-patterns/security-scan.md for anti-patterns
-    (plus the skill's own references/*). Deepen OWASP authz/IDOR, business-logic
-    abuse, SSRF, PII-in-logs. Write security-scan-<PR_NUMBER>.json. One-line summary.
+    Deepen OWASP authz/IDOR, business-logic abuse, SSRF, PII-in-logs per that
+    skill. Write security-scan-<PR_NUMBER>.json. One-line summary.
 ```
 
 ### 4.2 Documentation Validator (Haiku subagent)
@@ -198,7 +199,7 @@ Use Task tool:
     Write docs-drift-<PR_NUMBER>.json. One-line summary.
 ```
 
-Send both Task calls in ONE message. Continue to Step 5; collect in Step 6.
+**Send every Step 3 and Step 4 Task in ONE message** — 3 bug-finders, 0–4 QR passes, security-scan, docs-drift. They are independent and all read the same analysis JSON. Continue to Step 5 without waiting; collect in Step 6.
 
 ## Step 5: Phase 3 - Code Generation
 
@@ -227,18 +228,23 @@ Parse:
 ```
 IF (Critical code/QR/security findings > 0) OR (Clean Code blockers on correctness/invariants/hot paths):
   RECOMMENDATION = "REQUEST CHANGES"
+  RATIONALE = "Critical issues must be fixed before merge"
 
 ELIF (High findings > 3) OR (security_sensitive AND high_security_findings > 0):
   RECOMMENDATION = "REQUEST CHANGES"
+  RATIONALE = "Multiple high-severity issues require fixes"
 
 ELIF (High findings > 0) OR (missing_critical_docs):
   RECOMMENDATION = "COMMENT"
+  RATIONALE = "Issues should be addressed (manual review required)"
 
 ELIF (security_sensitive === true):
   RECOMMENDATION = "COMMENT"
+  RATIONALE = "Security-sensitive changes require manual review"
 
 ELSE:
   RECOMMENDATION = "COMMENT"
+  RATIONALE = "Review completed - findings noted for consideration"
 ```
 
 Always default to COMMENT (never APPROVE) — human-in-the-loop.
@@ -261,7 +267,7 @@ Set `review_metadata.model` to your model ID. Note bug-finder pass models in Cod
 
 ### Conventional Comments
 
-Formatter applies `<label> [decoration]: <subject>`. Finding fields match bug-finder schema. Severity defaults per `references/severity-rubric.md`. **Clean Code on correctness/invariants/shared hot paths → blocking.**
+Formatter applies `<label> [decoration]: <subject>`. Finding fields match bug-finder schema. Severity defaults per `../../references/severity-rubric.md`. **Clean Code on correctness/invariants/shared hot paths → blocking.**
 
 ### Formatting rules
 
@@ -336,7 +342,7 @@ View full review: <PR_URL>
 
 - Entry point for comprehensive reviews
 - Model-diverse 3-pass bug-finder (opus+sonnet+haiku) + risk-gated QR skills (`domain-architecture`, `data-contracts`, `ops-reliability`, `change-evolution`) + security-scan + docs-drift + codegen
-- Each pass reads **only** its matching `references/anti-patterns/<name>.md`
+- Each pass reads **only** its matching slice under the plugin's `references/anti-patterns/`
 - Clean Code craft issues that hit correctness/invariants/shared hot paths are **blockers**, not nits
 - Test execution/coverage left to CI
 - Never auto-approves/merges
