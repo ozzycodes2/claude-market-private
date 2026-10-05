@@ -1,6 +1,6 @@
 ---
 name: security-scan
-description: Run security scans using semgrep, linters, and dependency checkers to find vulnerabilities. Use when reviewing a PR that touches security-sensitive code or you need to surface injection, crypto, secrets, or dependency CVE risks.
+description: Run security scans using semgrep, linters, and dependency checkers to find vulnerabilities, including OWASP authz/IDOR, business-logic abuse, SSRF, and PII-in-logs. Use when reviewing a PR that touches security-sensitive code or you need to surface injection, crypto, secrets, or dependency CVE risks.
 allowed-tools: Bash Read Grep Glob
 ---
 
@@ -33,6 +33,9 @@ Writes security findings to `$OUTPUT_DIR/security-scan-<PR_NUMBER>.json`:
     "injection": 2,
     "crypto": 1,
     "auth": 2,
+    "business_logic": 0,
+    "ssrf": 0,
+    "pii_logging": 0,
     "secrets": 0,
     "dependencies": 5,
     "code_quality": 8
@@ -105,6 +108,15 @@ echo "PR number: $PR_NUMBER" >&2
 ```bash
 cat "$OUTPUT_DIR/pr-analysis-${PR_NUMBER}.json"
 ```
+
+## Step 0b: Load anti-patterns
+
+Read `references/anti-patterns.md` — it carries the OWASP dimensions to deepen
+(authz/IDOR, business-logic abuse, SSRF, PII-in-logs) alongside the classics.
+
+Also skim `shared/severity-rubric.md` for Clean Code blocking rules
+(security-adjacent craft issues — swallowed auth errors, flag params disabling
+authz — are blockers, not nits).
 
 ## Step 1: Check Tool Availability
 
@@ -340,7 +352,7 @@ done
 
 ## Step 5: Scan for Common Vulnerabilities
 
-Read `references/common-vulnerabilities.md` before grepping changed files for injection, auth, crypto patterns per language.
+Read `references/common-vulnerabilities.md` before grepping changed files for injection, auth, crypto patterns per language. Carry the Step 0b anti-patterns through this grep — the OWASP deepen dimensions are the ones these greps historically miss.
 
 ## Step 6: Analyze Dependencies
 
@@ -348,36 +360,7 @@ Read `references/dependency-analysis.md` before checking known CVEs and outdated
 
 ## Step 7: Categorize Findings
 
-Group findings by category:
-
-**Injection:**
-- SQL injection
-- Command injection
-- XSS
-- Path traversal
-
-**Authentication/Authorization:**
-- Missing authentication
-- Weak password hashing
-- Insecure session management
-- Hardcoded credentials
-
-**Cryptography:**
-- Weak algorithms
-- Insecure random
-- Hardcoded keys
-- Missing encryption
-
-**Dependencies:**
-- Known CVEs
-- Outdated packages
-- Unmaintained packages
-
-**Code Quality (Security-Adjacent):**
-- Missing input validation
-- Error information disclosure
-- Insecure defaults
-- Race conditions
+Read `references/finding-categories.md` and group findings by its categories — they are the keys of the `categories` counters in the output JSON.
 
 ## Step 8: Prioritize Findings
 
