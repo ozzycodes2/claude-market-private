@@ -2,21 +2,19 @@
 # Bounce /exit-session back to the user when the session is in a permission mode the
 # sweep cannot run in.
 #
-# exit-session's whole premise is that the teardown verbs (pkill, kill, rm -rf /tmp/*,
-# docker compose, tilt down, git worktree remove) are allow-listed in settings.json, so
-# the sweep runs start to finish without a prompt. Two modes break that premise:
+# Only plan mode qualifies: it blocks mutating tools outright, so there is no teardown
+# to be had, and starting one would strand the user in a half-torn-down stack.
 #
-#   auto  - strips every Bash allow rule at mode-entry time and routes each command
-#           through the classifier instead ("Ignoring dangerous permission <rule> from
-#           <source> (bypasses classifier)" in the debug log). Destructive teardown
-#           verbs are exactly what the classifier stops on, so the sweep prompts on
-#           nearly every step.
-#   plan  - blocks mutating tools outright; there is no teardown to be had.
+# auto mode used to be gated here too, on the grounds that entering it strips every Bash
+# allow rule ("Ignoring dangerous permission <rule> from <source> (bypasses classifier)"
+# in the debug log) and routes each command through the classifier. That gate fired on
+# every single invocation and cost the user a Shift+Tab and a re-run each time. It is gone:
+# the sweep is now described to the classifier in autoMode.allow, so auto mode passes the
+# teardown verbs on their own merits rather than on an allow rule that is not there.
 #
-# Nothing in the plugin surface can change the mode: no hook output field sets it, and
-# the setMode permission update is reachable only from the SDK permission bridge. So the
-# gate blocks the prompt and names the keystroke instead of letting the sweep start and
-# stall halfway through a half-torn-down stack.
+# Nothing in the plugin surface can change the mode: no hook output field sets it, and the
+# setMode permission update is reachable only from the SDK permission bridge. So for plan
+# mode the gate names the keystroke and stops.
 set -euo pipefail
 
 input=$(cat)
@@ -39,11 +37,6 @@ if ! printf '%s' "$prompt" | grep -Eq '^[[:space:]]*/(session-mgmt:)?exit-sessio
 fi
 
 case "$mode" in
-  auto)
-    reason="Not starting the teardown: this session is in auto mode, which strips the Bash allow rules exit-session depends on, so the sweep would prompt on nearly every step (pkill, rm, docker compose down -v, git worktree remove).
-
-Press Shift+Tab until the footer reads \"accept edits on\", then re-run /exit-session."
-    ;;
   plan)
     reason="Not starting the teardown: this session is in plan mode, which blocks the mutating tools the sweep needs.
 

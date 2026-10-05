@@ -1,10 +1,14 @@
 """Tests for session-mgmt/hooks/require-accept-edits.sh.
 
 The hook runs on every user prompt in the session, so both halves matter: it
-must block /exit-session in the modes where the sweep cannot run prompt-free,
-and it must stay completely silent for everything else. Run with:
+must block /exit-session in plan mode, where the sweep's mutating tools are off,
+and it must stay completely silent for everything else — auto mode included. Run
+with:
 
-    python3 -m unittest discover session-mgmt/tests
+    python3 session-mgmt/tests/test_require_accept_edits.py
+
+`unittest discover` does not work on this directory: it has no __init__.py, and
+Python refuses a start directory that is not importable.
 """
 import json
 import subprocess
@@ -36,41 +40,39 @@ def block_reason(prompt, mode):
 
 
 class BlockedModesTest(unittest.TestCase):
-    def test_auto_mode_blocks_with_the_allow_rule_explanation(self):
-        """auto strips the Bash allow rules, so the sweep must not start."""
-        reason = block_reason("/exit-session", "auto")
-        self.assertIsNotNone(reason)
-        self.assertIn("auto mode", reason)
-        self.assertIn("accept edits on", reason)
-
-    def test_plan_mode_blocks_for_a_different_reason(self):
+    def test_plan_mode_blocks_because_mutating_tools_are_off(self):
         reason = block_reason("/exit-session", "plan")
         self.assertIsNotNone(reason)
         self.assertIn("plan mode", reason)
         self.assertIn("accept edits on", reason)
 
     def test_block_output_is_a_well_formed_hook_decision(self):
-        rc, out, err = run_hook({"prompt": "/exit-session", "permission_mode": "auto"})
+        rc, out, err = run_hook({"prompt": "/exit-session", "permission_mode": "plan"})
         self.assertEqual(rc, 0)
         self.assertEqual(err, "")
         self.assertEqual(json.loads(out)["decision"], "block")
 
     def test_scope_argument_still_blocks(self):
         """`/exit-session worktree` is the same sweep, just narrower."""
-        self.assertIsNotNone(block_reason("/exit-session worktree", "auto"))
+        self.assertIsNotNone(block_reason("/exit-session worktree", "plan"))
 
     def test_namespaced_invocation_still_blocks(self):
-        self.assertIsNotNone(block_reason("/session-mgmt:exit-session", "auto"))
+        self.assertIsNotNone(block_reason("/session-mgmt:exit-session", "plan"))
 
     def test_leading_whitespace_still_blocks(self):
-        self.assertIsNotNone(block_reason("  /exit-session", "auto"))
+        self.assertIsNotNone(block_reason("  /exit-session", "plan"))
 
 
 class AllowedModesTest(unittest.TestCase):
-    def test_modes_that_honor_allow_rules_pass_through(self):
+    def test_modes_that_can_run_the_sweep_pass_through(self):
         for mode in ("acceptEdits", "default", "bypassPermissions", "dontAsk"):
             with self.subTest(mode=mode):
                 self.assertIsNone(block_reason("/exit-session", mode))
+
+    def test_auto_mode_passes_through(self):
+        """autoMode.allow describes the sweep, so the classifier clears it."""
+        self.assertIsNone(block_reason("/exit-session", "auto"))
+        self.assertIsNone(block_reason("/session-mgmt:exit-session worktree", "auto"))
 
     def test_absent_permission_mode_passes_through(self):
         """An unknown mode is not a reason to refuse to clean up."""
@@ -81,15 +83,15 @@ class AllowedModesTest(unittest.TestCase):
 
 class UnrelatedPromptsTest(unittest.TestCase):
     def test_unrelated_prompt_is_untouched(self):
-        rc, out, err = run_hook({"prompt": "fix the flaky test", "permission_mode": "auto"})
+        rc, out, err = run_hook({"prompt": "fix the flaky test", "permission_mode": "plan"})
         self.assertEqual((rc, out, err), (0, "", ""))
 
     def test_prose_mentioning_the_skill_is_not_an_invocation(self):
         """Only the slash command counts; the skill is disable-model-invocation."""
-        self.assertIsNone(block_reason("what does exit-session do?", "auto"))
+        self.assertIsNone(block_reason("what does exit-session do?", "plan"))
 
     def test_bare_exit_is_not_exit_session(self):
-        self.assertIsNone(block_reason("/exit", "auto"))
+        self.assertIsNone(block_reason("/exit", "plan"))
 
     def test_malformed_payload_fails_open_and_silently(self):
         """A parse error must not warn on a prompt the hook has no business gating."""

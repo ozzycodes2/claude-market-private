@@ -17,11 +17,11 @@ license: MIT
 compatibility: >-
   Assumes a git repo with optional worktrees under .claude/worktrees/ or /tmp;
   Docker + docker compose; optional Tilt (rancher-desktop/k3d); optional `just`
-  task runner. Teardown verbs are allow-listed in settings.json so the sweep runs
-  without prompts — which requires accept-edits (or default) mode, since `auto` mode
-  strips Bash allow rules; the bundled UserPromptSubmit hook blocks the invocation and
-  asks for the mode switch instead. The final self-exit uses `kill "$PPID"` (the CLI
-  process).
+  task runner. Runs without prompts in default, accept-edits and bypassPermissions
+  mode via allow rules in settings.json, and in `auto` mode — which strips those rules
+  — via an autoMode.allow entry describing the sweep. Only plan mode is refused, by the
+  bundled UserPromptSubmit hook, since it blocks mutating tools outright. The final
+  self-exit uses `kill "$PPID"` (the CLI process).
 argument-hint: "[optional: resource to scope to, e.g. worktree | docker | tilt | scratch]"
 disable-model-invocation: true
 ---
@@ -31,11 +31,11 @@ disable-model-invocation: true
 Teardown of everything a working session spun up: background processes, Docker/compose
 stacks, local Tilt/Kubernetes, git worktrees, merged local branches, and scratch files —
 leaving the machine as clean as before the session started — then quit the CLI. Designed
-to run **permission-free in accept-edits mode**: the teardown verbs are allow-listed there,
-so you execute the sweep directly without stopping for confirmation — including the two
-operations that destroy *data* rather than just tear down ephemeral resources. In `auto`
-mode those allow rules do not exist (Phase 0), which is why the sweep refuses to start in
-it.
+to run **permission-free**: the teardown verbs are allow-listed in default, accept-edits
+and bypassPermissions mode, and described to the classifier in `autoMode.allow` for `auto`
+mode, so you execute the sweep directly without stopping for confirmation — including the
+two operations that destroy *data* rather than just tear down ephemeral resources. Only
+plan mode is refused (Phase 0).
 
 ## Core principles
 
@@ -67,6 +67,16 @@ it.
 6. **No leading `cd`.** Use `git -C <path>` and absolute paths. A leading `cd` triggers a
    permission prompt (per the user's global CLAUDE.md) and defeats the point of a
    permission-free sweep.
+7. **One plain command per Bash call while in a worktree.** When the session is inside a
+   linked worktree — the normal case for this sweep — Claude Code's isolation validator
+   refuses any Bash line it cannot statically prove stays inside it: *"too complex to
+   verify that it stays inside the worktree; break it into plain, separate commands."*
+   It rejects `;` and `&&` chains, `$(…)` substitution, and heredocs **even when every
+   component is read-only**. It is a static-analysis gate, not a permission check, so no
+   allow rule and no permission mode gets past it. Issue separate Bash calls, in parallel
+   in one message where they're independent. The one exception is the bundled discovery
+   script: it is a single `bash <script>` call, and the commands inside its own subshell
+   are not re-examined — which is also why it is the cheapest way to run discovery.
 
 ## Workflow
 
@@ -74,26 +84,24 @@ Work the phases in order. Create a todo per phase so progress is visible.
 
 ### Phase 0 — Permission mode (preflight)
 
-The sweep is only prompt-free in **accept-edits** mode (or `default`, or
-`bypassPermissions`). It is *not* prompt-free in `auto` mode: entering `auto` strips every
-Bash allow rule from settings — the debug log says `Ignoring dangerous permission <rule>
-from <source> (bypasses classifier)` — and routes each command through the auto-mode
-classifier instead. Destructive teardown verbs are precisely what that classifier stops on,
-so a sweep started in `auto` prompts on `pkill`, on the scratch `rm`, on
-`docker compose down -v`, and on `git worktree remove --force`, and a half-answered sweep
-leaves a half-torn-down stack.
+**If you are reading this, the mode is already fine.** The bundled `UserPromptSubmit`
+hook (`hooks/require-accept-edits.sh`) blocks `/exit-session` in plan mode before you ever
+see the prompt, and it let this invocation through. Proceed straight to Phase 0a.
 
-The bundled `UserPromptSubmit` hook (`hooks/require-accept-edits.sh`) blocks
-`/exit-session` in `auto` and `plan` mode before you ever see the prompt, and tells the
-user to Shift+Tab into "accept edits on" and re-run. **So if you are reading this, the mode
-is already fine** — the hook let the invocation through. Proceed straight to Phase 0a.
+Only plan mode is refused, because it blocks the mutating tools the sweep needs. Every
+other mode works, by two different routes: `default`, `acceptEdits` and
+`bypassPermissions` honour the `Bash(...)` allow rules in settings.json, while `auto`
+strips them all at mode-entry (`Ignoring dangerous permission <rule> from <source>
+(bypasses classifier)` in the debug log) and relies instead on the `autoMode.allow` entry
+describing this sweep. Do not reintroduce an auto-mode gate: it fired on every single
+invocation and cost the user a Shift+Tab and a re-run each time.
 
 Nothing here can flip the mode for the user, so do not try: no hook output field sets it
 (`PreToolUse` returns only `permissionDecision` / `permissionDecisionReason` /
 `updatedInput` / `additionalContext`), and the `setMode` permission update is reachable
-only from the SDK permission bridge. The keystroke is the only lever. If the hook is not
-installed and prompts start landing on allow-listed verbs, stop the sweep, report what has
-already been torn down, and ask for the mode switch — do not grind through the sweep one
+only from the SDK permission bridge. The keystroke is the only lever. If prompts start
+landing on verbs that should be covered, stop the sweep, report what has already been
+torn down, and say which rule is missing — do not grind through the sweep one
 confirmation at a time.
 
 ### Phase 0a — Identify this session's own worktree (read-only, deterministic)
@@ -102,11 +110,17 @@ confirmation at a time.
 settles the question the rest of the sweep keeps getting wrong: *is the directory I am
 sitting in a worktree that should be torn down?*
 
+Three separate Bash calls, issued in parallel in one message — not `&&`-joined, and not
+wrapped in `echo "$(…)"` (Principle 7):
+
 ```
 git -C <cwd> rev-parse --git-dir           # linked worktree -> <main>/.git/worktrees/<name>
 git -C <cwd> rev-parse --git-common-dir    # linked worktree -> <main>/.git   (differs!)
 git -C <cwd> rev-parse --show-toplevel     # linked worktree -> the worktree path itself
 ```
+
+`git rev-parse --git-dir --git-common-dir --show-toplevel` in one call is also fine —
+that is a single command with three flags, not a chain.
 
 - **`--git-dir` and `--git-common-dir` differ** → the session is inside a **linked
   worktree**. `--show-toplevel` is `SELF_WORKTREE`, and the parent of `--git-common-dir`
@@ -136,13 +150,18 @@ bash <skill-dir>/scripts/discover-resources.sh <repo-root>
 ```
 
 (Substitute the real absolute path to this skill's `scripts/discover-resources.sh`, and
-the absolute repo root.) It prints sections for worktrees, current branch + merge status,
+the absolute repo root.) Write it exactly that way: `bash ` then the bare unquoted path.
+Quoting the path, or executing the script directly without `bash `, changes the command
+string enough to miss the allow rule and costs a prompt. It prints sections for worktrees,
+current branch + merge status,
 background jobs/ports, Docker containers, Tilt/k8s, and scratch dirs. If the script is
 unavailable, gather the same signals by hand (all read-only, all with `git -C`, no `cd`):
 
-- **Background tasks this session spawned:** use the `TaskList` tool to enumerate live
-  background shells and their `task_id`s. Cross-reference `ps` / `lsof -iTCP -sTCP:LISTEN -P -n`
-  for dev servers (vite, `target/debug/api`, `cargo run -p api`, `npm run dev`, cloudflared,
+- **Background tasks this session spawned:** use the `Monitor` tool to enumerate live
+  background shells and their `task_id`s — it is deferred, so `ToolSearch select:Monitor`
+  first. (There is no `TaskList` tool; asking for one wastes a turn.) Cross-reference
+  `ps` / `pgrep -f` / `lsof -iTCP -sTCP:LISTEN -P -n` for dev servers (vite,
+  `target/debug/api`, `cargo run -p api`, `npm run dev`, cloudflared,
   `kubectl port-forward`).
 - **Worktrees:** `git -C <repo> worktree list` and `ls -la <repo>/.claude/worktrees/ 2>/dev/null`.
 - **Branch:** `git -C <repo> branch --show-current`, `git -C <repo> status -s`, and whether
@@ -166,7 +185,8 @@ to downgrade `SELF_WORKTREE` to "probably another session's."
 
 ### Phase 1 — Stop ephemeral runtime (permission-free)
 
-1. **Background tasks:** call `TaskStop` for each `task_id` this session spawned. For
+1. **Background tasks:** call `TaskStop` (deferred — `ToolSearch select:TaskStop`) for
+   each `task_id` this session spawned. For
    manually-launched servers not tracked as tasks, `pkill -f '<pattern>'` or `kill <pid>`
    (use the narrowest pattern that matches only this session's process). Confirm ports are
    freed with `lsof -iTCP:<port> -sTCP:LISTEN -P -n`.
@@ -206,6 +226,9 @@ report what it said — do not leave the worktree standing silently.
 
 **3b. Any other worktree this session created** — throwaway checkouts under `/tmp`,
 review clones, a second worktree spun up mid-task:
+
+Three separate Bash calls, in this order — `;`-joining them gets the whole line refused
+under worktree isolation (Principle 7):
 
 ```
 git -C <MAIN_REPO> worktree unlock <path>           # errors if not locked; that error is fine
@@ -252,7 +275,7 @@ If the wrap-up implies any of these, list the ready-to-paste command and stop th
 
 ## Confirmation gating
 
-- **Permission-free in accept-edits mode (run directly, no prompt — the whole sweep):**
+- **Permission-free in every mode the hook admits (run directly, no prompt — the whole sweep):**
   stopping tasks/servers, `tilt down`, `docker compose down` **including `-v`**
   (volume/data wipe), scratch `rm`,
   `git worktree remove --force` **including worktrees with uncommitted changes**,
@@ -264,13 +287,19 @@ If the wrap-up implies any of these, list the ready-to-paste command and stop th
 ## Gotchas (environment-specific — do not assume otherwise)
 
 - **Teardown verbs are allow-listed**, so `git worktree remove/prune`, `git branch -d/-D`,
-  `docker compose/stop/rm`, `pkill`, `kill`, `rm -rf /tmp/*`, and `tilt down` run without a
-  prompt. `just -f <repo>/justfile compose-down` / `tilt-down` is the house convention —
-  check the `justfile` before falling back to raw commands.
-- **`auto` mode has no allow rules.** Mode entry strips every `Bash(...)` allow rule and
-  hands each command to the classifier, so "it's allow-listed" stops being true the moment
-  the user Shift+Tabs into `auto`. The gate hook keeps the sweep out of that mode; never
-  work around it by starting the sweep anyway.
+  `docker compose/stop/rm/ps`, `pkill`, `kill`, `pgrep`, `ps`, `lsof`, `rm -rf /tmp/*`,
+  and `tilt down/get` run without a prompt. `just -f <repo>/justfile compose-down` /
+  `tilt-down` is the house convention — check the `justfile` before falling back to raw
+  commands.
+- **Bash allow rules match the raw command string**, with `*` spanning `/` and spaces —
+  they are not gitignore-style path globs (that matcher serves `Read`/`Edit` rules only).
+  So `Bash(rm -rf *.claude/jobs/*)` does cover an absolute scratch path. It does not cover
+  flag reorderings like `rm -fr` or `rm -r -f`; keep to `rm -rf`.
+- **`auto` mode has no allow rules**, so in that mode the thing clearing the sweep is the
+  `autoMode.allow` entry describing it, not the `Bash(...)` rules — those are stripped at
+  mode entry. The practical difference: a classifier judgement is probabilistic where an
+  allow rule is not. If a teardown verb does get stopped in `auto`, that is a gap in the
+  prose entry; report it rather than retrying the command.
 - **Still deny-listed:** `git push origin --delete`, `git reset --hard`, force-push to main,
   and `gh pr merge`. Attempting them wastes a turn on a guaranteed denial. Print-for-user is
   the only correct path.

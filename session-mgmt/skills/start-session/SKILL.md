@@ -57,7 +57,17 @@ user types another word.
    exits, so writing it alone renames nothing durable. Write the transcript record
    directly (see Phase 2.5); mirror into the pid file too, best-effort, for the live
    indicator.
-6. **Execute silently; report once.** Don't narrate phase transitions, tool calls, or
+6. **One plain command per Bash call, from Phase 2 onward.** The moment EnterWorktree
+   returns, the session is worktree-isolated, and Claude Code's isolation validator
+   refuses any Bash line it cannot statically prove stays inside the worktree:
+   *"too complex to verify that it stays inside the worktree; break it into plain,
+   separate commands."* It rejects `;` and `&&` chains, `$(…)` substitution, and
+   heredocs — **even when every component is read-only**, and even for a bare
+   `acli jira workitem view`. No permission rule can pre-empt it. So after Phase 2,
+   never join commands: issue them as separate Bash calls, in parallel in a single
+   message where they're independent. That costs no extra turns; a refusal costs
+   several.
+7. **Execute silently; report once.** Don't narrate phase transitions, tool calls, or
    intermediate checks ("Preconditions pass...", "Now Phase 2.5...", "Verifying...").
    Run Phases 0-3 without commentary. The only output is the Phase 4 report — unless a
    real precondition fails and needs a user decision (that's a stop, not narration).
@@ -112,67 +122,38 @@ That pid file only drives the live "concurrent sessions" indicator while this pr
 is running, and gets deleted the instant the process exits, so writing only there
 renames nothing durable — the change vanishes the moment the session ends.
 
-Find *this* session's transcript by matching the filename to the session id (never
-guess the project-dir slug — its encoding isn't a stable contract):
+Run the bundled script — one plain command, no heredoc (Principle 6):
 
 ```bash
-python3 - "$CLAUDE_CODE_SESSION_ID" "<NAME>" <<'PY'
-import json, sys, os, glob
-sid, name = sys.argv[1], sys.argv[2]
-matches = glob.glob(os.path.expanduser(f"~/.claude/projects/*/{sid}.jsonl"))
-if not matches:
-    print("no transcript file matched; skipping rename")
-else:
-    with open(matches[0], "a") as f:
-        f.write(json.dumps({"type": "custom-title", "customTitle": name, "sessionId": sid}) + "\n")
-        f.write(json.dumps({"type": "agent-name", "agentName": name, "sessionId": sid}) + "\n")
-    print("renamed session ->", name)
-PY
+python3 <skill-dir>/scripts/rename-session.py "$CLAUDE_CODE_SESSION_ID" "<NAME>"
 ```
 
-Then, best-effort, mirror the name into the live pid file too, so any concurrent
-sessions view reflects it immediately while this process keeps running (purely
-cosmetic — safe to skip on failure):
+(Substitute the real absolute path to this skill's `scripts/rename-session.py`.) It
+appends the title records to the transcript and mirrors the name into the live pid
+file, reporting each on stdout.
 
-```bash
-python3 - "$CLAUDE_CODE_SESSION_ID" "<NAME>" <<'PY'
-import json, sys, os, glob, tempfile
-sid, name = sys.argv[1], sys.argv[2]
-d = os.path.expanduser("~/.claude/sessions")
-for p in glob.glob(os.path.join(d, "*.json")):
-    try:
-        j = json.load(open(p))
-    except Exception:
-        continue
-    if j.get("sessionId") == sid:
-        j["name"] = name
-        fd, tmp = tempfile.mkstemp(dir=d)
-        with os.fdopen(fd, "w") as f:
-            json.dump(j, f)
-        os.replace(tmp, p)
-        break
-PY
-```
+Earlier versions inlined this as `python3 - … <<'PY'`. Don't go back to that: a
+heredoc is exactly the shape the worktree-isolation validator refuses, and improvising
+around it means writing a scratch script to `/tmp` — two more round trips and a
+`Write` that nothing grants.
 
 Notes:
-- Append, don't rewrite. The transcript file is being actively written by this very
-  process for the rest of the session; a single `open(..., "a")` write is one
-  `write(2)` call under `O_APPEND`, which can't corrupt or race with the process's
-  own appends. Never read-modify-write this file the way the pid file is handled.
-- Match the transcript by filename (`<sessionId>.jsonl`) under `~/.claude/projects/*/`
-  — never by reconstructing the project-dir slug.
-- If `CLAUDE_CODE_SESSION_ID` is unset or no transcript file matches, print the
-  one-line skip and continue — a missing name is not worth failing the session over.
+- The script appends rather than rewriting, because the transcript is being actively
+  written by this very process for the rest of the session. Never read-modify-write it.
+- If `CLAUDE_CODE_SESSION_ID` is unset or no transcript matches, the script prints a
+  one-line skip and exits 0 — a missing name is not worth failing the session over.
 - This renames the session for next time — it takes effect when the session is opened
   via `/resume` afterward. It does not repaint the *currently running* process's own
   terminal title or prompt-box name (only the interactive `/rename` command updates
-  that in-memory state); the pid-file mirror above is the closest live-visible
-  approximation.
+  that in-memory state); the pid-file mirror is the closest live-visible approximation.
 
 ### Phase 2.6 — Report what the worktree inherited (read-only)
 
 A fresh worktree is not empty of untracked state, and the state it gets can make it look
 ready while pointing at another checkout's resources. Establish both, in the new cwd:
+
+Issue these as **separate, parallel Bash calls in one message** (Principle 6) — joining
+them with `;` is what gets the whole probe refused:
 
 - **`.worktreeinclude`** at the *main checkout's* root: every non-comment line is a
   gitignored path Claude Code **copies** into the new worktree — usually `.env`. Read the
@@ -180,7 +161,8 @@ ready while pointing at another checkout's resources. Establish both, in the new
   the main checkout are skipped silently, so absence is not an error.
 - **`worktree.symlinkDirectories`** in user settings: those directories (`node_modules`
   and friends) are **symlinked** back to the main checkout, not copied — so no install
-  step is needed, and none should be run.
+  step is needed, and none should be run. Use the `Read` tool on
+  `~/.claude/settings.json` rather than shelling out to `cat`/`grep`/`jq`.
 
 Then answer the question that decides whether the workspace is usable: **does this
 worktree have its own stack, or is it borrowing the main checkout's?** A copied `.env`
@@ -261,15 +243,26 @@ end-to-end without prompts, add to `permissions.allow`:
 - `Bash(acli jira workitem view *)` — Phase 3's story fetch; read-only.
 - `Bash(git rev-parse *)`, `Bash(git worktree list)` — Phase 1's read-only preconditions
   (covered already if you blanket-allow `Bash(git *)`).
-- Phase 2.5's rename scripts run under `python3`. There's no way to allowlist just
-  those two scripts without allowlisting `python3` broadly — it's a general-purpose
-  interpreter, so treat `Bash(python3 *)` as a deliberate, standalone trust decision,
-  not something to add solely for this skill.
+- `Bash(cat *)`, `Bash(ls *)`, `Bash(just *)` — Phase 2.6's probe of the inherited
+  environment.
+- Phase 2.5's rename runs under `python3`. There's no way to allowlist one script
+  without allowlisting the interpreter broadly, so treat `Bash(python3 *)` as a
+  deliberate, standalone trust decision, not something to add solely for this skill.
+
+Note that Bash rules are wildcard-matched against the raw command string, where `*`
+spans `/` and spaces — they are not gitignore-style path globs (that matcher is only
+used for `Read`/`Edit` rules). And entering `auto` mode strips every `Bash(...)` allow
+rule in favour of the classifier, so in that mode what matters is `autoMode.allow`,
+not this list.
 
 ## Gotchas
 
 - **EnterWorktree is deferred.** Calling it without a prior `ToolSearch
   select:EnterWorktree` fails with InputValidationError. Always load it first.
+- **After EnterWorktree, compound Bash lines are refused.** The isolation validator
+  rejects `;`, `&&`, `$(…)` and heredocs regardless of how harmless the components are
+  — it is a static-analysis gate, not a permission check, so no allow rule and no
+  permission mode gets past it. Split the call (Principle 6).
 - **`acli` is a shell command, not a tool.** There is nothing to ToolSearch for; the
   Atlassian MCP server is disabled and its `mcp__plugin_atlassian_atlassian__*` tools do
   not exist.
