@@ -1,7 +1,5 @@
 # Anti-patterns — Change / CD / design quality
 
-Read **only** this file for `change-evolution` passes. Do not load other anti-pattern slices.
-
 ## Change & evolution (CD)
 
 - Intermediate merge leaves system non-releasable

@@ -105,9 +105,9 @@ Each:
 - `subagent_type`: `general-purpose`
 - `model`: from table. **Do not omit** — an omitted `model` inherits the session model, collapsing all three passes onto one.
 - `description`: `Bug hunter pass [1 opus / 2 sonnet / 3 haiku]`
-- `prompt`: Bug-Finder Prompt below, with the PR diff inserted as `{{DIFF}}` and the contents of `../../references/anti-patterns/bug-finder.md` as `{{ANTI_PATTERNS}}`.
+- `prompt`: Bug-Finder Prompt below, with the PR diff inserted as `{{DIFF}}` and the contents of `references/anti-patterns.md` as `{{ANTI_PATTERNS}}`.
 
-Read `../../references/anti-patterns/bug-finder.md` yourself and paste it into the prompt. These subagents run with the reviewed repo as their working directory, so they cannot resolve plugin-relative paths. Do not include any other anti-pattern slice.
+Read `references/anti-patterns.md` yourself and paste it in. These are raw Task prompts, not skill invocations — the subagents run with the reviewed repo as their working directory and cannot resolve a path in this skill.
 
 ### Bug-Finder Prompt (all 3 passes)
 
@@ -143,7 +143,7 @@ Return a JSON array of findings, each: {"severity":"critical|high|medium","label
 
 ### 3.2 Risk-gated QR passes (parallel with bug-finder)
 
-Read `../../references/risk-class-routing.md`. From `risk_class`, decide which of these skills to run:
+Read `shared/risk-class-routing.md`. From `risk_class`, decide which of these skills to run:
 
 | Gate | Skill |
 |---|---|
@@ -267,7 +267,7 @@ Set `review_metadata.model` to your model ID. Note bug-finder pass models in Cod
 
 ### Conventional Comments
 
-Formatter applies `<label> [decoration]: <subject>`. Finding fields match bug-finder schema. Severity defaults per `../../references/severity-rubric.md`. **Clean Code on correctness/invariants/shared hot paths → blocking.**
+Formatter applies `<label> [decoration]: <subject>`. Finding fields match bug-finder schema. Severity defaults per `shared/severity-rubric.md`. **Clean Code on correctness/invariants/shared hot paths → blocking.**
 
 ### Formatting rules
 
@@ -342,7 +342,7 @@ View full review: <PR_URL>
 
 - Entry point for comprehensive reviews
 - Model-diverse 3-pass bug-finder (opus+sonnet+haiku) + risk-gated QR skills (`domain-architecture`, `data-contracts`, `ops-reliability`, `change-evolution`) + security-scan + docs-drift + codegen
-- Each pass reads **only** its matching slice under the plugin's `references/anti-patterns/`
+- Each pass owns its anti-pattern slice at `skills/<pass>/references/anti-patterns.md`, so it can address no other
 - Clean Code craft issues that hit correctness/invariants/shared hot paths are **blockers**, not nits
 - Test execution/coverage left to CI
 - Never auto-approves/merges

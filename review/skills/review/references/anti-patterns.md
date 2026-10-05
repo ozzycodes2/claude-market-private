@@ -1,7 +1,5 @@
 # Anti-patterns — Bug-finder (crash / security hunter)
 
-Read **only** this file for the orchestrator's 3-pass bug-finder. Do not load other anti-pattern slices.
-
 ## Crash / lifecycle
 
 - Null deref after cleanup / error path / cross-thread nulling

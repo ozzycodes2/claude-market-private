@@ -35,17 +35,10 @@ Quality Review Task passes on this array.
 
 **Rule of thumb:** if `risk_class` is empty, skip the four QR passes (bug-finder + security + docs still run). If unsure whether a class applies, **include** it — false positive pass cost is cheaper than a missed domain/data review.
 
-## Anti-patterns file per pass
+## Anti-patterns per pass
 
-Each pass reads **only** its matching slice under `review/references/anti-patterns/`:
-
-| Pass | Anti-patterns file |
-|---|---|
-| `domain-architecture` | `anti-patterns/domain-architecture.md` |
-| `data-contracts` | `anti-patterns/data-contracts.md` |
-| `ops-reliability` | `anti-patterns/ops-reliability.md` |
-| `change-evolution` | `anti-patterns/change-evolution.md` |
-| bug-finder (3-pass) | `anti-patterns/bug-finder.md` |
-| `security-scan` | `anti-patterns/security-scan.md` |
-
-Do **not** load the full taxonomy or other passes' anti-pattern files into a single prompt.
+Every pass carries its own slice at `skills/<pass>/references/anti-patterns.md`,
+so a pass can address no slice but its own — the bug-finder's lives under
+`skills/review/`, which owns those Tasks. Nothing loads the full taxonomy
+(`shared/quality-review-pr-review-taxonomy.md`); it is the provenance for the
+slices, not a prompt input.

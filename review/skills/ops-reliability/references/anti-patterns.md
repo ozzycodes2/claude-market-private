@@ -1,7 +1,5 @@
 # Anti-patterns — Ops, reliability, performance
 
-Read **only** this file for `ops-reliability` passes. Do not load other anti-pattern slices.
-
 ## Reliability / operability
 
 - Missing timeouts (infinite hangs)

@@ -1,7 +1,5 @@
 # Anti-patterns — Data & API contracts
 
-Read **only** this file for `data-contracts` passes. Do not load other anti-pattern slices.
-
 ## Data & consistency
 
 - Dual writes without outbox/CDC plan

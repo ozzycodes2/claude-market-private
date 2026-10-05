@@ -1,7 +1,5 @@
 # Anti-patterns — Domain / Architecture / Team boundaries
 
-Read **only** this file for `domain-architecture` passes. Do not load other anti-pattern slices.
-
 ## Domain
 
 - Accidental synonyms inventing conflicting public terms (`User` vs `Account` vs `Customer` for the same concept)

@@ -109,12 +109,12 @@ echo "PR number: $PR_NUMBER" >&2
 cat "$OUTPUT_DIR/pr-analysis-${PR_NUMBER}.json"
 ```
 
-## Step 0b: Load anti-patterns (this pass only)
+## Step 0b: Load anti-patterns
 
-Read **only** `../../references/anti-patterns/security-scan.md`.
-Do **not** load other files under `../../references/anti-patterns/`.
+Read `references/anti-patterns.md` — it carries the OWASP dimensions to deepen
+(authz/IDOR, business-logic abuse, SSRF, PII-in-logs) alongside the classics.
 
-Also skim `../../references/severity-rubric.md` for Clean Code blocking rules
+Also skim `shared/severity-rubric.md` for Clean Code blocking rules
 (security-adjacent craft issues — swallowed auth errors, flag params disabling
 authz — are blockers, not nits).
 
@@ -352,18 +352,7 @@ done
 
 ## Step 5: Scan for Common Vulnerabilities
 
-Read `references/common-vulnerabilities.md` before grepping changed files for injection, auth, crypto patterns per language.
-
-### OWASP dimensions to deepen (historically thin)
-
-- **Authorization / IDOR** — Server-side ownership checks on object IDs; default deny;
-  function-level authz on new endpoints; no client-trusted roles/prices.
-- **Business-logic abuse** — Workflow step skipping; race-to-privilege; quota/coupon
-  bypass via parallel requests; state-machine transitions enforced server-side.
-- **SSRF / unsafe egress** — User-controlled URLs; webhook/preview/importer fetches;
-  block private/metadata ranges; allowlists where feasible.
-- **PII in logs / telemetry** — No PII/secrets in logs, metrics labels, traces, or
-  exception messages; no debug body dumps with credentials/PHI.
+Read `references/common-vulnerabilities.md` before grepping changed files for injection, auth, crypto patterns per language. Carry the Step 0b anti-patterns through this grep — the OWASP deepen dimensions are the ones these greps historically miss.
 
 ## Step 6: Analyze Dependencies
 
@@ -371,51 +360,7 @@ Read `references/dependency-analysis.md` before checking known CVEs and outdated
 
 ## Step 7: Categorize Findings
 
-Group findings by category:
-
-**Injection:**
-- SQL injection
-- Command injection
-- XSS
-- Path traversal
-
-**Authentication/Authorization:**
-- Missing authentication
-- IDOR / missing object-level authorization
-- Weak password hashing
-- Insecure session management
-- Hardcoded credentials
-
-**Cryptography:**
-- Weak algorithms
-- Insecure random
-- Hardcoded keys
-- Missing encryption
-
-**Dependencies:**
-- Known CVEs
-- Outdated packages
-- Unmaintained packages
-
-**Business Logic (`business_logic`):**
-- Workflow step skipping / race-to-privilege
-- Quota, coupon, or rate-limit bypass via parallel requests
-- State-machine transitions not enforced server-side
-
-**SSRF (`ssrf`):**
-- User-controlled URL fetches (webhooks, previews, importers)
-- Access to private/metadata IP ranges
-- Missing egress allowlists
-
-**PII in Logs (`pii_logging`):**
-- PII/secrets in logs, metrics labels, traces, or exception messages
-- Debug body dumps containing credentials/PHI
-
-**Code Quality (Security-Adjacent):**
-- Missing input validation
-- Error information disclosure
-- Insecure defaults
-- Race conditions
+Read `references/finding-categories.md` and group findings by its categories — they are the keys of the `categories` counters in the output JSON.
 
 ## Step 8: Prioritize Findings
 
@@ -534,5 +479,3 @@ Analysis saved to: $OUTPUT_DIR/security-scan-123.json
 ## Error Handling and Notes
 
 Read `references/error-handling-and-notes.md` when tools fail, no tools installed, no findings, or need scan caveats.
-
-Anti-patterns for this skill live only in `../../references/anti-patterns/security-scan.md`.

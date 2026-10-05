@@ -1,7 +1,5 @@
 # Anti-patterns — Security scan (OWASP deepen)
 
-Read **only** this file for `security-scan`. Do not load other anti-pattern slices.
-
 ## Authz / IDOR (deepen — historically thin)
 
 - Client-supplied object IDs without server-side ownership checks (IDOR)

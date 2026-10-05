@@ -8,7 +8,7 @@ allowed-tools: Bash Read Grep Glob
 
 Analyze a pull request: what changed, which languages/frameworks involved, how to test it, what impact areas need review, which **risk classes** should gate deeper passes.
 
-**Foundation** for other review skills — produces structured analysis driving test recommendations, security scanning, documentation validation, and quality-review pass routing (`../../references/risk-class-routing.md`).
+**Foundation** for other review skills — produces structured analysis driving test recommendations, security scanning, documentation validation, and quality-review pass routing (`shared/risk-class-routing.md`).
 
 ## Inputs
 
@@ -87,7 +87,7 @@ Writes analysis to `<OUTPUT_DIR>/pr-analysis-<PR_NUMBER>.json`:
 ```
 
 `risk_class` is an array of zero or more of: `domain`, `auth`, `data`, `api`, `concurrency`, `ops`.
-The orchestrator uses it to gate QR passes (see `../../references/risk-class-routing.md`).
+The orchestrator uses it to gate QR passes (see `shared/risk-class-routing.md`).
 
 `uses_mac_ui` (see Step 4) tells `security-scan` and `docs-drift`
 to fetch mac-ui's live authority docs. `mac_ui_ref_repo` is the repo they fetch
@@ -425,4 +425,4 @@ Error: Could not fetch PR. Check:
 - All analysis read-only (safe to run on any PR)
 - Output JSON designed to be consumed by other skills
 - Can be run standalone or as part of review
-- Routing consumers: orchestrator + `../../references/risk-class-routing.md`
+- Routing consumers: orchestrator + `shared/risk-class-routing.md`

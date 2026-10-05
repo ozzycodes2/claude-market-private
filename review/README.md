@@ -40,11 +40,11 @@ keeping a human in the loop).
 | `codegen` | Drafts tests, docstrings, and CHANGELOG entries to fill surfaced gaps (human review required before committing). |
 | `monitor-pr` | Continuously watches a PR (drive with `/loop`) for CI failures and new review comments, tracks findings in a scratch file, dispatches subagents to fix them (in parallel when independent), and resolves/acknowledges each comment once its fix is pushed. |
 
-**Anti-patterns:** each pass reads **only** its matching slice under
-`references/anti-patterns/` (never one shared dump). Shared severity and
-routing live in `references/severity-rubric.md` and
-`references/risk-class-routing.md`. Taxonomy source:
-`references/quality-review-pr-review-taxonomy.md`.
+**Anti-patterns:** each pass owns its slice at
+`skills/<pass>/references/anti-patterns.md`, so it can address no other. Shared
+severity and routing live in `shared/severity-rubric.md` and
+`shared/risk-class-routing.md`. Taxonomy source:
+`shared/quality-review-pr-review-taxonomy.md`.
 
 **Clean Code:** craft issues that hit correctness, invariants, or maintainability
 on shared/hot paths are **blockers**, not deferred to nits.
