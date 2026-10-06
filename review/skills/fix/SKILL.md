@@ -2,7 +2,7 @@
 name: fix
 description: Apply and commit fixes for the findings a prior /review:review recorded — refactor code smells using the named Fowler/Kerievsky refactoring in the language's own idiom, rewrite flagged documentation and comments for clarity, regenerate stale generated artifacts, and defer anything needing a human design decision rather than guessing. Then answer the review comments that raised them: reply with the fix and resolve the thread once the commit is on the PR. Use after /review:review when you want the findings actually resolved in the working tree, one commit per finding. Edits files, commits, and replies on the PR; never pushes, never merges. Also the fix engine behind monitor-pr.
 allowed-tools: Bash Read Write Edit Grep Glob Skill Task Agent
-disable-model-invocation: true
+disable-model-invocation: false
 ---
 
 # Fix Review Findings
