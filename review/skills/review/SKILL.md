@@ -68,6 +68,24 @@ echo "Session output directory: $OUTPUT_DIR" >&2
 
 If PR URL not found, ask user for it.
 
+### 1.3 Locate this plugin's scripts
+
+Steps 8.5 and 9 run bundled scripts. A bare relative path resolves against the
+**reviewed repo's** working directory, not this plugin — the same trap called out
+in Step 3.1 — so resolve the root once, here.
+
+```bash
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-}"
+if [ ! -f "$PLUGIN_ROOT/scripts/review_formatter.py" ]; then
+  PLUGIN_ROOT="$(cd "${CLAUDE_SKILL_DIR:-.}/../.." 2>/dev/null && pwd)"
+fi
+[ -f "$PLUGIN_ROOT/scripts/review_formatter.py" ] \
+  || echo "WARN: plugin scripts not found; Glob for review_formatter.py" >&2
+```
+
+If both variables are unset, Glob for `**/scripts/review_formatter.py` and use
+that file's parent-of-parent.
+
 ## Step 2: Run Change Analysis (Foundation)
 
 ```
@@ -223,6 +241,11 @@ Parse:
 - `$OUTPUT_DIR/docs-drift-*.json`
 - `$OUTPUT_DIR/code-generation-*.json`
 
+The three bug-finders return their findings in context, not on disk. **Write the
+merged array to `$OUTPUT_DIR/bug-finder-<PR_NUMBER>.json`** as
+`{"findings": [...]}` — Step 8.5 collects the ledger from these files, and a pass
+with no file on disk is a pass whose findings `/review:fix` will never see.
+
 ## Step 7: Determine Merge Recommendation
 
 ```
@@ -318,10 +341,49 @@ craft or design finding, name the resolving refactoring.
 
 Omit skipped/failed/empty QR sections. Formatter omits empty sections.
 
+**Write this JSON to `$OUTPUT_DIR/review-payload.json`** — Steps 8.5 and 9 both
+read it from there.
+
+## Step 8.5: Persist findings to the durable ledger
+
+Steps 1-8 wrote everything to `$OUTPUT_DIR`, which is a `/tmp` dir keyed on a
+random session id. A later session cannot find it, so the findings — and the
+refactorings they name — die with this run. Write them somewhere durable instead,
+so `/review:fix` can work the list to completion.
+
+```bash
+LEDGER=$(python3 "$PLUGIN_ROOT/scripts/findings_ledger.py" build \
+  --pr-url "$PR_URL" \
+  --analysis "$OUTPUT_DIR/pr-analysis-${PR_NUMBER}.json" \
+  --payload  "$OUTPUT_DIR/review-payload.json" \
+  --run "$SESSION_ID" \
+  $(for f in "$OUTPUT_DIR"/*-${PR_NUMBER}.json; do
+      case "$(basename "$f")" in
+        pr-analysis-*|code-generation-*) continue ;;
+      esac
+      printf ' --source %s=%s' "$(basename "$f" | sed "s/-${PR_NUMBER}\.json$//")" "$f"
+    done) \
+  | cut -f1)
+```
+
+The script derives `~/.claude/review-findings/<owner>__<repo>/pr-<N>.json` from
+the PR URL, normalizes all four finding shapes into one schema, and copies the
+`test_setup` / `build_system` / `languages` slice of the analysis into the ledger.
+That slice is copied rather than referenced because `$OUTPUT_DIR` is gone by the
+time `fix` runs.
+
+The ledger holds source excerpts from security findings, so the script writes it
+`0600` under a `0700` directory and replaces any reported credential with a
+digest. Do not copy ledger contents into a log line or a PR comment.
+
+If this step fails, the review is still complete — report the failure and move
+on. The ledger is an optimization for `fix`, not part of the review verdict.
+
 ## Step 9: Post review via shared formatter
 
 ```bash
-cat "$OUTPUT_DIR/review-payload.json" | python3 scripts/review_formatter.py --post
+cat "$OUTPUT_DIR/review-payload.json" \
+  | python3 "$PLUGIN_ROOT/scripts/review_formatter.py" --post
 ```
 
 On failure, `--dry-run` and show the user.

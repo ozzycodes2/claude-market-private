@@ -101,6 +101,12 @@ Only trivial issues: unused variable → `_`-prefix, trailing commas, whitespace
 import ordering. Never fix logic/type errors. Emit `{file, line, issue, fix,
 diff}`.
 
+These diffs are **evidence that drift exists**, not the remedy. `/review:fix`
+discards them and runs the repo's own formatter instead: the tool is
+authoritative, and a diff drafted during review is stale by the time anyone
+applies it. Keep emitting them — they are what tells `fix` to run the formatter
+at all.
+
 ## Step 7: Output JSON
 
 Build with `jq -n`, every generated snippet passed via `--arg` (never heredoc
