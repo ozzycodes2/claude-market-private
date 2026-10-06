@@ -1,13 +1,52 @@
 ---
 name: reflect
-description: Query Claude Code conversation history and session data using SQL. Use when analyzing past conversations, token usage, tool patterns, agent activity, or extracting insights from session logs. Triggers on requests about session history, conversation analysis, usage statistics, or cc-query.
+description: Query Claude Code conversation history and session data using SQL. Use when analyzing past conversations, token usage, tool patterns, agent activity, or extracting insights from session logs. Triggers on requests about session history, conversation analysis, usage statistics, periodic reviews over a week/month/quarter, or cc-query.
 context: fork
-allowed-tools: Bash
+allowed-tools: Bash, Read
 ---
 
 # Querying Session Data
 
 Use `${CLAUDE_PLUGIN_ROOT}/bin/cc-query` to analyze Claude Code sessions with SQL (DuckDB).
+
+## Reviewing a span of time — REQUIRED slots
+
+Applies whenever the request names a period rather than one session: "the last
+30 days", "this week", "this quarter".
+
+**Read [period-review.md](period-review.md) before querying.** It carries the
+tested queries, the per-finding schema, the guards, and the traps that have
+produced wrong conclusions here before. The slots below are the index.
+
+Four layers. Thirteen slots. Fill them all, or report a layer as *not
+applicable* and say why.
+
+**A — Measure** (transcripts, SQL)
+A1 window and volume, date range first · A2 where the work went · A3 tool
+patterns **with output chars**, ranked by cost not call count · A4 skill
+utilization from `~/.claude.json` `skillUsage`, naming those **never invoked** ·
+A5 plugin and MCP utilization against `enabledPlugins` · A6 navigation mix,
+`LSP` vs. `Grep`/`Glob` vs. text search through Bash.
+
+**B — Interpret** (causal; `Why` is mandatory in each)
+B1 worked · B2 friction, including *what to try instead* · B3 learned ·
+B4 corrections and interrupts, precise and upper-bound counts labeled
+separately, recurring ones quoted verbatim.
+
+**C — Audit the instruction surface** (files on disk, `git blame`)
+C1 findings in `CLAUDE.md`, `AGENTS.md`, `SKILL.md`, rule files, commands,
+hooks — unenforced instructions, recency traps, contradictions, volatile
+specifics, fossils. Each with `file:line` and quoted evidence. Never read
+`settings*.json` or `.mcp.json` whole; they can hold secrets — `jq` named keys.
+
+**D — Actions**
+D1 prioritized actions, ordered by confidence, each with observation, why it
+matters, confidence, action, and quantified cost only where the data supports
+it · D2 measurement limits, stated **before** any recommendation rests on them.
+
+Propose; never apply an edit to an instruction file without explicit consent.
+An empty finding is a valid outcome. Check whether a recommendation is already
+configured before making it.
 
 ## Query Planning (Read This First)
 
@@ -47,6 +86,9 @@ EOF
 ## Use Cases
 
 **Analyzing a specific session**: See [session-analysis.md](session-analysis.md) for templates and output format.
+
+**Reviewing a span of time**: the REQUIRED slots are at the top of this file;
+queries and traps in [period-review.md](period-review.md).
 
 ## Reference
 
@@ -283,16 +325,25 @@ ORDER BY timestamp DESC;
 ```
 
 ### Weekly Summary (Single Call)
+
+Date arithmetic is unavailable: the `-` operator is unbound for `DATE`,
+`TIMESTAMP` and `TIMESTAMPTZ` in this build, so `now() - INTERVAL '7 days'`
+and `current_date - 7` both fail with a binder error. Compute the cutoff in
+the shell and interpolate it as a literal.
+
 ```bash
-cat << 'EOF' | ${CLAUDE_PLUGIN_ROOT}/bin/cc-query
+SINCE=$(date -v-7d +%F 2>/dev/null || date -d '7 days ago' +%F)
+cat << EOF | ${CLAUDE_PLUGIN_ROOT}/bin/cc-query
 -- Sessions this week
 SELECT date_trunc('day', timestamp) as day, count(DISTINCT sessionId) as sessions, count(*) as msgs
-FROM messages WHERE timestamp > now() - INTERVAL '7 days' GROUP BY day ORDER BY day;
+FROM messages WHERE timestamp >= '$SINCE' GROUP BY day ORDER BY day;
 -- What we worked on
 SELECT left(content, 200) as topic FROM human_messages
-WHERE timestamp > now() - INTERVAL '7 days' AND length(content) > 30
+WHERE timestamp >= '$SINCE' AND length(content) > 30
   AND content NOT LIKE '%<local-command%' ORDER BY timestamp DESC LIMIT 20;
 -- Token consumption
-SELECT sum(input_tokens) as input, sum(output_tokens) as output FROM token_usage WHERE timestamp > now() - INTERVAL '7 days';
+SELECT sum(input_tokens) as input, sum(output_tokens) as output FROM token_usage WHERE timestamp >= '$SINCE';
 EOF
 ```
+
+Note the unquoted `EOF` — `<< 'EOF'` would pass `$SINCE` through literally.

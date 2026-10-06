@@ -20,7 +20,7 @@ SELECT CAST(timestamp AS DATE) as day,
        count(*) FILTER (WHERE type = 'user') as user_msgs,
        round(sum(CAST(message->'usage'->>'output_tokens' AS BIGINT))::FLOAT /
              nullif(count(*) FILTER (WHERE type = 'user'), 0), 0) as tokens_per_user_msg
-FROM messages WHERE CAST(timestamp AS DATE) >= current_date - INTERVAL '14 days'
+FROM messages WHERE timestamp >= '$SINCE'   -- shell-computed literal; see SKILL.md
 GROUP BY day ORDER BY day;
 ```
 
@@ -96,7 +96,7 @@ SELECT CAST(timestamp AS DATE) as day,
        round(sum(CAST(message->'usage'->>'cache_read_input_tokens' AS BIGINT))::FLOAT * 100.0 /
              nullif(sum(CAST(message->'usage'->>'input_tokens' AS BIGINT)) +
                     sum(CAST(message->'usage'->>'cache_read_input_tokens' AS BIGINT)), 0), 1) as cache_hit_pct
-FROM assistant_messages WHERE CAST(timestamp AS DATE) >= current_date - INTERVAL '7 days'
+FROM assistant_messages WHERE timestamp >= '$SINCE'   -- shell-computed literal
 GROUP BY day ORDER BY day;
 ```
 
