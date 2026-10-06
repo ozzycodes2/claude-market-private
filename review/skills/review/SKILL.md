@@ -278,9 +278,13 @@ stack"): intent → system fit → domain invariants → failure behavior →
 contracts → test adequacy → design simplicity → security → maintainability →
 craft.
 
-Cap `required_actions` at the top 5. The rest stay as inline findings. An
-author who sees twenty equally-weighted required actions fixes none of them in
-the intended order.
+**List every blocking finding. Do not cap, summarize, or elide.** The consumer
+may be an agent working the list to completion, so an omitted action is an
+unfixed finding. Ordering sets the sequence; it never sets the membership.
+
+Each entry must be actionable on its own, without reading the rest of the
+review: name the path (and line, when mapped), the symptom, and the fix. For a
+craft or design finding, name the resolving refactoring.
 
 ### Build JSON
 
