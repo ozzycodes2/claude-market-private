@@ -64,7 +64,7 @@ gh pr view "$PR_URL" --json title,body,files,additions,deletions
 
 ## Step 3: Review
 
-Walk checklist dimensions in order: domain → architecture → team boundaries. Apply Clean Code as **blocking** when craft issues hit correctness, invariants, or maintainability on shared/hot paths (not deferred to nits).
+Walk checklist dimensions in order: domain → architecture → team boundaries. Clean Code findings are **blocking regardless of module reach** — blast radius sets severity, not whether to block. Name the resolving refactoring in `suggestion`.
 
 Prioritize:
 

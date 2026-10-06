@@ -62,7 +62,7 @@ gh pr view "$PR_URL" --json title,body,files,additions,deletions,commits
 
 ## Step 3: Review
 
-Walk checklist: CD readiness / reversibility first, then design quality (YAGNI, deep modules, complexity). Apply Clean Code as **blocking** when craft issues hit correctness, invariants, or maintainability on shared/hot paths.
+Walk checklist: CD readiness / reversibility first, then design quality (YAGNI, deep modules, complexity). Category 4 design-quality and Clean Code findings are **blocking regardless of module reach** — blast radius sets severity, not whether to block. Name the resolving refactoring in `suggestion`.
 
 Prioritize:
 

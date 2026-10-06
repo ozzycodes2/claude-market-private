@@ -64,7 +64,7 @@ Focus on clients/HTTP calls, queues/consumers, retries/timeouts, caches, paginat
 
 ## Step 3: Review
 
-Walk checklist: failure modes → timeouts/retries/isolation → observability → performance → concurrency leftovers. Apply Clean Code as **blocking** when craft issues obscure failure modes on shared/hot paths.
+Walk checklist: failure modes → timeouts/retries/isolation → observability → performance → concurrency leftovers. Clean Code findings that obscure failure modes are **blocking regardless of module reach**. Name the resolving refactoring in `suggestion`.
 
 Do **not** re-litigate basic race/NPE hunting (bug-finder owns that); focus on operational consequences and leftover concurrency classes listed in the checklist.
 

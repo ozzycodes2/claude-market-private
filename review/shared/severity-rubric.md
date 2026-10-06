@@ -13,32 +13,45 @@ Aligns with Google “Nit:”, Microsoft scope discipline, and the quality-revie
 | *(as label)* | `thought` / `note` | Non-blocking | Future design, mentoring, cross-team idea |
 | *(as label)* | `praise` | N/A | Reinforce good practice |
 
-## Clean Code (category 3 Code craft) — blocking policy
+## Clean Code & design quality (categories 3 and 4) — blocking policy
 
-Clean Code findings are **not** deferred to nits by default.
+Craft and design findings are **not** deferred to nits, and **not** exempted by
+module reach. A leaf module today is a shared module next quarter; "no shared
+consumers yet" is how craft debt becomes permanent.
 
-Treat as **Blocker / critical or high** when the craft issue hits:
+Treat as **Blocker / critical or high** when the finding hits:
 
 - **Correctness** — silent failure, swallowed errors, wrong null/Optional policy on a real path
 - **Invariants** — side effects that break shared mutable state; logging PII; dead code that masks intent
-- **Maintainability on shared/hot paths** — unreadable nesting, boolean blindness, or duplication that will force every future change through the same footgun in a module many teams touch
+- **Maintainability** — unreadable nesting, boolean blindness, or duplication that forces every future change through the same footgun
+- **Design quality** — the category 4 dimensions: complexity budget, deep modules, information hiding, abstraction-level consistency, misuse-prone API, temporal coupling, feature envy, primitive obsession
+
+Blast radius sets **critical vs. high**. It does not set **blocking vs. not**.
+
+For a design or craft finding, name the smell and the refactoring that resolves
+it (Fowler, *Refactoring*; Kerievsky, *Refactoring to Patterns*). Where the
+language's idiom diverges from the catalog's OO move — enum over hierarchy,
+`Option` over Null Object, newtype over wrapper class — prescribe the idiom and
+say so. Add no trait, generic, or indirection the smell does not demand.
 
 Treat as **Suggestion / Nit** when:
 
-- Naming/style preference without domain conflict
+- Naming/style preference with no domain-language conflict
 - Formatting that belongs in a linter
-- Local/throwaway code with no shared consumers
 - Equally valid alternate structure (do not block on preference)
+- SOLID or KISS asserted without a concrete pain to point at
 
 ## Decision heuristic
 
 1. If wrong → users lose money/data/trust/security → **critical**
 2. If wrong → outage / hard rollback / amplifying failure → **critical**
-3. If wrong → next change is painful but system works → **medium** (or **high** if hot/shared module)
+3. If wrong → next change is painful but system works → **high**, blocking
 4. If preference without principle → **nitpick** or omit
 5. If unclear → **question**, not blocker
 
-**Google standard overlay:** Approve when the PR **improves code health** even if imperfect. Do not recreate perfectionism.
+**Google standard overlay:** the bar is whether the PR improves code health, and
+a named smell with a known refactoring is not perfectionism. Block on it, then
+approve once resolved. Do not block on preference.
 
 ## Finding field defaults
 

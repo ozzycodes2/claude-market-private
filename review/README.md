@@ -46,8 +46,12 @@ severity and routing live in `shared/severity-rubric.md` and
 `shared/risk-class-routing.md`. Taxonomy source:
 `shared/quality-review-pr-review-taxonomy.md`.
 
-**Clean Code:** craft issues that hit correctness, invariants, or maintainability
-on shared/hot paths are **blockers**, not deferred to nits.
+**Clean Code & design quality:** craft issues that hit correctness, invariants,
+or maintainability are **blockers**, not deferred to nits — and not exempted by
+module reach. Blast radius sets `critical` vs `high`, not blocking vs not. Each
+finding names the refactoring that resolves it (Fowler, *Refactoring*;
+Kerievsky, *Refactoring to Patterns*), using the language's idiom where it
+diverges from the catalog's OO move.
 
 **Rust & mac-ui tailoring:** `analyze` detects Rust (cargo/just/nextest)
 and `@vlognow/mac-ui` (Machinify Web Components) usage. When present, `security-scan`

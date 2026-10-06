@@ -26,7 +26,7 @@
 - Ordering/partition assumptions undocumented
 - Concurrent idempotency without unique constraints as safety net (when ops-facing)
 
-## Clean Code (blocking when on shared/hot paths)
+## Clean Code (blocking)
 
 - Logging that is noisy enough to hide incidents, or that includes secrets/PII
 - Deep nesting / boolean flagparams on hot-path handlers that obscure failure modes

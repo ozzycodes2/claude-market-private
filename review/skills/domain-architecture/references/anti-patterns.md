@@ -26,7 +26,7 @@
 - Platform leak forcing every product team to know internals
 - Bus-factor: only the author understands the change; no docs/pairing path
 
-## Clean Code (blocking when on shared/hot paths)
+## Clean Code (blocking)
 
 - Silent catch / swallowed errors on domain-critical paths
 - Shared mutable global/singleton state crossing module boundaries

@@ -72,13 +72,13 @@ Severity hint key used inline (formatter labels): `issue (blocking)` · `suggest
 - **Ubiquitous language** — Names/types match domain terms used by product/domain experts; no accidental synonyms (`User` vs `Account` vs `Customer` meaning the same thing). `issue (blocking)` if new public API invents conflicting terms
 - **Bounded context alignment** — Change stays inside the owning context; no leaking foreign concepts into the model. `issue (blocking)` if cross-context model merge
 - **Aggregate boundaries & invariants** — Invariants enforced inside the aggregate/transaction boundary, not “eventually maybe” across aggregates without explicit design. `issue (blocking)`
-- **Entities vs value objects** — Identity vs equality used correctly; value objects immutable where expected. `suggestion (non-blocking)`
+- **Entities vs value objects** — Identity vs equality used correctly; value objects immutable where expected. `issue (blocking)` — identity/equality errors are correctness
 - **Domain events** — Events named past-tense facts; payload carries what’s needed without dumping whole aggregates; consumers don’t invent alternate truths. `suggestion (non-blocking)` / `issue (blocking)` if event contract breaks
 - **Application vs domain vs infrastructure** — Domain logic not buried in controllers/repos/UI; use-case orchestration clear. `issue (blocking)` for new significant logic in wrong layer
 - **Anti-corruption layer** — External/legacy DTOs translated at boundary; foreign schemas not polluting core. `issue (blocking)` if foreign model becomes source of truth internally
 - **Context mapping** — Partnership / customer-supplier / conformist / ACL / shared kernel / published language chosen consciously when touching integrations. `question`/`suggestion (non-blocking)`
-- **Domain rules vs policy knobs** — Business rules as code/tests, not only tribal knowledge in PR comments. `suggestion (non-blocking)`
-- **Inconsistency of language in tests/docs** — Specs and tests speak the same language as production code. `suggestion (non-blocking)`
+- **Domain rules vs policy knobs** — Business rules as code/tests, not only tribal knowledge in PR comments. `issue (blocking)` — a rule that lives only in a PR comment is undiscoverable
+- **Inconsistency of language in tests/docs** — Specs and tests speak the same language as production code. `issue (blocking)` for domain/public names; `nitpick` for test-local names
 
 ---
 
@@ -87,12 +87,12 @@ Severity hint key used inline (formatter labels): `issue (blocking)` · `suggest
 
 - **Dependency direction** — Inner layers don’t depend on outer (UI/DB/framework); dependencies point toward policies/use cases. `issue (blocking)`
 - **Ports & adapters** — New I/O behind interfaces; swapping adapters shouldn’t rewrite domain. `suggestion (non-blocking)`/`issue (blocking)` for hard DB coupling in core
-- **Layering / package structure** — Change placed in correct module; no “utility dumping ground” growth without ownership. `suggestion (non-blocking)`
+- **Layering / package structure** — Change placed in correct module; no “utility dumping ground” growth without ownership. `issue (blocking)` · Move Function, Extract Class
 - **Coupling** — Temporal, content, control, common, stamp coupling; unwanted fan-out; circular deps. `issue (blocking)` for new cycles/hard coupling across ownership
-- **Cohesion** — Modules change for one reason; feature cohesion vs coincidental. `suggestion (non-blocking)`
-- **Use-case completeness** — Happy path + failure modes owned by application service, not scattered. `suggestion (non-blocking)`
-- **Frameworks as details** — Framework annotations/types not leaking deep into domain. `suggestion (non-blocking)`
-- **Shared kernels / libraries** — New shared code justified; avoids premature platformization. `question` (Google: belong in library?)
+- **Cohesion** — Modules change for one reason; feature cohesion vs coincidental. `issue (blocking)` — Divergent Change · Extract Class
+- **Use-case completeness** — Happy path + failure modes owned by application service, not scattered. `issue (blocking)` — scattered error handling is a correctness risk
+- **Frameworks as details** — Framework annotations/types not leaking deep into domain. `issue (blocking)` · Extract Interface
+- **Shared kernels / libraries** — New shared code justified; avoids premature platformization. `issue (blocking)` without a named owner; `question` otherwise
 - **Architecture fitness** — Change matches established patterns; if pattern-breaking, PR explains why. `issue (blocking)` if silent divergence
 - **Blast radius / integration surface** — New cross-service calls, queues, schemas, feature flags documented. `issue (blocking)` if undeclared
 
@@ -121,17 +121,19 @@ Severity hint key used inline (formatter labels): `issue (blocking)` · `suggest
 ## 4. Design quality
 *Informed by: Ousterhout; SOLID (selectively); YAGNI/KISS; Google complexity/over-engineering; Fowler*
 
-- **Complexity budget** — Accidental vs essential; can a reader grasp quickly? (Google/Ousterhout) `issue (blocking)` if needless complexity on hot/shared path
-- **Deep modules** — Simple interface, nontrivial implementation; avoid shallow class explosion. `suggestion (non-blocking)`
-- **Information hiding** — Internals not leaked; stable abstractions at boundaries. `suggestion (non-blocking)`/`issue (blocking)`
-- **Abstraction level consistency** — Mixed high/low level in one function. `suggestion (non-blocking)`
+Category 4 dimensions block regardless of module reach. Blast radius sets severity, not whether to block. Name the resolving refactoring with each finding.
+
+- **Complexity budget** — Accidental vs essential; can a reader grasp quickly? (Google/Ousterhout) `issue (blocking)` · Extract Function, Decompose Conditional
+- **Deep modules** — Simple interface, nontrivial implementation; avoid shallow class explosion. `issue (blocking)` · Inline Class, Combine Functions into Class
+- **Information hiding** — Internals not leaked; stable abstractions at boundaries. `issue (blocking)` · Encapsulate Record, Encapsulate Collection, Hide Delegate
+- **Abstraction level consistency** — Mixed high/low level in one function. `issue (blocking)` · Extract Function
 - **SOLID where useful** — SRP/OCP/LSP/ISP/DIP applied to real pain, not cargo-cult. `suggestion (non-blocking)`
-- **YAGNI / speculative generality** — Google: don’t solve future imaginary problems. `issue (blocking)` for heavy over-engineering
+- **YAGNI / speculative generality** — Google: don’t solve future imaginary problems. `issue (blocking)` · Inline Function, Collapse Hierarchy, Remove Dead Code, Change Function Declaration
 - **KISS** — Simplest design that works and stays changeable. `suggestion (non-blocking)`
-- **API of a module** — Hard to misuse; defaults safe (principle of least astonishment). `suggestion (non-blocking)`/`issue (blocking)`
-- **Temporal coupling** — Must-call-in-order APIs without enforcement. `suggestion (non-blocking)`
-- **Feature envy / inappropriate intimacy** — Cross-module poking at internals. `suggestion (non-blocking)`
-- **Primitive obsession vs modeling** — Missing domain types. `suggestion (non-blocking)`
+- **API of a module** — Hard to misuse; defaults safe (principle of least astonishment). `issue (blocking)` · Introduce Parameter Object, Replace Constructor with Factory Function
+- **Temporal coupling** — Must-call-in-order APIs without enforcement. `issue (blocking)` · Combine Functions into Transform, Encapsulate the sequence behind one call
+- **Feature envy / inappropriate intimacy** — Cross-module poking at internals. `issue (blocking)` · Move Function, Move Field, Hide Delegate
+- **Primitive obsession vs modeling** — Missing domain types. `issue (blocking)` · Replace Primitive with Object, Introduce Parameter Object
 - **Continuation of design debt** — Does PR improve or degrade system design health? (Google standard) `issue (blocking)` if net degradation without plan
 
 ---
@@ -145,7 +147,7 @@ Severity hint key used inline (formatter labels): `issue (blocking)` · `suggest
 - **Feedback loops** — CI signals meaningful; failing tests not ignored; review not substituting for automation. `issue (blocking)` if CI red/ignored
 - **Reversibility** — Easy rollback; expand/contract for migrations. `issue (blocking)` for irreversible data loss without safeguards
 - **Separating refactor from behavior** — Palantir/Google/Shopify: don’t mix. `suggestion (non-blocking)`/`issue (blocking)` if huge mixed PR
-- **Evolutionary path** — Parallel run, strangler, dual-write called out when replacing systems. `question`/`issue (blocking)`
+- **Evolutionary path** — Parallel run, strangler, dual-write called out when replacing systems. `issue (blocking)` when the PR replaces a system; `question` otherwise
 - **Config vs code change ordering** — Safe order for deploy. `issue (blocking)` if wrong order can outage
 - **Experiment / kill switch** — For uncertain product/tech bets. `suggestion (non-blocking)`
 
@@ -179,13 +181,13 @@ Severity hint key used inline (formatter labels): `issue (blocking)` · `suggest
 - **Migrations** — Expand/contract; backward/forward compatible deploys; locking/long migrations risk. `issue (blocking)`
 - **Transactional boundaries** — What commits together; avoid multi-resource “transactions” without saga/outbox. `issue (blocking)`
 - **Idempotency** — Writes/handlers safe under retry/at-least-once. `issue (blocking)` for payments/fulfillment/side effects
-- **Exactly-once illusions** — At-least-once + idempotent consumer preferred; document. `question`
+- **Exactly-once illusions** — At-least-once + idempotent consumer preferred; document. `issue (blocking)` when code assumes exactly-once; `question` otherwise
 - **Eventual consistency UX** — Stale reads, read-your-writes, conflict resolution. `suggestion (non-blocking)`/`issue (blocking)` if user-visible corruption risk
 - **Caching** — TTL, invalidation, stampede, poison cache, consistency with source of truth. `suggestion (non-blocking)`/`issue (blocking)`
 - **Data retention / deletion** — GDPR-ish delete paths; soft-delete semantics. `issue (blocking)` for privacy requirements
 - **Serialization compatibility** — Protobuf/JSON/Avro evolution rules. `issue (blocking)`
 - **PII storage minimization** — Store only what’s needed; tokenization. `issue (blocking)`
-- **Backfills** — Rate limits, observability, resume, correctness checks. `suggestion (non-blocking)`/`issue (blocking)`
+- **Backfills** — Rate limits, observability, resume, correctness checks. `issue (blocking)`
 - **Dual-write hazards** — Two stores updated; failure modes. `issue (blocking)` without outbox/CDC plan
 
 ---
@@ -202,11 +204,11 @@ Severity hint key used inline (formatter labels): `issue (blocking)` · `suggest
 - **Observability** — Logs/metrics/traces for new paths; golden signals (latency, traffic, errors, saturation). `issue (blocking)` if new user-critical path is dark
 - **SLOs / error budget awareness** — Change risk vs burn. `question` for high-risk
 - **Alerting** — Actionable alerts; not pages for symptoms that aren’t actionable. `suggestion (non-blocking)`
-- **Runbooks / ops notes** — Deploy/rollback/feature-flag instructions when behavior changes ops. `suggestion (non-blocking)`/`issue (blocking)` for high-risk
-- **Health checks** — Liveness vs readiness correct. `suggestion (non-blocking)`
+- **Runbooks / ops notes** — Deploy/rollback/feature-flag instructions when behavior changes ops. `issue (blocking)` whenever ops behavior changes
+- **Health checks** — Liveness vs readiness correct. `issue (blocking)` — wrong semantics causes restart loops
 - **Resource limits** — Memory/CPU/FD/connection pools; DoS amplification. `issue (blocking)` if unbounded
-- **Crash-only / restart safety** — Process can die mid-op safely (idempotent + durable state). `suggestion (non-blocking)`
-- **Time & clocks** — Skew, DST, monotonic vs wall clock. `suggestion (non-blocking)`/`issue (blocking)` for scheduling/billing
+- **Crash-only / restart safety** — Process can die mid-op safely (idempotent + durable state). `issue (blocking)`
+- **Time & clocks** — Skew, DST, monotonic vs wall clock. `issue (blocking)` — clock bugs are silent and expensive
 
 ---
 
@@ -238,12 +240,12 @@ Severity hint key used inline (formatter labels): `issue (blocking)` · `suggest
 - **Hot paths** — Algorithmic complexity on critical request/job paths. `issue (blocking)` if obvious O(n²) on large n
 - **N+1 queries / chatty I/O** — Batching, joins, data loaders. `issue (blocking)`/`suggestion (non-blocking)` by severity
 - **Pagination / unbounded result sets** — Limits enforced. `issue (blocking)`
-- **Caching strategy** — Correctness + hit rate; stampede. `suggestion (non-blocking)`
+- **Caching strategy** — Correctness + hit rate; stampede. `issue (blocking)` on shared paths (invalidation correctness)
 - **Allocation / GC pressure** — Hot loops. `suggestion (non-blocking)`
 - **Concurrency for scale** — Parallelism vs complexity tradeoff. `question`
 - **Data volume assumptions** — Documented expected sizes; tested near limits. `suggestion (non-blocking)`
 - **Fan-out amplification** — One request → N downstream. `issue (blocking)` if uncontrolled
-- **Async offload** — Slow work not on request thread without reason. `suggestion (non-blocking)`
+- **Async offload** — Slow work not on request thread without reason. `issue (blocking)` when slow work sits on a request path
 - **Capacity / cost** — New storage/compute cost called out. `question`/`suggestion (non-blocking)`
 
 ---
@@ -253,14 +255,14 @@ Severity hint key used inline (formatter labels): `issue (blocking)` · `suggest
 
 - **Backward compatibility** — Additive preferred; no silent renames/type changes. `issue (blocking)`
 - **Versioning strategy** — Explicit; Stripe-like encapsulation of breaks when needed. `issue (blocking)` if break without version story
-- **Error shapes** — Stable codes/messages; actionable; no sensitive leak. `suggestion (non-blocking)`/`issue (blocking)`
+- **Error shapes** — Stable codes/messages; actionable; no sensitive leak. `issue (blocking)` on public APIs
 - **Idempotency keys** — For mutating public APIs. `issue (blocking)` for payment-like APIs
-- **Pagination/filtering/sorting contracts** — Consistent, documented. `suggestion (non-blocking)`
-- **Pagination tokens vs offset** — Stability under concurrent writes. `suggestion (non-blocking)`
+- **Pagination/filtering/sorting contracts** — Consistent, documented. `issue (blocking)` for new public endpoints — consistency is part of the contract
+- **Pagination tokens vs offset** — Stability under concurrent writes. `issue (blocking)` when concurrent writes are possible — offset silently skips rows
 - **Authn/z at API boundary** — Consistent with codebase (Palantir). `issue (blocking)`
-- **Payload minimization** — Don’t over-expose fields. `suggestion (non-blocking)`/`issue (blocking)` privacy
+- **Payload minimization** — Don’t over-expose fields. `issue (blocking)`
 - **Event / webhook contracts** — Signature verification, versioning, at-least-once. `issue (blocking)`
-- **Client SDK impact** — Generated clients / breaking field changes. `suggestion (non-blocking)`
+- **Client SDK impact** — Generated clients / breaking field changes. `issue (blocking)` for breaking field changes
 - **Deprecation policy** — Timeline, dual-run, docs. `suggestion (non-blocking)`/`issue (blocking)`
 - **HATEOAS/resource modeling** — Consistency with existing API style. `suggestion (non-blocking)`
 - **Public vs internal API** — Different stability bars. `question`
@@ -277,7 +279,7 @@ Severity hint key used inline (formatter labels): `issue (blocking)` · `suggest
 - **Async correctness** — Cancellation, structured concurrency, lost wakeups. `suggestion (non-blocking)`/`issue (blocking)`
 - **Idempotent handlers under concurrency** — Unique constraints as safety net. `issue (blocking)`
 - **Time-of-check/time-of-use** — Filesystem/authz races. `issue (blocking)`
-- **Ordering guarantees** — Queue/partition assumptions stated. `question`
+- **Ordering guarantees** — Queue/partition assumptions stated. `issue (blocking)` when code depends on order without stating it; `question` otherwise
 - **Poison messages / DLQ** — Failure isolation. `suggestion (non-blocking)`
 
 ---
@@ -301,7 +303,7 @@ Severity hint key used inline (formatter labels): `issue (blocking)` · `suggest
 
 - **Size** — Prefer ~100–300 LOC conceptual change; reject/split mega-PRs (Google/Shopify/SWE book). `issue (blocking)` to request split when unreviewable
 - **Atomicity / one concern** — Feature XOR refactor XOR dep bump (Shopify/Palantir). `suggestion (non-blocking)`/`issue (blocking)`
-- **Description quality** — Why, who benefits, what could go wrong, alternatives considered, systems affected (Shopify). `issue (blocking)` if empty on non-trivial PR
+- **Description quality** — Why, who benefits, what could go wrong, alternatives considered, systems affected (Shopify). `issue (blocking)` if empty, or if present but missing *why*, on a non-trivial PR
 - **Risk communication** — Rollout plan, monitoring, rollback. `issue (blocking)` for high-risk
 - **Test plan evidence** — What was run; screenshots for UI (Google/MS). `suggestion (non-blocking)`/`issue (blocking)`
 - **Linked issue / product intent** — Traceability. `suggestion (non-blocking)`
@@ -320,7 +322,7 @@ Severity hint key used inline (formatter labels): `issue (blocking)` · `suggest
 
 - **Code ownership** — Right OWNERS/reviewers; don’t merge without owning team LGTM. `issue (blocking)`
 - **Cross-team coupling** — New hard deps creating review/latency bottlenecks (Orosz “better” systemic fix). `suggestion (non-blocking)`/`issue (blocking)`
-- **Platform vs product responsibilities** — Leaky abstractions forcing every team to know internals. `suggestion (non-blocking)`
+- **Platform vs product responsibilities** — Leaky abstractions forcing every team to know internals. `issue (blocking)`
 - **API as team contract** — Changes negotiated; consumer notification. `issue (blocking)` for breaking
 - **Cognitive load on team** — Too many domains in one service (Team Topologies). `question`
 - **Interaction mode** — Collaboration vs X-as-a-Service vs facilitating — implicit mode mismatch. `question`
@@ -394,7 +396,7 @@ Severity hint key used inline (formatter labels): `issue (blocking)` · `suggest
 ## What juniors often over-index on (agent should de-emphasize as blockers)
 - Formatting, import order, brace style, alphabetical lists → **linters/Nits**
 - Preferring familiar patterns without system context
-- Demanding perfect SOLID on throwaway/local code
+- Cargo-cult SOLID with no concrete pain to point at (note: module reach is *not* an exemption — see category 4 blocking policy)
 - Line-by-line style without reading PR description/tests first
 - Blocking on alternative implementations that are equally valid
 - Expanding scope to adjacent tech debt (MS: file separate tasks)
@@ -429,11 +431,11 @@ Align comments with Conventional Comments + Google “Nit:” + MS guidance.
 **Agent decision heuristic**
 - If wrong → users lose money/data/trust/security → **Blocker**
 - If wrong → outage/hard rollback/amplifying failure → **Blocker**
-- If wrong → next change is painful but system works → **Suggestion** (or should-fix if in hot shared module)
+- If wrong → next change is painful but system works → **Should-fix, blocking**. Blast radius sets Blocker-vs-should-fix, not blocking-vs-not
 - If preference without principle → **Nit** or omit
 - If unclear → **Question**, not Blocker
 
-**Google standard overlay:** Approve when PR **improves code health** even if imperfect; don’t hold for perfection. QR agent should not recreate perfectionism.
+**Google standard overlay:** the bar is whether the PR **improves code health**. A named smell with a known refactoring is not perfectionism — block on it, then approve once resolved. Don’t block on preference.
 
 ---
 

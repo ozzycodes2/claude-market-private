@@ -125,7 +125,7 @@ You are a bug hunter. Find bugs that will crash production or create security vu
 - **Concurrency (expanded):** deadlocks / lock ordering; TOCTOU (filesystem/authz); async cancellation / lost wakeups / unstructured concurrency; concurrent idempotency (handler unsafe under parallel retries; missing unique constraints); poison messages / missing DLQ isolation.
 - **Control flow:** missing returns after cleanup/error handling, early exits that skip cleanup, unreachable code.
 - **Architectural:** inconsistent patterns (mixing two APIs for one purpose), wrappers/utilities removed without justification.
-- **Clean Code (blocking):** silent catch / swallowed errors, shared mutable globals, or craft issues that hit correctness/invariants on shared/hot paths — emit as critical/high, not nits. Style-only → omit or nitpick.
+- **Clean Code (blocking):** silent catch / swallowed errors, shared mutable globals, or craft issues that hit correctness/invariants — emit as critical/high, not nits, **regardless of module reach**. Blast radius sets critical-vs-high, not blocking-vs-not. Name the resolving refactoring (Fowler/Kerievsky) in `suggestion`. Style-only with no domain-language conflict → omit or nitpick.
 
 ## Output
 Return a JSON array of findings, each: {"severity":"critical|high|medium","label":"issue|suggestion|nitpick|question|thought|praise","decoration":"blocking|non-blocking|if-minor","path":"exact/path","line":N,"title":"5-10 words","body":"explanation with lifecycle/data-flow trace","suggestion":"concrete fix"}.
@@ -226,26 +226,22 @@ Parse:
 ## Step 7: Determine Merge Recommendation
 
 ```
-IF (Critical code/QR/security findings > 0) OR (Clean Code blockers on correctness/invariants/hot paths):
+IF (any finding carries decoration "blocking"):
   RECOMMENDATION = "REQUEST CHANGES"
-  RATIONALE = "Critical issues must be fixed before merge"
+  RATIONALE = "<N> blocking findings — <top 3 titles by priority stack>"
 
-ELIF (High findings > 3) OR (security_sensitive AND high_security_findings > 0):
-  RECOMMENDATION = "REQUEST CHANGES"
-  RATIONALE = "Multiple high-severity issues require fixes"
-
-ELIF (High findings > 0) OR (missing_critical_docs):
+ELIF (missing_critical_docs) OR (security_sensitive === true):
   RECOMMENDATION = "COMMENT"
-  RATIONALE = "Issues should be addressed (manual review required)"
-
-ELIF (security_sensitive === true):
-  RECOMMENDATION = "COMMENT"
-  RATIONALE = "Security-sensitive changes require manual review"
+  RATIONALE = "Non-blocking findings; manual review required"
 
 ELSE:
   RECOMMENDATION = "COMMENT"
   RATIONALE = "Review completed - findings noted for consideration"
 ```
+
+A finding decorated `(blocking)` that yields a `COMMENT` verdict teaches the
+author to ignore the decoration. One blocking finding is enough for
+`REQUEST CHANGES`; counts and severity tiers only order the output.
 
 Always default to COMMENT (never APPROVE) — human-in-the-loop.
 
@@ -267,11 +263,24 @@ Set `review_metadata.model` to your model ID. Note bug-finder pass models in Cod
 
 ### Conventional Comments
 
-Formatter applies `<label> [decoration]: <subject>`. Finding fields match bug-finder schema. Severity defaults per `shared/severity-rubric.md`. **Clean Code on correctness/invariants/shared hot paths → blocking.**
+Formatter applies `<label> [decoration]: <subject>`. Finding fields match bug-finder schema. Severity defaults per `shared/severity-rubric.md`. **Clean Code and category 4 design quality → blocking regardless of module reach.**
 
 ### Formatting rules
 
 - Code refs in backticks; bullets not paragraphs; lead with takeaway.
+
+### Ordering `required_actions`
+
+Blocking design and craft dimensions mean most non-trivial PRs return
+`REQUEST CHANGES`. Order `required_actions` by the taxonomy priority stack
+(`shared/quality-review-pr-review-taxonomy.md`, "QR / Staff-style priority
+stack"): intent → system fit → domain invariants → failure behavior →
+contracts → test adequacy → design simplicity → security → maintainability →
+craft.
+
+Cap `required_actions` at the top 5. The rest stay as inline findings. An
+author who sees twenty equally-weighted required actions fixes none of them in
+the intended order.
 
 ### Build JSON
 
@@ -343,7 +352,7 @@ View full review: <PR_URL>
 - Entry point for comprehensive reviews
 - Model-diverse 3-pass bug-finder (opus+sonnet+haiku) + risk-gated QR skills (`domain-architecture`, `data-contracts`, `ops-reliability`, `change-evolution`) + security-scan + docs-drift + codegen
 - Each pass owns its anti-pattern slice at `skills/<pass>/references/anti-patterns.md`, so it can address no other
-- Clean Code craft issues that hit correctness/invariants/shared hot paths are **blockers**, not nits
+- Clean Code and category 4 design-quality findings are **blockers regardless of module reach**; blast radius sets severity only. Each names its resolving refactoring
 - Test execution/coverage left to CI
 - Never auto-approves/merges
 - Cost: higher when QR passes gate on; still prefer gated runs over always-on four extras

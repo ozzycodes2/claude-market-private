@@ -21,7 +21,7 @@
 - Deprecation without dual-run timeline or caller migration docs
 - Error shapes that leak sensitive internals
 
-## Clean Code (blocking when on shared/hot paths)
+## Clean Code (blocking)
 
 - Leaking ORM entities as public API DTOs
 - Catch-all Exception swallowing on write/migration paths

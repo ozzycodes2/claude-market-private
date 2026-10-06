@@ -64,7 +64,7 @@ Focus on migrations, schema files, serializers, OpenAPI/Protobuf/Avro, handlers 
 
 ## Step 3: Review
 
-Walk checklist: data/consistency first, then API/contracts. Apply Clean Code as **blocking** when craft issues hit correctness, invariants, or maintainability on shared contract/hot write paths.
+Walk checklist: data/consistency first, then API/contracts. Clean Code findings are **blocking regardless of module reach** — blast radius sets severity, not whether to block. Name the resolving refactoring in `suggestion`.
 
 Prioritize:
 

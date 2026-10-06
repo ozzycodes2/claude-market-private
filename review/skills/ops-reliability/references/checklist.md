@@ -13,32 +13,34 @@ Dimensions from taxonomy categories **8 Reliability & operability**, **10 Perfor
 - [ ] **Observability** — Logs/metrics/traces for new paths; golden signals. `issue (blocking)` if user-critical path is dark
 - [ ] **SLOs / error budget** — Change risk vs burn. `question` for high-risk
 - [ ] **Alerting** — Actionable; not symptom spam. `suggestion (non-blocking)`
-- [ ] **Runbooks / ops notes** — Deploy/rollback/flag instructions when ops behavior changes. `suggestion (non-blocking)`/`issue (blocking)` for high-risk
-- [ ] **Health checks** — Liveness vs readiness correct. `suggestion (non-blocking)`
+- [ ] **Runbooks / ops notes** — Deploy/rollback/flag instructions. `issue (blocking)` whenever ops behavior changes
+- [ ] **Health checks** — Liveness vs readiness correct. `issue (blocking)` — wrong semantics causes restart loops
 - [ ] **Resource limits** — Memory/CPU/FD/pools; DoS amplification. `issue (blocking)` if unbounded
-- [ ] **Crash-only / restart safety** — Die mid-op safely. `suggestion (non-blocking)`
-- [ ] **Time & clocks** — Skew, DST, monotonic vs wall. `suggestion (non-blocking)`/`issue (blocking)` for scheduling/billing
+- [ ] **Crash-only / restart safety** — Die mid-op safely. `issue (blocking)`
+- [ ] **Time & clocks** — Skew, DST, monotonic vs wall. `issue (blocking)` — clock bugs are silent and expensive
 
 ## 10. Performance & scalability
 
 - [ ] **Hot paths** — Algorithmic complexity on critical request/job paths. `issue (blocking)` if obvious O(n²) on large n
 - [ ] **N+1 / chatty I/O** — Batching, joins, loaders. `issue (blocking)`/`suggestion (non-blocking)`
 - [ ] **Pagination / unbounded results** — Limits enforced. `issue (blocking)`
-- [ ] **Caching strategy** — Correctness + stampede. `suggestion (non-blocking)`
+- [ ] **Caching strategy** — Correctness + stampede. `issue (blocking)` on shared paths (invalidation correctness)
 - [ ] **Allocation / GC pressure** — Hot loops. `suggestion (non-blocking)`
 - [ ] **Data volume assumptions** — Expected sizes documented/tested. `suggestion (non-blocking)`
 - [ ] **Fan-out amplification** — One request → N downstream. `issue (blocking)` if uncontrolled
-- [ ] **Async offload** — Slow work not on request thread without reason. `suggestion (non-blocking)`
+- [ ] **Async offload** — Slow work not on request thread without reason. `issue (blocking)` when slow work sits on a request path
 - [ ] **Capacity / cost** — New storage/compute called out. `question`/`suggestion (non-blocking)`
 
 ## Concurrency leftovers (beyond bug-finder races)
 
 - [ ] **Poison messages / DLQ** — Failure isolation for consumers. `suggestion (non-blocking)`/`issue (blocking)`
-- [ ] **Async cancellation leftovers** — Orphaned work / inconsistent state after cancel. `suggestion (non-blocking)`/`issue (blocking)`
-- [ ] **Ordering guarantees** — Queue/partition assumptions stated. `question`
+- [ ] **Async cancellation leftovers** — Orphaned work / inconsistent state after cancel. `issue (blocking)`
+- [ ] **Ordering guarantees** — Queue/partition assumptions stated. `issue (blocking)` when code depends on order without stating it; `question` otherwise
 - [ ] **Concurrent idempotency (ops view)** — Unique constraints / dedupe as safety net for at-least-once consumers. `issue (blocking)`
 
 ## Clean Code (category 3 Code craft) — blocking overlay
 
 - [ ] PII/secrets in logs on new paths → **Blocker**
-- [ ] Deep nesting / flag params that hide timeout/retry behavior on hot handlers → **Blocker** if correctness obscured
+- [ ] Deep nesting that hides timeout/retry behavior → **Blocker** · Replace Nested Conditional with Guard Clauses
+- [ ] Boolean flag params on handlers → **Blocker** · Remove Flag Argument
+- [ ] Logging noisy enough to hide an incident → **high**

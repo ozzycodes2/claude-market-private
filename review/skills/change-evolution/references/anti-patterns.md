@@ -12,7 +12,7 @@
 
 ## Design quality
 
-- Needless complexity / speculative generality (gold plating) on hot or shared paths
+- Needless complexity / speculative generality (gold plating)
 - Shallow class explosion; leaking internals at boundaries
 - Module API easy to misuse; unsafe defaults
 - Net design-health degradation without a plan (Google standard)
@@ -25,7 +25,7 @@
 - “Tests follow-up” promise
 - Empty description on non-trivial PR (missing why / risks / alternatives)
 
-## Clean Code (blocking when on shared/hot paths)
+## Clean Code (blocking)
 
 - Dead / commented-out code masking intent in evolving modules
 - Duplication that will diverge under parallel evolution of the same concern
