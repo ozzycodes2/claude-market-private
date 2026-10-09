@@ -333,8 +333,7 @@ craft or design finding, name the resolving refactoring.
     "tool_name": "review",
     "review_title": "Review",
     "tool_version": "<from plugin.json>",
-    "model": "<orchestrator model ID>",
-    "stages": ["Change Analysis", "Code Review", "QR Passes", "Security", "Documentation", "Code Generation"]
+    "model": "<orchestrator model ID>"
   }
 }
 ```

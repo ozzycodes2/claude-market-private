@@ -1,6 +1,6 @@
 {
   "name": "review",
-  "version": "0.10.1",
+  "version": "0.11.0",
   "description": "Comprehensive multi-phase PR review \u2014 change analysis with risk_class routing, 3-pass deep code review, risk-gated quality-review passes (domain-architecture, data-contracts, ops-reliability, change-evolution), security scanning (OWASP deepen), and documentation-drift checks, posted as one unified GitHub review. Test execution and coverage analysis are left to CI. Plus fix: apply the findings in the working tree \u2014 refactor each code smell by the named Fowler/Kerievsky move in the language's own idiom, rewrite flagged docs and comments, regenerate stale artifacts, and defer anything needing a human design decision, one commit per finding and never a push; then reply to and resolve the review comments it answered. Plus monitor-pr: continuously watch a PR for CI failures and review comments (drive with /loop), delegate the fixing to fix, push, and resolve or reply-acknowledge each comment once its fix ships. Rust and Machinify mac-ui changes get tailored checks.",
   "repository": "https://github.com/ozzycodes2/claude-market-private",
   "license": "MIT",
