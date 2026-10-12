@@ -1,8 +1,8 @@
 ---
 name: review
-description: Orchestrates comprehensive PR review combining analysis, code review, security, documentation, and risk-gated quality-review passes. Use when you want a full automated review of a GitHub PR posted as a single unified comment.
-allowed-tools: Bash Read Write Skill Task
-disable-model-invocation: true
+description: Orchestrates comprehensive PR review combining analysis, code review, security, documentation, and risk-gated quality-review passes, posted as one unified GitHub comment. Use when asked to review a pull request, run a full review on a PR, or right after opening a PR that should be reviewed before merge — including when that instruction arrives as part of a larger task such as "open a PR and review it".
+allowed-tools: Bash Read Write Skill Task Agent
+disable-model-invocation: false
 ---
 
 # Orchestrate Full PR Review
