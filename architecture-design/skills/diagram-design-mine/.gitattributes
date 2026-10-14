@@ -1,0 +1,3 @@
+# SKILL.md is held to a byte cap measured against the committed file, so its
+# line endings cannot depend on a checkout's core.autocrlf.
+SKILL.md text eol=lf

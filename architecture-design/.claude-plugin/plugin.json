@@ -1,7 +1,7 @@
 {
   "name": "architecture-design",
-  "version": "0.1.1",
-  "description": "Design deep modules and sharpen a project's domain model. Shared vocabulary for module depth, interfaces, and seams; domain terminology, ADRs, and CONTEXT docs; and a codebase deepening scan with an HTML report. Run setup-matt-pocock-skills once first.",
+  "version": "0.2.0",
+  "description": "Design deep modules, sharpen a project's domain model, and draw the result. Shared vocabulary for module depth, interfaces, and seams; domain terminology, ADRs, and CONTEXT docs; a codebase deepening scan with an HTML report; and 45 self-contained HTML/SVG diagram types in the Mine Final skin, with .drawio, Mermaid, and Excalidraw import. Run setup-matt-pocock-skills once first.",
   "repository": "https://github.com/ozzycodes2/claude-market-private",
   "license": "MIT",
   "author": {
@@ -15,6 +15,9 @@
     "ubiquitous-language",
     "adr",
     "codebase-design",
+    "diagrams",
+    "svg",
+    "design-system",
     "development"
   ]
 }

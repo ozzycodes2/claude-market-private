@@ -1,0 +1,5 @@
+# Files skipped by `lint-skin.py --all --baseline`.
+#
+# Empty. Every example conforms unskipped: `lint-skin.py --all` reports 0
+# findings across all 215 linted files. Add a name here only with a comment
+# naming the convention the file cannot satisfy, and why.
