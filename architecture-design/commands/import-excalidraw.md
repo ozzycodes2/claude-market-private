@@ -2,9 +2,10 @@
 description: Redraw an Excalidraw board as an editorial diagram at a chosen format, size, and detail level
 argument-hint: <excalidraw-file> [--format=html|svg|png|html+png] [--size=<preset>] [--detail=faithful|balanced|simplified] [--audience=engineer|mixed|executive] [--type=<diagram-type>] [--variant=light|dark|full] [--output=<path>]
 allowed-tools: Read, Write, Edit, Bash, Glob
+disable-model-invocation: true
 ---
 
-Redraw the Excalidraw scene at `$1` in this skill's design system, following [`skills/diagram-design-mine/references/import-excalidraw.md`](../skills/diagram-design-mine/references/import-excalidraw.md) and [`skills/diagram-design-mine/references/output-spec.md`](../skills/diagram-design-mine/references/output-spec.md). Treat those references as the source of truth — don't reimplement the logic here.
+Redraw the Excalidraw scene at `$1` in this skill's design system, following [`skills/create-diagram/references/import-excalidraw.md`](../skills/create-diagram/references/import-excalidraw.md) and [`skills/create-diagram/references/output-spec.md`](../skills/create-diagram/references/output-spec.md). Treat those references as the source of truth — don't reimplement the logic here.
 
 Full argument string: `$ARGUMENTS`
 
@@ -18,7 +19,7 @@ Accepts `.excalidraw` and `.excalidraw.json` scenes. PNG/SVG exports are rejecte
 - `--variant=light` — the minimal light template.
 - An Excalidraw file holds a single scene, so there is no page or diagram selector.
 - Type is chosen from the extracted structure; `--type` forces one of the visual
-  types in [`SKILL.md` §3](../skills/diagram-design-mine/SKILL.md).
+  types in [`SKILL.md` §3](../skills/create-diagram/SKILL.md).
 
 ## Flags
 

@@ -2,9 +2,10 @@
 description: Redraw a draw.io file as an editorial diagram at a chosen format, size, and detail level
 argument-hint: <drawio-file> [--format=html|svg|png|html+png] [--size=<preset>] [--detail=faithful|balanced|simplified] [--audience=engineer|mixed|executive] [--type=<diagram-type>] [--page=N|NAME|all] [--variant=light|dark|full] [--output=<path>]
 allowed-tools: Read, Write, Edit, Bash, Glob
+disable-model-invocation: true
 ---
 
-Redraw the draw.io file at `$1` as a diagram in this skill's design system, following [`skills/diagram-design-mine/references/import-drawio.md`](../skills/diagram-design-mine/references/import-drawio.md) and [`skills/diagram-design-mine/references/output-spec.md`](../skills/diagram-design-mine/references/output-spec.md). Treat those references as the source of truth — don't reimplement the logic here.
+Redraw the draw.io file at `$1` as a diagram in this skill's design system, following [`skills/create-diagram/references/import-drawio.md`](../skills/create-diagram/references/import-drawio.md) and [`skills/create-diagram/references/output-spec.md`](../skills/create-diagram/references/output-spec.md). Treat those references as the source of truth — don't reimplement the logic here.
 
 Full argument string: `$ARGUMENTS`
 
@@ -18,7 +19,7 @@ Accepts `.drawio`, `.drawio.xml`, `.xml`, `.drawio.png`, and `.drawio.svg`.
 - `--variant=light` — the minimal light template.
 - A single-page file selects its only page; a multi-page file lists pages and asks which to use.
 - Type is chosen from the extracted structure; `--type` forces one of the visual types in
-  [`SKILL.md` §3](../skills/diagram-design-mine/SKILL.md).
+  [`SKILL.md` §3](../skills/create-diagram/SKILL.md).
 
 ## Flags
 

@@ -12,7 +12,7 @@ that ends in a visual report.
 | `domain-modeling` | Build and sharpen a project's domain model — pin down ubiquitous language and record architectural decisions (ADRs). |
 | `improve-codebase-architecture` | Scan a codebase for deepening opportunities, present them as a visual HTML report, then grill through whichever one you pick. |
 | `setup-matt-pocock-skills` | One-time repo setup — configures the issue tracker, triage label vocabulary, and domain doc layout. Run once before first use of the other skills. |
-| `diagram-design-mine` | Draw the architecture as a self-contained HTML/SVG figure — 45 visual types, Mine Final skin, with `.drawio` / Mermaid / Excalidraw import. |
+| `create-diagram` | Draw the architecture as a self-contained HTML/SVG figure — 45 visual types, Mine Final skin, with `.drawio` / Mermaid / Excalidraw import. |
 
 ## Usage
 
@@ -43,9 +43,9 @@ automatic spacing and routing.
 > **Run `setup-matt-pocock-skills` once** before the others — it lays down the issue
 > tracker, label vocabulary, and domain doc layout the rest depend on.
 
-`diagram-design-mine` is independent of the other four and needs no setup.
+`create-diagram` is independent of the other four and needs no setup.
 
-## diagram-design-mine
+## create-diagram
 
 A fork of Cathryn Lavery's [diagram-design](https://github.com/cathrynlavery/diagram-design)
 (v2.6, MIT), reskinned to Mine Final. The layout grammar is unchanged — same
@@ -66,11 +66,11 @@ palette as a deliberate opt-in alternate.
 
 ### Gates
 
-`skills/diagram-design-mine/scripts/` carries upstream's verifiers, retargeted
+`skills/create-diagram/scripts/` carries upstream's verifiers, retargeted
 to run from the skill directory rather than a repository checkout:
 
 ```sh
-cd architecture-design/skills/diagram-design-mine
+cd architecture-design/skills/create-diagram
 python3 scripts/verify-contrast.py            # 18 role-and-use pairs, both skins
 python3 scripts/lint-skin.py --all            # palette and font conformance
 python3 scripts/verify-geometry.py --all      # the six connector rules
@@ -117,7 +117,7 @@ for t in scripts/test-*.py; do python3 "$t" >/dev/null 2>&1 || echo "$t"; done
 
 MIT — see the marketplace [LICENSE](../LICENSE).
 
-`skills/diagram-design-mine/` is derived from
+`skills/create-diagram/` is derived from
 [cathrynlavery/diagram-design](https://github.com/cathrynlavery/diagram-design),
 MIT, © Cathryn Lavery — see
-[skills/diagram-design-mine/LICENSE](skills/diagram-design-mine/LICENSE).
+[skills/create-diagram/LICENSE](skills/create-diagram/LICENSE).

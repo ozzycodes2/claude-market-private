@@ -1,10 +1,11 @@
 ---
-description: Save, load, inspect, update, reset, or delete diagram-design-mine client profiles
+description: Save, load, inspect, update, reset, or delete create-diagram client profiles
 argument-hint: "[list|save|load|show|update|reset|delete] [name]"
 allowed-tools: Read, Write, Edit, Bash, Glob
+disable-model-invocation: true
 ---
 
-Manage Diagram Design (Mine Final) client profiles by following [`skills/diagram-design-mine/references/profiles.md`](../skills/diagram-design-mine/references/profiles.md). Treat that reference as the source of truth for storage, strict slug validation, metadata, marker-first resolution, schema checks, and failure handling. Do not reimplement or relax its rules here.
+Manage Diagram Design (Mine Final) client profiles by following [`skills/create-diagram/references/profiles.md`](../skills/create-diagram/references/profiles.md). Treat that reference as the source of truth for storage, strict slug validation, metadata, marker-first resolution, schema checks, and failure handling. Do not reimplement or relax its rules here.
 
 Full argument string: `$ARGUMENTS`
 

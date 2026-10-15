@@ -2,9 +2,10 @@
 description: Redraw Mermaid as an editorial diagram at a chosen format, size, and detail level
 argument-hint: <mermaid-file> [--format=html|svg|png|html+png] [--size=<preset>] [--detail=faithful|balanced|simplified] [--audience=engineer|mixed|executive] [--type=<diagram-type>] [--diagram=N|all] [--variant=light|dark|full] [--output=<path>]
 allowed-tools: Read, Write, Edit, Bash, Glob
+disable-model-invocation: true
 ---
 
-Redraw the Mermaid source at `$1` in this skill's design system, following [`skills/diagram-design-mine/references/import-mermaid.md`](../skills/diagram-design-mine/references/import-mermaid.md) and [`skills/diagram-design-mine/references/output-spec.md`](../skills/diagram-design-mine/references/output-spec.md). Treat those references as the source of truth.
+Redraw the Mermaid source at `$1` in this skill's design system, following [`skills/create-diagram/references/import-mermaid.md`](../skills/create-diagram/references/import-mermaid.md) and [`skills/create-diagram/references/output-spec.md`](../skills/create-diagram/references/output-spec.md). Treat those references as the source of truth.
 
 Full argument string: `$ARGUMENTS`
 
@@ -18,7 +19,7 @@ Accepts `.mmd`, `.mermaid`, and Markdown files containing fenced `mermaid` block
 - `--variant=light` — the minimal light template.
 - A single diagram selects diagram 0; a multi-block Markdown file lists blocks and asks which to use.
 - Type is chosen from the extracted grammar and structure; `--type` forces one of the visual
-  types in [`SKILL.md` §3](../skills/diagram-design-mine/SKILL.md).
+  types in [`SKILL.md` §3](../skills/create-diagram/SKILL.md).
 
 ## Flags
 
