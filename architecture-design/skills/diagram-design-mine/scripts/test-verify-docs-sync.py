@@ -441,11 +441,15 @@ def check_style_guide_anchors(verify) -> None:
         raise AssertionError(f"shipped SKILL.md reference links failed: {errors}")
 
     # Punctuation drops out of the slug and the spaces around it survive.
+    # Both anchors name headings style-guide.md actually carries: upstream's
+    # second fixture pointed at 'inversion-rule-light--dark', which no heading
+    # in its own style guide ever matched, so the case failed there too.
     errors = []
     verify.check_skill_reference_links(
         errors,
         "See [strokes](references/style-guide.md#stroke-radius-spacing) and "
-        "[inversion](references/style-guide.md#inversion-rule-light--dark).",
+        "[type](references/style-guide.md"
+        "#the-type-scale-does-not-survive-and-says-so).",
         verify.SKILL.parent,
     )
     if errors:
@@ -503,7 +507,6 @@ def check_heading_syntax(verify) -> None:
 # must fail a test, not shrink it.
 SIZE_SURFACES = {
     "SKILL.md": " · ",
-    "README.md": " · ",
     "commands/import-drawio.md": ", ",
     "commands/import-mermaid.md": ", ",
     "commands/import-excalidraw.md": ", ",
@@ -524,7 +527,8 @@ def check_size_preset_surfaces(verify) -> None:
         for relative in (OUTPUT_SPEC, *SIZE_SURFACES):
             target = root / relative
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_bytes((ROOT / relative).read_bytes())
+            source = verify.plugin_surface(ROOT, Path(relative))
+            target.write_bytes(source.read_bytes())
         errors = run_checks(root, verify.check_size_preset_surfaces)
         if errors:
             raise AssertionError(f"shipped size-preset surfaces failed: {errors}")
@@ -556,15 +560,14 @@ def check_size_preset_surfaces(verify) -> None:
             raise AssertionError(f"an unknown preset on a surface was not reported: {errors}")
         command.write_bytes(original)
 
-        readme = root / "README.md"
-        original = mutate(readme, "`doc-inline` · `doc-wide`", "`doc-wide` · `doc-inline`")
+        skill = root / "SKILL.md"
+        original = mutate(skill, "`doc-inline` · `doc-wide`", "`doc-wide` · `doc-inline`")
         errors = run_checks(root, verify.check_size_preset_surfaces)
-        expected = [size_drift("README.md", "presets out of output-spec.md order")]
+        expected = [size_drift("SKILL.md", "presets out of output-spec.md order")]
         if errors != expected:
             raise AssertionError(f"reordered presets were not reported: {errors}")
-        readme.write_bytes(original)
+        skill.write_bytes(original)
 
-        skill = root / "SKILL.md"
         original = mutate(skill, "| **Size** |", "| **Canvas** |")
         errors = run_checks(root, verify.check_size_preset_surfaces)
         expected = ["SKILL.md has no size-preset list"]
@@ -609,18 +612,22 @@ def main() -> int:
     verify = load_verify_module()
     check_architecture_delta_discovery(verify)
 
-    # Keep real routing vocabulary in the fixtures so the size check cannot
-    # accidentally replace the existing lexical-hook validation.
-    short = json.loads((ROOT / ".claude-plugin/plugin.json").read_text(encoding="utf-8"))["description"]
+    # The plugin manifest sits above the skill, so the fixture reproduces the
+    # vendored layout rather than the skill alone.
+    manifest = verify.plugin_surface(ROOT, Path(".claude-plugin/plugin.json"))
+    short = json.loads(manifest.read_text(encoding="utf-8"))["description"]
     with tempfile.TemporaryDirectory() as temporary:
-        root = Path(temporary)
+        root = Path(temporary) / "plugin" / "skills" / ROOT.name
         for relative, _ in verify.MANIFEST_DESCRIPTIONS:
-            path = root / relative
+            path = root.parent.parent / relative
             path.parent.mkdir(parents=True, exist_ok=True)
-            document = json.loads((ROOT / relative).read_text(encoding="utf-8"))
-            path.write_text(json.dumps(document), encoding="utf-8")
+            path.write_text(
+                json.dumps(json.loads(manifest.read_text(encoding="utf-8"))),
+                encoding="utf-8",
+            )
+
         for relative, _ in verify.MANIFEST_DESCRIPTIONS:
-            path = root / relative
+            path = root.parent.parent / relative
             original = path.read_text(encoding="utf-8")
             for length in (500, 501):
                 document = json.loads(original)
@@ -638,57 +645,34 @@ def main() -> int:
                     raise AssertionError(f"manifest size boundary failed: {errors}")
             path.write_text(original, encoding="utf-8")
 
-        # Architecture alone must not accidentally satisfy Architecture delta.
-        # Mutate each native discovery surface independently, including Codex's
-        # long description; a correct hook elsewhere cannot hide this omission.
+        # The manifest no longer mirrors the type list, so the discovery hooks
+        # are the whole of what it has to carry.
         for relative, keys in verify.MANIFEST_DESCRIPTIONS:
-            path = root / relative
+            path = root.parent.parent / relative
             original = path.read_text(encoding="utf-8")
             for key in keys:
                 document = json.loads(original)
-                container = (
-                    document["interface"] if key == "longDescription"
-                    else document["metadata"] if "metadata" in document
-                    else document
-                )
+                container = document["metadata"] if "metadata" in document else document
                 before = container[key]
-                container[key] = before.replace("architecture delta, ", "")
+                container[key] = before.replace("lifecycle phase", "subject progress")
                 if container[key] == before:
-                    raise AssertionError(f"{relative} {key} lacks Architecture delta")
+                    raise AssertionError(f"{relative} {key} lacks the lifecycle hook")
                 path.write_text(json.dumps(document), encoding="utf-8")
                 errors = []
                 verify.check_manifest_descriptions(errors, root)
-                if len(errors) != 1 or "type 'Architecture delta'" not in errors[0]:
-                    raise AssertionError(f"missing delta hook was not rejected: {errors}")
+                if errors != [
+                    f"{relative.as_posix()} {key!r} lost discovery hook 'lifecycle phase'"
+                ]:
+                    raise AssertionError(f"missing lifecycle hook was not rejected: {errors}")
             path.write_text(original, encoding="utf-8")
 
-        codex = root / ".codex-plugin/plugin.json"
-        document = json.loads(codex.read_text(encoding="utf-8"))
-        document["interface"]["longDescription"] = short + " More detail." * 50
-        codex.write_text(json.dumps(document), encoding="utf-8")
+        # A manifest the plugin does not carry is a miss, not a pass.
+        for relative, _ in verify.MANIFEST_DESCRIPTIONS:
+            (root.parent.parent / relative).unlink()
         errors = []
         verify.check_manifest_descriptions(errors, root)
-        if errors:
-            raise AssertionError(f"longDescription incorrectly limited: {errors}")
-
-        document["description"] = short.replace("Wardley map", "map")
-        codex.write_text(json.dumps(document), encoding="utf-8")
-        errors = []
-        verify.check_manifest_descriptions(errors, root)
-        if len(errors) != 1 or "lost the lexical hook" not in errors[0]:
-            raise AssertionError(f"missing routing hook was not rejected: {errors}")
-
-        document = json.loads(codex.read_text(encoding="utf-8"))
-        document["description"] = short.replace("lifecycle phase", "subject progress")
-        document["interface"]["longDescription"] = document["interface"]["longDescription"].replace(
-            "lifecycle phase", "subject progress"
-        )
-        codex.write_text(json.dumps(document), encoding="utf-8")
-        errors = []
-        verify.check_manifest_descriptions(errors, root)
-        lifecycle_errors = [error for error in errors if "discovery hook 'lifecycle phase'" in error]
-        if len(lifecycle_errors) != 2:
-            raise AssertionError(f"missing lifecycle discovery hooks were not rejected: {errors}")
+        if not all("missing plugin manifest" in error for error in errors) or not errors:
+            raise AssertionError(f"an absent manifest was not reported: {errors}")
 
     for length in (1024, 1025):
         errors: list[str] = []
@@ -1233,13 +1217,8 @@ From a repository checkout, run `python3 <repo-root>/scripts/verify-geometry.py 
         drawio_command = root / "commands/import-drawio.md"
         mermaid_command = root / "commands/import-mermaid.md"
         excalidraw_command = root / "commands/import-excalidraw.md"
-        profile_command = root / "commands/profile.md"
-        doctor_command = root / "commands/doctor.md"
-        export_prompt = root / "prompts/export-diagram.md"
-        mermaid_prompt = root / "prompts/import-mermaid.md"
-        excalidraw_prompt = root / "prompts/import-excalidraw.md"
-        profile_prompt = root / "prompts/profile.md"
-        doctor_prompt = root / "prompts/doctor.md"
+        profile_command = root / "commands/diagram-profile.md"
+        doctor_command = root / "commands/diagram-doctor.md"
         for path in (
             profile_reference,
             doctor_reference,
@@ -1253,11 +1232,6 @@ From a repository checkout, run `python3 <repo-root>/scripts/verify-geometry.py 
             excalidraw_command,
             profile_command,
             doctor_command,
-            export_prompt,
-            mermaid_prompt,
-            excalidraw_prompt,
-            profile_prompt,
-            doctor_prompt,
         ):
             path.parent.mkdir(parents=True, exist_ok=True)
         profile_reference.write_text("# Profiles\n", encoding="utf-8")
@@ -1274,127 +1248,32 @@ From a repository checkout, run `python3 <repo-root>/scripts/verify-geometry.py 
         )
         profile_command.write_text("Follow references/profiles.md.\n", encoding="utf-8")
         doctor_command.write_text("Follow references/doctor.md.\n", encoding="utf-8")
-        export_prompt.write_text("Follow references/export.md.\n", encoding="utf-8")
-        mermaid_prompt.write_text("Follow references/import-mermaid.md.\n", encoding="utf-8")
-        excalidraw_prompt.write_text(
-            "Follow references/import-excalidraw.md.\n", encoding="utf-8"
-        )
-        profile_prompt.write_text("Follow references/profiles.md.\n", encoding="utf-8")
-        doctor_prompt.write_text("Follow references/doctor.md.\n", encoding="utf-8")
 
         errors = []
         verify.check_routing_surfaces(errors, root)
         if errors:
             raise AssertionError(f"valid routing surfaces failed: {errors}")
 
-        doctor_prompt.unlink()
+        doctor_command.unlink()
         errors = []
         verify.check_routing_surfaces(errors, root)
-        expected = "routing surface is missing: prompts/doctor.md"
+        expected = "routing surface is missing: commands/diagram-doctor.md"
         if errors != [expected]:
-            raise AssertionError(f"missing routing prompt was not reported: {errors}")
+            raise AssertionError(f"missing routing command was not reported: {errors}")
 
-        doctor_prompt.write_text("Stale standalone instructions.\n", encoding="utf-8")
+        doctor_command.write_text("Stale standalone instructions.\n", encoding="utf-8")
         errors = []
         verify.check_routing_surfaces(errors, root)
         expected = (
-            "routing surface does not route to references/doctor.md: prompts/doctor.md"
+            "routing surface does not route to references/doctor.md: "
+            "commands/diagram-doctor.md"
         )
         if errors != [expected]:
-            raise AssertionError(f"stale routing prompt was not reported: {errors}")
-
-        factory_manifest = root / ".factory-plugin/plugin.json"
-        factory_marketplace = root / ".factory-plugin/marketplace.json"
-        factory_manifest.parent.mkdir(parents=True)
-        factory_manifest.write_text(
-            json.dumps(
-                {
-                    "name": "diagram-design",
-                    "repository": "https://github.com/example/diagram-design",
-                }
-            ),
-            encoding="utf-8",
-        )
-        factory_marketplace.write_text(
-            json.dumps({"name": "diagram-design"}),
-            encoding="utf-8",
-        )
-        valid_readme = """# Diagram Design
-
-```bash
-droid plugin marketplace add https://github.com/example/diagram-design
-droid plugin install diagram-design@diagram-design --scope user
-```
-
-```
-diagram-design/
-├── .factory-plugin/ — Factory Droid metadata
-├── commands/
-└── skills/
-```
-"""
-        readme = root / "README.md"
-        readme.write_text(valid_readme, encoding="utf-8")
-
-        errors = []
-        verify.check_factory_install_surface(errors, root)
-        if errors:
-            raise AssertionError(f"valid Factory install contract failed: {errors}")
-
-        readme.write_text(
-            valid_readme.replace(
-                "droid plugin marketplace add https://github.com/example/diagram-design\n"
-                "droid plugin install diagram-design@diagram-design --scope user",
-                "droid plugin install diagram-design@diagram-design --scope user\n"
-                "droid plugin marketplace add https://github.com/example/diagram-design",
-            ),
-            encoding="utf-8",
-        )
-        errors = []
-        verify.check_factory_install_surface(errors, root)
-        expected = (
-            "README Factory install block must match native metadata: "
-            "`droid plugin marketplace add https://github.com/example/diagram-design` "
-            "then `droid plugin install diagram-design@diagram-design`"
-        )
-        if errors != [expected]:
-            raise AssertionError(
-                f"reversed Factory install commands were not reported: {errors}"
-            )
-
-        readme.write_text(
-            valid_readme.replace(
-                "diagram-design@diagram-design", "diagram-design@wrong-marketplace"
-            ),
-            encoding="utf-8",
-        )
-        errors = []
-        verify.check_factory_install_surface(errors, root)
-        expected = (
-            "README Factory install block must match native metadata: "
-            "`droid plugin marketplace add https://github.com/example/diagram-design` "
-            "then `droid plugin install diagram-design@diagram-design`"
-        )
-        if errors != [expected]:
-            raise AssertionError(
-                f"drifted Factory plugin ID was not reported: {errors}"
-            )
-
-        readme.write_text(
-            valid_readme.replace("├── .factory-plugin/ — Factory Droid metadata\n", ""),
-            encoding="utf-8",
-        )
-        errors = []
-        verify.check_factory_install_surface(errors, root)
-        expected = (
-            "README architecture tree must list Factory's native .factory-plugin/ path"
-        )
-        if errors != [expected]:
-            raise AssertionError(f"missing Factory native path was not reported: {errors}")
+            raise AssertionError(f"stale routing command was not reported: {errors}")
 
         counted = root / "commands"
         counted.mkdir(parents=True, exist_ok=True)
-        for relative in verify.COUNT_SURFACES[4:]:
+        for relative in verify.COUNT_SURFACES[3:]:
             surface = root / relative
             surface.parent.mkdir(parents=True, exist_ok=True)
             surface.write_text("See the shipped visual types.\n", encoding="utf-8")
@@ -1452,6 +1331,7 @@ diagram-design/
         # said 39 while the selection table shipped 40 — because nothing checked
         # it. It points at SKILL.md §3 instead, and the two phrasings the real
         # file used are covered so the wording cannot come back.
+        readme = root / "README.md"
         readme_routed = (
             "# Diagram Design\n\n"
             "Every visual type ships in three static variants; see `SKILL.md` §3.\n"
@@ -1884,8 +1764,8 @@ diagram-design/
     print(
         "PASS: docs sync checks references, style-guide anchors, asset citations, "
         "strict-bundler packaging, "
-        "routing surfaces, size-preset surfaces, Factory install contract, type-count routing, High-Level invariants, "
-        "font-link parity, the Cyrillic title fallback order, the type-ramp contract, "
+        "routing surfaces, size-preset surfaces, type-count routing, High-Level invariants, "
+        "font-link parity, the type-ramp contract, "
         "split routing, and gallery guards (parent/variant model, contiguous ordinals, variant letters, type parity)"
     )
     return 0

@@ -1,46 +1,44 @@
 #!/usr/bin/env python3
 """Verify that routing and browsing surfaces stay in sync with the skill.
 
-Fifteen drift classes. The first thirteen have each shipped before; the
-fourteenth nearly did (#217); the fifteenth guards the ADR 0004 split:
+Thirteen drift classes. The first eleven have each shipped before; the
+twelfth nearly did (#217); the thirteenth guards the ADR 0004 split:
 
 1. The SKILL.md frontmatter description is the only text an agent sees before
    deciding to load the skill — every visual type in the selection table must
    keep a lexical hook there.
 2. The gallery (assets/index.html) must reach every shipped example, and every
    gallery tab must point at a file that exists.
-3. Every concrete file named in README.md's architecture tree must exist.
-4. Every relative references/*.md link in SKILL.md must resolve, and a link
+3. Every relative references/*.md link in SKILL.md must resolve, and a link
    into a style-guide.md section must name one of its headings.
-5. Claude and Pi command/prompt surfaces must route to the matching reference.
-6. Plugin descriptions must fit Cowork's installation limit while retaining
-   every type's lexical hook. The skill and Codex longDescription keep the
-   fuller feature summary without inheriting the short-description limit.
-7. Factory Droid's README install commands and native manifest path must agree
-   with the package metadata instead of becoming a second hand-maintained API.
-8. Every support path a strict skill bundler can extract from SKILL.md must be
+4. Every plugin command surface must route to the matching reference.
+5. The hosting plugin's description must fit Cowork's installation limit and
+   keep the discovery hooks. It does not mirror the SKILL.md type list: this
+   skill is one of several in the plugin, so that list is the frontmatter
+   description's job (class 1), not the manifest's.
+6. Every support path a strict skill bundler can extract from SKILL.md must be
    a literal file shipped inside the skill package.
-9. Import command surfaces must route to the visual-type taxonomy instead of
+7. Import command surfaces must route to the visual-type taxonomy instead of
    hardcoding a count that becomes stale when a type is added. Counts in the
-   README, contribution guide, skill, and current references must equal the
-   number of shipped type-*.md references.
-10. The High-Level reproducibility checklist must agree with its canvas formula
+   plugin README, skill, and current references must equal the number of
+   shipped type-*.md references.
+8. The High-Level reproducibility checklist must agree with its canvas formula
    and retain sequential numbering.
-11. The canonical dark Line example must keep the dark-skin tokens and canvas.
-12. The 4px-grid section (references/layout-budget.md since the ADR 0004 split)
+9. The canonical dark Line example must keep the dark-skin tokens and canvas.
+10. The 4px-grid section (references/layout-budget.md since the ADR 0004 split)
    and the output-spec type ramp must agree: the grid table carries no font-size
    row, the grid section links to references/output-spec.md, the ramp table
    keeps its five type roles across all three presets, and every font-size in
    SKILL.md, references/primitives-core.md (the §6 markup patterns), and the
    grid owner is a canonical role size or falls inside a named exception.
-13. Every copy of the Google Fonts css2 link must request the families
+11. Every copy of the Google Fonts css2 link must request the families
    assets/template.html does, and the export @import must include them. A copy
    in SKILL.md or any reference is held to the same parity even where no copy
    is required.
-14. Every surface that lists the size presets for selection — the SKILL.md
-   and README output-dial tables and the three import commands — must name
-   exactly the presets in the output-spec.md size table, in its order.
-15. Every SKILL.md section the ADR 0004 split thinned must keep the exact link
+12. Every surface that lists the size presets for selection — the SKILL.md
+   output dial and the three import commands — must name exactly the presets
+   in the output-spec.md size table, in its order.
+14. Every SKILL.md section the ADR 0004 split thinned must keep the exact link
    to each block it moved out, or that content ships unreachable.
 """
 
@@ -53,10 +51,28 @@ from pathlib import Path, PurePosixPath
 from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parent.parent
+
+
+def plugin_surface(root: Path, relative: Path) -> Path:
+    """Locate a routing surface the plugin keeps beside the skill, not inside it.
+
+    A vendored skill lives at `<plugin>/skills/<name>/`, so `commands/`,
+    `.claude-plugin/` and the plugin README are siblings of `skills/`. Fall back
+    to the skill-local path so a genuine miss is reported against the layout the
+    skill owns.
+    """
+    candidates = [root / relative]
+    if root.parent.name == "skills":
+        candidates.insert(0, root.parent.parent / relative)
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    return candidates[-1]
+
+
 SKILL = ROOT / "SKILL.md"
 GALLERY = ROOT / "assets/index.html"
 ASSET_DIR = ROOT / "assets"
-README = ROOT / "README.md"
 HIGH_LEVEL_REFERENCE = ROOT / "references/type-high-level.md"
 ONBOARDING_REFERENCE = ROOT / "references/onboarding.md"
 LINE_DARK_EXAMPLE = ROOT / "assets/example-line-dark.html"
@@ -79,31 +95,25 @@ DESCRIPTION_ALIASES = {
     "dependency graph": "dependency",
 }
 DISCOVERY_HOOKS = ("lifecycle phase",)
+# A plugin that hosts several skills namespaces the two commands whose names
+# would otherwise collide; the four import/export verbs are unambiguous.
 ROUTING_SURFACES = {
     Path("commands/export-diagram.md"): "references/export.md",
     Path("commands/import-drawio.md"): "references/import-drawio.md",
     Path("commands/import-mermaid.md"): "references/import-mermaid.md",
     Path("commands/import-excalidraw.md"): "references/import-excalidraw.md",
-    Path("commands/profile.md"): "references/profiles.md",
-    Path("commands/doctor.md"): "references/doctor.md",
-    Path("prompts/export-diagram.md"): "references/export.md",
-    Path("prompts/import-mermaid.md"): "references/import-mermaid.md",
-    Path("prompts/import-excalidraw.md"): "references/import-excalidraw.md",
-    Path("prompts/profile.md"): "references/profiles.md",
-    Path("prompts/doctor.md"): "references/doctor.md",
+    Path("commands/diagram-profile.md"): "references/profiles.md",
+    Path("commands/diagram-doctor.md"): "references/doctor.md",
 }
 # Surfaces that enumerate every size preset for selection, and the marker of
 # the line that carries the list. The output-spec.md size table is the source.
 SIZE_PRESET_TABLE_HEADING = "## 2. Size"
 SIZE_PRESET_SURFACES = {
     Path("SKILL.md"): "| **Size** |",
-    Path("README.md"): "| **Size** |",
     Path("commands/import-drawio.md"): "- `--size` — any preset in `output-spec.md` §2:",
     Path("commands/import-mermaid.md"): "- `--size` — any preset in `output-spec.md` §2:",
     Path("commands/import-excalidraw.md"): "- `--size` — any preset in `output-spec.md` §2:",
 }
-FACTORY_MANIFEST = Path(".factory-plugin/plugin.json")
-FACTORY_MARKETPLACE = Path(".factory-plugin/marketplace.json")
 SUPPORT_DIRECTORIES = frozenset(
     {"references", "templates", "scripts", "assets", "examples"}
 )
@@ -405,28 +415,6 @@ def check_gallery_type_parity(errors: list[str], gallery: Path, references: Path
         errors.append(f"visual type {name!r} has no numbered gallery tab")
 
 
-def readme_tree_tokens(markdown: str) -> list[str]:
-    blocks = re.findall(r"```\n(diagram-design/\n.*?)```", markdown, re.DOTALL)
-    tokens: list[str] = []
-    for block in blocks:
-        tokens.extend(
-            re.findall(r"([A-Za-z0-9][A-Za-z0-9_.*-]*\.(?:md|html|py|yml|yaml|json|txt|mmd|drawio|png))", block)
-        )
-    return tokens
-
-
-def check_readme_tree(errors: list[str]) -> None:
-    markdown = README.read_text(encoding="utf-8")
-    tokens = readme_tree_tokens(markdown)
-    if not tokens:
-        errors.append("README architecture tree not found or names no files")
-        return
-    for token in sorted(set(tokens)):
-        matches = list(ROOT.rglob(token))
-        if not matches:
-            errors.append(f"README architecture tree names {token!r} but no such file exists")
-
-
 def skill_reference_links(markdown: str) -> list[str]:
     """Return direct relative links from SKILL.md into references/."""
     return re.findall(
@@ -555,7 +543,7 @@ def check_routing_surfaces(errors: list[str], root: Path) -> None:
         reference = root / "." / reference_link
         if not reference.is_file():
             errors.append(f"routing source of truth is missing: {reference_link}")
-        path = root / relative
+        path = plugin_surface(root, relative)
         if not path.is_file():
             errors.append(f"routing surface is missing: {relative.as_posix()}")
             continue
@@ -591,7 +579,7 @@ def check_size_preset_surfaces(errors: list[str], root: Path) -> None:
         errors.append("output-spec.md size table names no presets")
         return
     for relative, marker in SIZE_PRESET_SURFACES.items():
-        path = root / relative
+        path = plugin_surface(root, relative)
         if not path.is_file():
             errors.append(f"size-preset surface is missing: {relative.as_posix()}")
             continue
@@ -610,51 +598,6 @@ def check_size_preset_surfaces(errors: list[str], root: Path) -> None:
         errors.append(
             f"{relative.as_posix()} size presets drift from the output-spec.md size table: "
             + ", ".join(drift)
-        )
-
-
-def check_factory_install_surface(errors: list[str], root: Path) -> None:
-    markdown = (root / "README.md").read_text(encoding="utf-8")
-    manifest = json.loads((root / FACTORY_MANIFEST).read_text(encoding="utf-8"))
-    marketplace = json.loads((root / FACTORY_MARKETPLACE).read_text(encoding="utf-8"))
-    code_blocks = re.findall(
-        r"^```[^\n]*\n(.*?)^```[ \t]*$", markdown, re.MULTILINE | re.DOTALL
-    )
-
-    marketplace_command = f"droid plugin marketplace add {manifest['repository']}"
-    install_command = f"droid plugin install {manifest['name']}@{marketplace['name']}"
-    command_blocks = [
-        [line.strip() for line in block.splitlines() if line.strip()]
-        for block in code_blocks
-    ]
-    install_is_documented = any(
-        any(
-            line == install_command or line.startswith(f"{install_command} ")
-            for line in lines[lines.index(marketplace_command) + 1 :]
-        )
-        for lines in command_blocks
-        if marketplace_command in lines
-    )
-    if not install_is_documented:
-        errors.append(
-            "README Factory install block must match native metadata: "
-            f"`{marketplace_command}` then `{install_command}`"
-        )
-
-    native_directory = f"{FACTORY_MANIFEST.parent.as_posix()}/"
-    architecture_blocks = [
-        block
-        for block in code_blocks
-        if "diagram-design/" in block and "commands/" in block
-    ]
-    native_path_is_documented = any(
-        line.lstrip(" │├─└").startswith(native_directory)
-        for block in architecture_blocks
-        for line in block.splitlines()
-    )
-    if not native_path_is_documented:
-        errors.append(
-            f"README architecture tree must list Factory's native {native_directory} path"
         )
 
 
@@ -697,7 +640,6 @@ COUNT_SURFACES = (
     Path("commands/import-mermaid.md"),
     Path("commands/import-excalidraw.md"),
     Path("README.md"),
-    Path("CONTRIBUTING.md"),
     Path("SKILL.md"),
     Path("references/onboarding.md"),
     Path("references/semantic-patterns.md"),
@@ -718,7 +660,7 @@ def check_type_counts(errors: list[str], root: Path) -> None:
     """Commands stay count-free; reader-facing docs use the shipped count."""
     shipped = shipped_type_count(root)
     for relative in COUNT_SURFACES:
-        path = root / relative
+        path = plugin_surface(root, relative)
         if not path.is_file():
             errors.append(f"type-count surface is missing: {relative.as_posix()}")
             continue
@@ -1449,11 +1391,12 @@ def format_uses(uses: list[tuple[str | None, float]]) -> str:
     )
 
 
+# Upstream shipped one plugin per skill, so its Codex, Factory and marketplace
+# manifests all described this skill and sat at one root. Here the skill is
+# vendored into a plugin that hosts several, and only the Claude manifest is the
+# plugin's own; the rest belong to the marketplace.
 MANIFEST_DESCRIPTIONS = (
     (Path(".claude-plugin/plugin.json"), ("description",)),
-    (Path(".claude-plugin/marketplace.json"), ("description",)),
-    (Path(".codex-plugin/plugin.json"), ("description", "longDescription")),
-    (FACTORY_MANIFEST, ("description",)),
 )
 
 
@@ -1475,13 +1418,8 @@ def find_key(node: object, key: str) -> str | None:
 
 
 def check_manifest_descriptions(errors: list[str], root: Path) -> None:
-    markdown = SKILL.read_text(encoding="utf-8")
-    description = normalized(frontmatter_description(markdown))
-    if not description:
-        return
-    types = selection_table_types(markdown)
     for relative, keys in MANIFEST_DESCRIPTIONS:
-        path = root / relative
+        path = plugin_surface(root, relative)
         if not path.exists():
             errors.append(f"missing plugin manifest: {relative.as_posix()}")
             continue
@@ -1497,14 +1435,6 @@ def check_manifest_descriptions(errors: list[str], root: Path) -> None:
                     f"({len(value)} > {PLUGIN_DESCRIPTION_MAX} characters)"
                 )
             text = normalized(value)
-            for name in types:
-                hook = DESCRIPTION_ALIASES.get(normalized(name), normalized(name))
-                if hook not in text:
-                    errors.append(
-                        f"{relative.as_posix()} {key!r} lost the lexical hook for "
-                        f"type {name!r} (expected {hook!r}) — it must name every "
-                        f"type the SKILL.md description names"
-                    )
             for hook in DISCOVERY_HOOKS:
                 if hook not in text:
                     errors.append(
@@ -1633,10 +1563,8 @@ def main() -> int:
     errors: list[str] = []
     check_description(errors)
     check_manifest_descriptions(errors, ROOT)
-    check_factory_install_surface(errors, ROOT)
     check_gallery(errors)
     check_gallery_type_parity(errors, GALLERY, SKILL.parent / "references")
-    check_readme_tree(errors)
     check_skill_reference_links(
         errors,
         SKILL.read_text(encoding="utf-8"),
@@ -1671,10 +1599,10 @@ def main() -> int:
             print(f"  - {error}")
         return 1
     print(
-        "OK docs sync: description hooks, gallery reachability, README tree, "
+        "OK docs sync: description hooks, gallery reachability, "
         "reference links and style-guide anchors, asset citations, packaged support "
         "files, routing surfaces, size-preset surfaces, "
-        "manifest descriptions, Factory install contract, type-count routing, "
+        "manifest descriptions, type-count routing, "
         "High-Level invariants, onboarding trust boundary, Line dark-skin contract, "
         "font-link parity, type-ramp contract, registered legacy "
         "type sizes, split routing"

@@ -137,7 +137,7 @@ Anything else is a bug in the diagram, not a new size. The one standing carve-ou
 
 ### Registered legacy sizes
 
-Thirty-three declared sizes across sixteen files predate this contract. They are recorded here so the rule above is exact rather than aspirational, and frozen so the list cannot quietly grow. `scripts/verify-docs-sync.py` reads these rows against the files and fails if one gains an off-ramp size, loses one, or drops off disk.
+Thirty-one declared sizes across fourteen files predate this contract. They are recorded here so the rule above is exact rather than aspirational, and frozen so the list cannot quietly grow. `scripts/verify-docs-sync.py` reads these rows against the files and fails if one gains an off-ramp size, loses one, or drops off disk.
 
 Each is registered against the font carrying it, because that is what the sweep checks. It classifies every element first, resolving `class` attributes through the stylesheet, `var(--font-mono)` back to the family it names, and a `{node-name}` token to the ramp row that owns it, then applies only the exceptions open to that font. The canonical role sizes stay one union, so a size on the ramp for any role is on contract wherever it appears. An element whose font it cannot read gets no exception at all. It reads the `<svg>` and any CSS rule worn by an element inside it, so the prose around a diagram does not count as diagram type.
 
@@ -146,14 +146,13 @@ Each is registered against the font carrying it, because that is what the sweep 
 | `assets/example-data-flow.html` | SF Mono 5, SF Mono 6 | chip text and role label, both set in CSS |
 | `assets/example-data-flow-dark.html` | SF Mono 5, SF Mono 6 | chip text and role label, both set in CSS |
 | `assets/example-data-flow-full.html` | SF Mono 5, SF Mono 6 | chip text and role label, both set in CSS |
-| `assets/example-nested.html` | Inter italic 14, Inter italic 14 | two italic asides |
-| `assets/example-nested-dark.html` | Inter italic 14, Inter italic 14 | two italic asides |
-| `assets/example-nested-full.html` | Inter italic 14, Inter italic 14 | two italic asides |
+| `assets/example-nested.html` | Inter regular 14, Inter regular 14 | two italic asides |
+| `assets/example-nested-dark.html` | Inter regular 14, Inter regular 14 | two italic asides |
+| `assets/example-nested-full.html` | Inter regular 14, Inter regular 14 | two italic asides |
 | `assets/example-paved-road-animated.html` | Inter 600 13 | boundary node name |
 | `assets/example-process.html` | SF Mono 6 | role chip |
 | `assets/example-process-dark.html` | SF Mono 6 | role chip |
 | `assets/example-process-full.html` | SF Mono 6 | role chip |
-| `assets/example-quadrant-consultant.html` | Inter 600 13 | inline dot glyph in a `tspan` |
 | `assets/example-queue-animated.html` | Inter 600 13, Inter 600 22, Inter 600 24 | state caption and two fill counters |
 | `assets/example-treemap.html` | Inter 600 7, Inter 600 7, Inter 600 13, Inter 600 13 | two cell index glyphs and two cell names |
 | `assets/example-treemap-dark.html` | Inter 600 7, Inter 600 7, Inter 600 13, Inter 600 13 | two cell index glyphs and two cell names |

@@ -424,16 +424,15 @@ Four options:
   whatever the viewer's platform supplies, and the register-switch rule treats
   that tail as unknown rather than as covered. A Cyrillic eyebrow on a platform
   whose generic mono lacks Cyrillic falls back to a proportional face silently.
-- **`verify-docs-sync.py` cannot run against a vendored skill.** Several of its
-  invariants validate the upstream repository's shape rather than the skill's —
-  `check_factory_install_surface` reads a root `README.md` that does not exist
-  here and raises `FileNotFoundError`, and `main` calls it well before it
-  reaches anything about type. The serif-stack invariant it used to carry is
-  retired: it required all four templates to declare a `--font-serif` reaching
-  `Noto Serif` ahead of any CJK serif face, and this skin declares no
-  `--font-serif` anywhere. Nothing replaces it, because the title is set in
-  Inter, whose Google Fonts slice carries Cyrillic directly — there is no
-  fallback order left to get wrong.
+- **`verify-docs-sync.py` is down to thirteen drift classes from sixteen.** Two
+  of the three retired classes guarded a host this plugin does not target —
+  Factory Droid's `.factory-plugin/` install contract, and an architecture tree
+  that upstream's per-skill README rooted at the skill directory. The third was
+  the serif-stack order: it required all four templates to declare a
+  `--font-serif` reaching `Noto Serif` ahead of any CJK serif face, and this
+  skin declares no `--font-serif` anywhere. Nothing replaces it, because the
+  title is set in Inter, whose Google Fonts slice carries Cyrillic directly —
+  there is no fallback order left to get wrong.
 - **Radar lost two series.** Three dash patterns on one ink is the honest
   ceiling, and the shipped skin supported five. A five-entity radar now has no
   representation in this skin at all.

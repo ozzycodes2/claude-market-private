@@ -158,7 +158,7 @@ def main() -> int:
                     ("glob pin", "*.md text eol=lf\n", True),
                     ("unrelated later rule", pin + "docs/*.md eol=crlf\n", True),
                     ("later eol=crlf", pin + "*.md eol=crlf\n", False),
-                    ("later -text", pin + "skills/**/SKILL.md -text\n", False),
+                    ("later -text", pin + "**/SKILL.md -text\n", False),
                     ("later binary", pin + "SKILL.md binary\n", False),
                     ("later unset eol", pin + "SKILL.md !eol\n", False),
                     ("later character class", pin + "SKILL.[m]d eol=crlf\n", False),

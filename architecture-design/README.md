@@ -86,27 +86,28 @@ type, or explicit paths. `verify-contrast.py` and `verify-dumbbell.py` take no
 arguments. A bare invocation that prints a usage block and exits 2 wants `--all`;
 it is not a failure.
 
-Four upstream gates validate the *repository* rather than the skill and have no
-subject here: `verify-docs-sync.py` (expects a root README, CHANGELOG, and
-`docs/`), `verify-plugin-package.py` (diffs a git base ref for version bumps),
-`verify-screenshot-freshness.py` (wants `docs/screenshots/*.png`, which would be
-45 images of the upstream skin), and `verify-semantic-motion.py` (reads
-`docs/adr/0002-semantic-patterns-do-not-expand-the-taxonomy.md`). They are kept
-for provenance and are expected to fail.
+Two further gates run clean once pointed at this layout:
 
-`verify-docs-sync.py` is down to fifteen drift classes from upstream's sixteen.
-The retired one required every template to declare a `--font-serif` stack
-reaching `Noto Serif` before any CJK serif face; this skin has no serif, and its
-Inter titles draw Cyrillic from Inter itself, so the invariant had no subject
-rather than an unmet one.
+```sh
+python3 scripts/verify-docs-sync.py           # routing and browsing surfaces
+python3 scripts/verify-semantic-motion.py     # the semantic-pattern taxonomy
+```
 
-The 41 `scripts/test-*.py` suites are the verifiers' own tests. Thirty-four
-pass. The seven that do not are the harnesses for the repository-shaped gates
-above plus `test-build-openai-plugin-zip.py`, `test-maintainer-policy.py` and
-`test-plugin-package.py`; each wants a surface a vendored skill does not carry —
-`.codex-plugin/plugin.json`, `.maintainer-policy.json`, `docs/adr/`,
-`docs/screenshots/manifest.json`, a git base ref. `test-build-readme-thumbs.py`
-is the one environmental failure: it needs Pillow.
+`verify-docs-sync.py` resolves `commands/`, `.claude-plugin/` and the README at
+the plugin root, since a vendored skill keeps them as siblings of `skills/`. It
+is down to thirteen drift classes from upstream's sixteen. Two retired classes
+guarded Factory Droid's `.factory-plugin/` install contract and a README
+architecture tree that upstream rooted at its one skill directory; the third
+required every template to declare a `--font-serif` stack reaching `Noto Serif`
+before any CJK serif face, and this skin has no serif at all.
+
+`verify-plugin-package.py` and `bump-plugin-version.py` are upstream's release
+pipeline. They describe a one-plugin-one-skill package whose `SKILL.md`
+`metadata.version` tracks the manifest MAJOR.MINOR — a relationship that cannot
+hold for a plugin hosting five skills. They are kept for provenance, run only
+against fixture repositories, and are not part of this plugin's release.
+
+All 37 `scripts/test-*.py` suites pass:
 
 ```sh
 for t in scripts/test-*.py; do python3 "$t" >/dev/null 2>&1 || echo "$t"; done

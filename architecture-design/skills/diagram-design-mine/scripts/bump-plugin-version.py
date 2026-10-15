@@ -16,7 +16,11 @@ MANIFEST_PATHS = (
     Path(".codex-plugin/plugin.json"),
     Path(".factory-plugin/plugin.json"),
 )
-SKILL_PATH = Path("SKILL.md")
+# The release tooling is upstream's and describes upstream's one-plugin-one-skill
+# package: a single `diagram-design` plugin whose SKILL.md tracks the manifest
+# MAJOR.MINOR. It is kept for provenance and exercised against fixture repos, so
+# these paths name that package rather than the plugin vendoring this skill.
+SKILL_PATH = Path("skills/diagram-design/SKILL.md")
 SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 
 
