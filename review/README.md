@@ -34,7 +34,7 @@ keeping a human in the loop).
 | `data-contracts` | QR pass — data consistency + API/event contracts (categories 7 Data & consistency, 11 API / contract design). Risk-gated on `data` / `api`. |
 | `ops-reliability` | QR pass — reliability, performance, concurrency leftovers (categories 8 Reliability & operability, 10 Performance & scalability, plus concurrency leftovers). Risk-gated on `ops` / `concurrency`. |
 | `change-evolution` | QR pass — CD readiness + design quality YAGNI/deep modules (categories 5 Change & evolution, 4 Design quality). Gated on size/mixed/CD/design. |
-| `security-scan` | Runs available static analyzers; deepens OWASP authz/IDOR, business-logic abuse, SSRF, PII-in-logs; degrades gracefully when tools aren't installed. |
+| `security-scan` | Runs available static analyzers, scoped to the diff's added lines; deepens OWASP authz/IDOR, business-logic abuse, SSRF, PII-in-logs; audits dependencies only when the PR changes a manifest; degrades gracefully when tools aren't installed. |
 | `docs-drift` | Detects docs drift (ADRs, OpenAPI, rendered artifacts, READMEs, comments) plus light DX fold (runbooks / caller migration) and completeness gaps. |
 | `codegen` | Drafts tests, docstrings, and CHANGELOG entries to fill surfaced gaps. Standalone — invoke it by name; `review` does not call it. |
 | `fix` | Applies the recorded findings — refactors each smell by its named Fowler/Kerievsky move in the language's own idiom, rewrites flagged docs and comments, regenerates stale artifacts, defers design decisions. One commit per finding, then replies to and resolves the review comments that raised them; **never pushes**. |
@@ -197,6 +197,9 @@ issue found by multiple passes as high-confidence.
 
 ## Notes
 
+- Pattern scanners are scoped to the lines the PR added
+  (`scripts/changed_lines.py`). Findings elsewhere in a touched file are real
+  but pre-existing; the count of what was scoped out is reported.
 - `codegen` is standalone: `review` does not call it, and nothing it writes
   reaches the findings ledger. Generated code is for review only — never
   auto-committed.

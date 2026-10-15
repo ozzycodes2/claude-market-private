@@ -194,12 +194,34 @@ empty, omit the audit tools from `tools_used`, and say so in the Step 11 summary
 The code scanners (semgrep, bandit, gosec, clippy, the pattern catalogs) are
 unaffected — they are scoped to changed files already.
 
+### 1.2 Capture the diff for hunk scoping
+
+`semgrep`, `bandit` and `gosec` report per file, not per hunk, so a thirty-line
+change to a two-thousand-line module returns findings on all two thousand lines.
+Scope them to the lines the PR added.
+
+```bash
+gh pr diff "$PR_URL" > "$OUTPUT_DIR/pr.diff"
+FILTER="$CLAUDE_PLUGIN_ROOT/scripts/changed_lines.py"
+```
+
+If `$CLAUDE_PLUGIN_ROOT` is unset, Glob for `**/scripts/changed_lines.py`. A
+bare relative path resolves against the **reviewed repo**, not this plugin.
+
+Scoping is to **added** lines only. A hunk's context lines are unchanged code
+that would have been flagged on the base branch too. A multi-line finding
+survives if any line in its span was added, so a function-level rule still fires
+when the PR touched one line inside it.
+
+What this deliberately loses: a vulnerability the PR *exposed* without editing —
+a new caller reaching an old unsanitized sink. The data-flow checks in Step 5 and
+the bug-finder's sink tracing cover that class; these pattern scanners did not.
+
 ## Step 2: Run Semgrep (Universal Scanner)
 
 Semgrep is language-agnostic, catches most common vulnerabilities:
 
 ```bash
-# Run semgrep with security rules
 semgrep \
   --config=auto \
   --json \
@@ -207,8 +229,13 @@ semgrep \
   --timeout=60 \
   --max-memory=4096 \
   <changed_files> \
+  | python3 "$FILTER" filter --diff "$OUTPUT_DIR/pr.diff" --tool semgrep \
   > "$OUTPUT_DIR"/semgrep-results.json
 ```
+
+The filter prints its drop count to stderr. Report that count in Step 11 — a
+large one means the PR touched a file that was already dirty, which is worth
+knowing even though those findings are not this PR's.
 
 **Rules to use:**
 - `auto` - Auto-detect language, use appropriate rules
@@ -229,12 +256,9 @@ jq '.results[] | select(.extra.severity == "INFO")' "$OUTPUT_DIR"/semgrep-result
 ### Python: Bandit
 
 ```bash
-# Scan changed Python files
-bandit \
-  -r <changed_python_files> \
-  -f json \
-  -o "$OUTPUT_DIR"/bandit-results.json \
-  -ll  # Low confidence = low severity
+bandit -r <changed_python_files> -f json -ll \
+  | python3 "$FILTER" filter --diff "$OUTPUT_DIR/pr.diff" --tool bandit \
+  > "$OUTPUT_DIR"/bandit-results.json
 ```
 
 **What bandit finds:**
@@ -277,12 +301,9 @@ jq '.vulnerabilities | to_entries[] | select(.value.severity == "high" or .value
 ### Go: gosec
 
 ```bash
-# Scan Go code
-gosec \
-  -fmt=json \
-  -out="$OUTPUT_DIR"/gosec-results.json \
-  <changed_go_files> \
-  || true  # Don't fail on findings
+gosec -fmt=json <changed_go_files> 2>/dev/null \
+  | python3 "$FILTER" filter --diff "$OUTPUT_DIR/pr.diff" --tool gosec \
+  > "$OUTPUT_DIR"/gosec-results.json || true   # findings are not an error
 ```
 
 ### Ruby: Brakeman
@@ -503,6 +524,8 @@ Top Issues:
   3. [HIGH] requests 2.25.0 has CVE-2023-32681
 
 Tools Used: semgrep, bandit, npm-audit
+Scoped out: 14 findings outside the diff's changed lines
+Dependency audit: skipped (no manifest in this PR)
 
 Security Sensitive: Yes
 
