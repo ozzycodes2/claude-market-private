@@ -178,7 +178,7 @@ inherits the session model and collapses the intended split:
 | S1 design-level | `general-purpose` | `opus` |
 | S1 mechanical | `general-purpose` | `sonnet` |
 | S2 | `general-purpose` | `opus` |
-| S3, S4 | `general-purpose` | `sonnet` |
+| S3, S4 | `general-purpose` | `haiku` |
 
 Use the verbatim prompts in `references/subagent-prompts.md`, with the catalog
 row, the idiom rows, and the rules **inlined** — a subagent runs in the reviewed

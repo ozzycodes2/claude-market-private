@@ -53,14 +53,14 @@ The order findings are worked in is load-bearing, not cosmetic.
 
 Never omit `model`. An omitted `model` inherits the session model, which
 collapses the intended split — the same trap documented in
-`skills/review/SKILL.md` for the three bug-finder passes.
+`skills/review/SKILL.md` for the two bug-finder passes.
 
 | Strategy | `subagent_type` | `model` | Why |
 |---|---|---|---|
 | S1, design-level (enum over hierarchy, typestate, newtype, module split) | `general-purpose` | `opus` | Picking the move and judging the idiom divergence is judgement; a wrong pick adds indirection that outlives the PR |
 | S1, mechanical (Extract Function, Inline, Move, Remove Dead Code) | `general-purpose` | `sonnet` | The mechanics are deterministic once the move is chosen |
 | S2 | `general-purpose` | `opus` | A behavior change on a correctness or security path |
-| S3, S4 | `general-purpose` | `sonnet` | The prose rules are checkable; a smaller model under-edits |
+| S3, S4 | `general-purpose` | `haiku` | The prose rules are explicit and the edit is bounded to text already located for it |
 | S5, S0, S6 | no agent | — | The orchestrator runs the recipe, runs the formatter, or records the deferral |
 
 ## S6 — the deferral criteria in full
