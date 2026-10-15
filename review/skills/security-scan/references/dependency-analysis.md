@@ -1,5 +1,8 @@
 ## Step 6: Analyze Dependencies
 
+**Runs only when `AUDIT_DEPS=true`** — the PR changed a manifest or lockfile.
+Otherwise the audit reports the branch's standing advisories, not this PR's.
+
 ### 6.1 Check for Known Vulnerabilities
 
 **Python:**

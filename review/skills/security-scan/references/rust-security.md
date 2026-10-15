@@ -6,15 +6,23 @@ report what isn't installed rather than silently skipping.
 
 ## Supply-chain tools (run when present)
 
+`cargo audit` and `cargo deny` report the whole dependency tree, so they run
+only when the PR changed `Cargo.toml` or `Cargo.lock` (`AUDIT_DEPS`, security-scan
+Step 1.1). `cargo machete` and clippy are scoped to the crate and always run.
+
 ```bash
-command -v cargo-audit  >/dev/null && cargo audit --json            # RUSTSEC CVEs
-command -v cargo-deny   >/dev/null && cargo deny --format json check advisories bans licenses sources
+if [ "$AUDIT_DEPS" = true ]; then
+  command -v cargo-audit >/dev/null && cargo audit --json           # RUSTSEC CVEs
+  command -v cargo-deny  >/dev/null && cargo deny --format json check advisories bans licenses sources
+fi
 command -v cargo-machete>/dev/null && cargo machete                 # unused deps
 # clippy is the highest-signal Rust linter; run it if the toolchain is present.
 cargo clippy --workspace --all-targets -- -D warnings 2>&1 | tail -40
 # Prefer the repo's own gate if a justfile defines it (same as CI):
 command -v just >/dev/null && just clippy 2>&1 | tail -40
 ```
+
+One finding per RUSTSEC advisory, however many crates pull it in.
 
 Map results: RUSTSEC advisory → dependency finding (severity from CVSS);
 `cargo deny` ban/license violation → dependency finding; clippy `-D warnings`

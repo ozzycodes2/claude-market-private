@@ -168,6 +168,32 @@ MAC_UI_REF_REPO=$(jq -r '.mac_ui_ref_repo // "vlognow/mac-ui"' "$OUTPUT_DIR/pr-a
 Recommend installing: semgrep (universal), <language-specific tool>
 ```
 
+### 1.1 Gate the dependency audits on a changed manifest
+
+A dependency audit reports the whole dependency tree's advisories, so it returns
+the same findings on every PR against a branch, whether or not that PR touched a
+dependency. Those findings are real but they are not this PR's, and the author
+defers them round after round. Run the auditors only when the PR changes a
+manifest or a lockfile.
+
+```bash
+gh pr diff "$PR_URL" --name-only > "$OUTPUT_DIR/changed-files.txt"
+MANIFEST_RE='(^|/)(package-lock\.json|package\.json|yarn\.lock|pnpm-lock\.yaml|requirements[^/]*\.txt|poetry\.lock|Pipfile\.lock|pyproject\.toml|Cargo\.lock|Cargo\.toml|go\.mod|go\.sum|Gemfile\.lock|pom\.xml|build\.gradle[^/]*)$'
+if grep -qE "$MANIFEST_RE" "$OUTPUT_DIR/changed-files.txt"; then
+  AUDIT_DEPS=true
+else
+  AUDIT_DEPS=false
+fi
+```
+
+When `AUDIT_DEPS=false`, skip Step 6 entirely, leave `dependency_vulnerabilities`
+empty, omit the audit tools from `tools_used`, and say so in the Step 11 summary:
+
+> Dependency audit skipped — no manifest or lockfile in this PR.
+
+The code scanners (semgrep, bandit, gosec, clippy, the pattern catalogs) are
+unaffected — they are scoped to changed files already.
+
 ## Step 2: Run Semgrep (Universal Scanner)
 
 Semgrep is language-agnostic, catches most common vulnerabilities:
@@ -222,21 +248,23 @@ bandit \
 ### Python: Safety (dependency checker)
 
 ```bash
-# Check for vulnerable dependencies
-safety check \
-  --json \
-  --file=requirements.txt \
-  > "$OUTPUT_DIR"/safety-results.json 2>&1 || true
+if [ "$AUDIT_DEPS" = true ]; then
+  safety check \
+    --json \
+    --file=requirements.txt \
+    > "$OUTPUT_DIR"/safety-results.json 2>&1 || true
+fi
 ```
 
 ### JavaScript/TypeScript: npm audit
 
 ```bash
-# Check for vulnerable dependencies
-if [ -f "package-lock.json" ]; then
-  npm audit --json > "$OUTPUT_DIR"/npm-audit-results.json 2>&1 || true
-elif [ -f "yarn.lock" ]; then
-  yarn audit --json > "$OUTPUT_DIR"/yarn-audit-results.json 2>&1 || true
+if [ "$AUDIT_DEPS" = true ]; then
+  if [ -f "package-lock.json" ]; then
+    npm audit --json > "$OUTPUT_DIR"/npm-audit-results.json 2>&1 || true
+  elif [ -f "yarn.lock" ]; then
+    yarn audit --json > "$OUTPUT_DIR"/yarn-audit-results.json 2>&1 || true
+  fi
 fi
 ```
 
@@ -283,8 +311,8 @@ spotbugs \
 
 When `PRIMARY_LANG=rust`, cargo tooling replaces the (Rust-blind) generic
 scanners. Read `references/rust-security.md`, run its supply-chain commands
-(`cargo audit`, `cargo deny`, `cargo machete`, `cargo clippy -- -D warnings` or
-`just clippy`), then grep changed `.rs` (non-test) for its correctness/PHI
+(`cargo audit` and `cargo deny` only when `AUDIT_DEPS=true`; `cargo machete` and
+`cargo clippy -- -D warnings` or `just clippy` always), then grep changed `.rs` (non-test) for its correctness/PHI
 pattern catalog — secret/PHI behind `#[derive(Debug)]`, sensitive values in
 logs, blank-env `Some("")`, silent enum fallback, `reqwest::Client::new()`
 without a timeout, `unwrap`/`expect`/`panic!`/`unsafe` in non-test code.
@@ -356,7 +384,14 @@ Read `references/common-vulnerabilities.md` before grepping changed files for in
 
 ## Step 6: Analyze Dependencies
 
+**Skip this step entirely when `AUDIT_DEPS=false`** (Step 1.1).
+
 Read `references/dependency-analysis.md` before checking known CVEs and outdated packages per language.
+
+Emit **one finding per `(package, advisory id)`**. Two routes to the same
+advisory — `safety` and `pip-audit`, `npm audit` and `cargo deny` on a shared
+transitive — are one finding, as are the many transitive paths a single advisory
+reaches. Name the shortest path in `body` and give the count of the rest.
 
 ## Step 7: Categorize Findings
 
