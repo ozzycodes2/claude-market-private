@@ -96,7 +96,7 @@
     {
       "name": "architecture-design",
       "version": "0.2.0",
-      "description": "Design deep modules, sharpen a project's domain model, and draw the result. Shared vocabulary for module depth, interfaces, and seams; domain terminology, ADRs, and CONTEXT docs; a codebase deepening scan with an HTML report; and 45 self-contained HTML/SVG diagram types in the Mine Final skin, with .drawio, Mermaid, and Excalidraw import. Run setup-matt-pocock-skills once first.",
+      "description": "Design deep modules, sharpen a project's domain model, and draw the result. Shared vocabulary for module depth, interfaces, and seams; domain terminology, ADRs, and CONTEXT docs; a codebase deepening scan with an HTML report; and 45 self-contained HTML/SVG diagram types in the Mine Final skin — including lifecycle phase maps — with .drawio, Mermaid, and Excalidraw import. Run setup-matt-pocock-skills once first.",
       "category": "development",
       "repository": "https://github.com/ozzycodes2/claude-market-private",
       "license": "MIT",
@@ -143,8 +143,8 @@
     },
     {
       "name": "session-mgmt",
-      "version": "0.6.0",
-      "description": "Manage the full lifecycle of a Claude Code working session. start-session opens a task in a fresh, isolated git worktree (via EnterWorktree, never `git worktree add`) named after the argument on branch `worktree-<name>`, reports what untracked state the worktree inherited — `.worktreeinclude` copies, symlinked node_modules — and whether its `.env` still points at the main checkout's stack, and loads the JIRA story when the name is an issue key. exit-session tears down the ephemeral resources a session created — background processes and dev servers, Docker/compose stacks, local Kubernetes, git worktrees (unlocking them first), throwaway local branches, and temp files — permission-free, then quits the CLI. Runs prompt-free in default, accept-edits and auto mode; a bundled UserPromptSubmit hook refuses only plan mode, where mutating tools are off. It hands back the deny-listed remote/history ops rather than running them.",
+      "version": "0.7.0",
+      "description": "Manage the full lifecycle of a Claude Code working session. start-session opens a task in a fresh, isolated git worktree (via EnterWorktree, never `git worktree add`) named after the argument on branch `worktree-<name>`, reports what untracked state the worktree inherited — `.worktreeinclude` copies, symlinked node_modules — and whether its `.env` still points at the main checkout's stack, and loads the JIRA story when the name is an issue key. exit-session tears down the ephemeral resources a session created — background processes and dev servers, Docker/compose stacks with their volumes, networks and locally built images, local Kubernetes, git worktrees (the session's own and every one it handed to a subagent, unlocking them first), throwaway local branches, and temp files — permission-free, then quits the CLI. Worktrees are attributed by the pid in their git lock reason and Docker resources by their compose-project label, so teardown survives a compacted context. Runs prompt-free in default, accept-edits and auto mode; a bundled UserPromptSubmit hook refuses only plan mode, where mutating tools are off. It hands back the deny-listed remote/history ops rather than running them.",
       "category": "productivity",
       "repository": "https://github.com/ozzycodes2/claude-market-private",
       "license": "MIT",
@@ -156,6 +156,7 @@
         "session",
         "start-session",
         "worktree",
+        "subagent",
         "jira",
         "cleanup",
         "teardown",
