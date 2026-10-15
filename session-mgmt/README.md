@@ -55,10 +55,12 @@ into the new worktree; `git worktree add` into a path does not, which forces a
 |---|---|---|
 | Background tasks / dev servers | `TaskStop`, `pkill -f`, `kill`; frees ports | permission-free |
 | Docker / compose stacks | `just compose-down` / `docker compose down [-v]`; `docker rm -f` ad-hoc | permission-free (incl. `-v` volume wipe) |
+| Subagent compose projects | `docker compose -p <worktree-basename> down -v --rmi local`, else removal by `com.docker.compose.project` label; `image prune -f` | permission-free; never `system`/`volume` prune |
 | Local Tilt / Kubernetes | `just tilt-down` / `tilt down`; kills port-forwards (namespace kept) | permission-free |
 | Scratch files | `rm` of `.claude/jobs/<id>/tmp` and this session's `/tmp/*` | permission-free |
 | Git worktrees | `git worktree unlock` (session worktrees are locked) + `remove --force` + `prune` | permission-free |
-| Merged local branches | `git branch -D` + `git fetch --prune` (session branches only, real `worktree-<name>` names) | permission-free |
+| Subagent / orphan worktrees | same, for every `.claude/worktrees/agent-*` whose lock pid is yours, released, or dead; `rm -rf` for dirs `prune` leaves | permission-free; dirty non-session worktrees preserved |
+| Merged local branches | `git branch -D` + `git fetch --prune` (session branches only, real `worktree-<name>` names) | permission-free; hand-named branches kept |
 | Remote delete / resets / merge / force-push | handed back — still deny-listed | never silent |
 
 ## How it works
@@ -67,17 +69,20 @@ into the new worktree; `git worktree add` into a path does not, which forces a
 Phase 0   Permission mode       gate hook keeps the sweep out of auto / plan mode
 Phase 0a  Own worktree          git rev-parse → is this session sitting in a worktree?
 Phase 0b  Discover (read-only)  scripts/discover-resources.sh → full inventory
-Phase 1   Stop runtime          background tasks, tilt down, docker compose down
+Phase 0c  Classify worktrees    lock pid → self / this session's agents / orphans / foreign
+Phase 1   Stop runtime          background tasks, tilt down, compose down (+ agent projects)
 Phase 2   Remove scratch        .claude/jobs/<id>/tmp + this session's /tmp/* paths
-Phase 3   Git worktrees         own worktree first, then unlock + remove --force + prune
+Phase 3   Git worktrees         3a own worktree, 3b /tmp checkouts, 3c subagents + orphans
 Phase 4   Merged branches       git branch -D + fetch --prune (session branches)
 Report    Summary, then exit    prints the summary, then `kill "$PPID"` quits the CLI
 ```
 
 Two hard rules:
 
-- **Session-scoped.** Only tears down what *this* session created. Other sessions'
-  worktrees, branches, containers, and processes are listed as "left untouched," never removed.
+- **Scoped by live holder.** Tears down what *this* session created, including every
+  worktree it handed to a subagent, plus worktrees whose holding `claude` pid is gone.
+  Anything a *running* session still holds is listed as "left untouched," never removed —
+  as is any non-session worktree carrying uncommitted changes.
 - **Fully permission-free teardown — in accept-edits mode.** Teardown verbs are
   allow-listed, so the entire sweep runs without prompts — including
   `docker compose down -v` (volume/data wipe) and force-removing a worktree with
@@ -88,10 +93,33 @@ Two hard rules:
 
 ## Discovery script
 
-`scripts/discover-resources.sh [REPO_DIR]` is a read-only inventory (mutates nothing). It
-reports worktrees, current branch + PR/merge status, listening ports and candidate session
-processes, Docker containers, Tilt sessions, scratch dirs, and teardown-shaped `just` recipes.
-Missing tools are skipped with a note on stderr. `--help` for usage.
+`scripts/discover-resources.sh [REPO_DIR] [--worktrees-only]` is a read-only inventory
+(mutates nothing). It reports the session's own worktree, every other worktree classified
+by lock holder, worktree directories git no longer tracks, current branch + PR/merge
+status, listening ports and candidate session processes, Docker containers and the
+volumes/networks/images grouped by compose project, Tilt sessions, scratch dirs, and
+teardown-shaped `just` recipes. Missing tools are skipped with a note on stderr.
+`--help` for usage.
+
+`--worktrees-only` prints just the worktree sections. The full pass spends most of its
+wall time in `pgrep -f` — roughly a second per pattern on a busy machine.
+
+Each worktree gets one of six tags:
+
+| Tag | Lock state | Disposition |
+|---|---|---|
+| `SELF` | the session is standing in it | Phase 3a |
+| `THIS-SESSION` | lock pid is an ancestor of the script | Phase 3c |
+| `STALE-UNLOCKED` | no lock — the agent finished and released it | Phase 3c |
+| `FOREIGN-LIVE` | lock pid is a running `claude` | **left alone** |
+| `ORPHAN-DEAD-PID` | lock pid no longer exists | Phase 3c |
+| `ORPHAN-PID-RECYCLED` | pid alive but no longer `claude` (or `<defunct>`) | Phase 3c |
+
+Attribution is mechanical in both halves: the lock reason git stores
+(`claude agent <name> (pid N start <ts>)`) names the holding CLI process, and compose
+derives its project name from the worktree directory basename, so a subagent's containers,
+volumes, networks and locally built images all carry
+`com.docker.compose.project=<basename>`.
 
 ## Permission mode
 

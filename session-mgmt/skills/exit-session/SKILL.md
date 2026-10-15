@@ -5,14 +5,15 @@ description: >-
   quit the CLI — so the user can wrap up with a single /exit-session. Use when the
   user says "exit session", "clean up this session", "tear down everything", "wrap
   up and clean up resources", "remove the worktree and scratch", "stop the
-  background processes", "shut down the stack", or asks to clean up after finishing
-  a task — even if they only name one resource (assume they want the full sweep
-  unless they scope it). Runs teardown permission-free: stops background processes
-  and dev servers, Docker/compose stacks, local Tilt/Kubernetes, git worktrees,
-  merged local branches, and temp/scratch files without prompting, then exits the
-  CLI. Always removes the worktree the session is running in, determined from git
-  rather than from recall. Strictly session-scoped — never touches resources belonging
-  to other sessions.
+  background processes", "shut down the stack", "clean up the agent worktrees", or asks
+  to clean up after finishing a task — even if they only name one resource (assume they
+  want the full sweep unless they scope it). Runs teardown permission-free: stops
+  background processes and dev servers, Docker/compose stacks plus their volumes,
+  networks and images, local Tilt/Kubernetes, git worktrees, merged local branches, and
+  temp/scratch files without prompting, then exits the CLI. Covers the worktrees and
+  Docker resources left behind by subagents spawned during the session, not just the
+  primary agent's own worktree — both determined from git locks and Docker labels rather
+  than from recall. Never touches resources a still-live session holds.
 license: MIT
 compatibility: >-
   Assumes a git repo with optional worktrees under .claude/worktrees/ or /tmp;
@@ -29,8 +30,10 @@ disable-model-invocation: true
 # Exit Session
 
 Teardown of everything a working session spun up: background processes, Docker/compose
-stacks, local Tilt/Kubernetes, git worktrees, merged local branches, and scratch files —
-leaving the machine as clean as before the session started — then quit the CLI. Designed
+stacks with their volumes, networks and locally built images, local Tilt/Kubernetes, git
+worktrees — the session's own **and every one it handed to a subagent** — merged local
+branches, and scratch files, leaving the machine as clean as before the session started,
+then quit the CLI. Designed
 to run **permission-free**: the teardown verbs are allow-listed in default, accept-edits
 and bypassPermissions mode, and described to the classifier in `autoMode.allow` for `auto`
 mode, so you execute the sweep directly without stopping for confirmation — including the
@@ -39,18 +42,25 @@ plan mode is refused (Phase 0).
 
 ## Core principles
 
-1. **Session-scoped, always.** Only tear down what *this* session created. Other
-   sessions' worktrees, branches, containers, and background processes are off-limits —
-   list them under "left untouched," never remove them. When you can't attribute a
-   resource to this session, preserve it and say so.
-2. **Attribute mechanically first, from memory second.** For the one resource that is
-   *knowable with certainty* — the worktree this session is sitting in — ask git, not your
-   recollection (Phase 0a). Conversation history is the fallback for genuinely ambiguous
-   resources (which container, which scratch path), never the primary test for the
-   session's own worktree. By the time a real working session reaches teardown its context
-   has usually compacted, so the `EnterWorktree` call that created the worktree is long
-   gone — and "I don't remember creating it" then silently becomes "it must be someone
-   else's," which is how a session leaks its own worktree on every single run.
+1. **Scoped by live holder, not by memory.** A resource is off-limits when a *live*
+   session still holds it — not merely because you don't recall creating it. Worktrees
+   locked by another running `claude` pid, and their containers, are preserved and listed
+   under "left untouched." Everything with no live holder — this session's own worktrees,
+   its subagents' worktrees, and worktrees whose holder pid is gone — is in scope.
+2. **Attribute mechanically first, from memory second.** Three resources are *knowable
+   with certainty*, so ask the system, never your recollection:
+   - the worktree this session sits in → `git rev-parse` (Phase 0a);
+   - which worktrees belong to this session's subagents → the git **lock reason**, which
+     names the holding `claude` pid; that pid is an ancestor of your own shell (Phase 0c);
+   - which Docker resources belong to a given worktree → the
+     `com.docker.compose.project` label, which equals the worktree directory basename.
+
+   Conversation history is the fallback for genuinely ambiguous resources (an ad-hoc
+   `docker run --name`, a scratch path), never the primary test for a worktree. By the
+   time a real session reaches teardown its context has usually compacted, so the
+   `EnterWorktree` and `Agent(isolation:"worktree")` calls are long gone — and "I don't
+   remember creating it" then silently becomes "it must be someone else's," which is how
+   a session leaks its own worktree, and every worktree it gave a subagent, on every run.
 3. **Discover, then execute — no plan-gate.** Do one read-only discovery pass to build
    the inventory, then tear down immediately. Teardown is pre-authorized; you do **not**
    pause for a "confirm the plan" step. Show the inventory as you go so progress is visible.
@@ -60,10 +70,12 @@ plan mode is refused (Phase 0).
    still has **uncommitted** changes. The only thing you never do is run the still-denied
    remote/history ops (Phase 4) — those aren't teardown; hand them back.
 5. **Preserve on doubt — except where git already answered.** For anything you can't
-   attribute to this session, default to leaving it and flagging it: a missed cleanup is
-   cheap, a wrong deletion is not. This does **not** apply to the worktree Phase 0a
-   identifies as the session's own — that one is settled by `git rev-parse`, so there is no
-   doubt to preserve on, and skipping it is the failure mode this rule is blamed for.
+   attribute, default to leaving it and flagging it: a missed cleanup is cheap, a wrong
+   deletion is not. This does **not** apply to the worktrees Phase 0a and 0c settle
+   mechanically — those are answered by `git rev-parse` and the lock pid, so there is no
+   doubt to preserve on, and skipping them is the failure mode this rule is blamed for.
+   The one live remnant of the rule: a worktree with **uncommitted changes** that is not
+   this session's own gets preserved and reported, never discarded (Phase 3c).
 6. **No leading `cd`.** Use `git -C <path>` and absolute paths. A leading `cd` triggers a
    permission prompt (per the user's global CLAUDE.md) and defeats the point of a
    permission-free sweep.
@@ -129,9 +141,10 @@ that is a single command with three flags, not a chain.
   there (`/start-session`, `EnterWorktree`, `claude -w`), so by construction it is this
   session's. Read the real branch from `git -C <MAIN_REPO> worktree list --porcelain`
   (it is `worktree-<name>`, not `<name>`).
-- **They are the same** → the session is in the main checkout. There is no self-worktree;
-  every worktree in the list belongs to some other session, so none of them are yours to
-  remove. Say so in the report rather than reaping them.
+- **They are the same** → the session is in the main checkout. There is no self-worktree,
+  and Phase 3a is a no-op. This says **nothing** about the other worktrees in the list:
+  a session running from the main checkout still owns every worktree it handed to a
+  subagent. Phase 0c classifies those; do not conclude they are all other sessions'.
 
 `MAIN_REPO` — not `SELF_WORKTREE` — is the `<repo-root>` argument for everything that
 follows. The bundled script resolves this itself and prints a `THIS SESSION'S OWN WORKTREE`
@@ -149,13 +162,19 @@ gathers the whole picture in one read-only pass. Pass the repo root as an argume
 bash <skill-dir>/scripts/discover-resources.sh <repo-root>
 ```
 
+Add `--worktrees-only` when you only need the worktree picture — for
+`/exit-session worktree`, or to re-check the inventory after Phase 3. The full pass spends
+most of its wall time in `pgrep -f`, about a second per pattern on a busy machine.
+
 (Substitute the real absolute path to this skill's `scripts/discover-resources.sh`, and
 the absolute repo root.) Write it exactly that way: `bash ` then the bare unquoted path.
 Quoting the path, or executing the script directly without `bash `, changes the command
-string enough to miss the allow rule and costs a prompt. It prints sections for worktrees,
-current branch + merge status,
-background jobs/ports, Docker containers, Tilt/k8s, and scratch dirs. If the script is
-unavailable, gather the same signals by hand (all read-only, all with `git -C`, no `cd`):
+string enough to miss the allow rule and costs a prompt. It prints sections for the
+self-worktree, **every worktree classified by lock holder** (Phase 0c), unregistered
+worktree directories, current branch + merge status, background jobs/ports, Docker
+containers, Docker volumes/networks/images grouped by compose project, Tilt/k8s, and
+scratch dirs. If the script is unavailable, gather the same signals by hand (all
+read-only, all with `git -C`, no `cd`):
 
 - **Background tasks this session spawned:** use the `Monitor` tool to enumerate live
   background shells and their `task_id`s — it is deferred, so `ToolSearch select:Monitor`
@@ -163,25 +182,78 @@ unavailable, gather the same signals by hand (all read-only, all with `git -C`, 
   `ps` / `pgrep -f` / `lsof -iTCP -sTCP:LISTEN -P -n` for dev servers (vite,
   `target/debug/api`, `cargo run -p api`, `npm run dev`, cloudflared,
   `kubectl port-forward`).
-- **Worktrees:** `git -C <repo> worktree list` and `ls -la <repo>/.claude/worktrees/ 2>/dev/null`.
+- **Worktrees:** `git -C <repo> worktree list --porcelain` (the `--porcelain` form is what
+  carries the lock reasons Phase 0c needs) and
+  `ls -la <repo>/.claude/worktrees/ 2>/dev/null`.
 - **Branch:** `git -C <repo> branch --show-current`, `git -C <repo> status -s`, and whether
   its PR is merged (`gh pr view <branch> --json state,mergedAt`).
-- **Docker:** `docker ps` (note session stacks like `postgres kafka localstack` and any
-  ad-hoc `--name` containers).
+- **Docker:** `docker ps -a` (note session stacks like `postgres kafka localstack` and any
+  ad-hoc `--name` containers), plus `docker volume ls`, `docker network ls`, and
+  `docker image ls` — each with
+  `--filter label=com.docker.compose.project=<worktree-basename>` to attribute them.
 - **Tilt/k8s:** `tilt get session 2>/dev/null`; `kubectl port-forward` procs.
 - **Scratch:** `.claude/jobs/<id>/tmp` dirs and `/tmp/*` paths this session created (PR
   bodies, commit-msg files, review worktrees).
 
-**Attribute each resource to this session or not.** `SELF_WORKTREE` from Phase 0a is
-already attributed — it is yours, and no amount of not remembering it changes that. For
-everything else (containers, ports, scratch paths, extra worktrees), use the conversation
-history as the source of truth for what this session started; anything you didn't start
-goes in the "left untouched" list. If the user passed a scope arg (e.g. `worktree`), limit
-the sweep to that resource type.
+**Attribute each resource mechanically where you can, from history only where you can't.**
+`SELF_WORKTREE` (Phase 0a) is yours, and no amount of not remembering it changes that.
+Every other worktree is settled by its lock holder (Phase 0c), and each worktree's Docker
+resources by its compose-project label. Conversation history is the source of truth only
+for what those two keys cannot reach: ad-hoc `docker run --name` containers, ports, and
+scratch paths. Anything you didn't start and can't attribute goes in "left untouched."
+If the user passed a scope arg (e.g. `worktree`), limit the sweep to that resource type.
 
 A compacted or `/clear`ed context is the normal case here, not an edge case. When history
-is thin, that is a reason to lean harder on Phase 0a's mechanical answer — never a reason
-to downgrade `SELF_WORKTREE` to "probably another session's."
+is thin, that is a reason to lean harder on the mechanical answers — never a reason to
+downgrade `SELF_WORKTREE` or a subagent worktree to "probably another session's."
+
+### Phase 0c — Classify every other worktree by its lock holder (read-only)
+
+Phase 0a settles only the worktree you are *standing in*. Subagents get their own:
+`Agent(isolation:"worktree")` and the `worktree.bgIsolation` setting both put each
+subagent in `<MAIN_REPO>/.claude/worktrees/agent-<17-hex>` on a `worktree-agent-<id>`
+branch. A session that fanned out across a dozen agents therefore owns a dozen worktrees
+it never entered — and because nothing in conversation history survives compaction, they
+are the bulk of what this sweep used to leak.
+
+The classifier is the **lock reason**. Every worktree the CLI enters is locked as
+`claude agent <name> (pid <PID> start <ts>)`, and that PID is the `claude` process — an
+**ancestor of your own shell**. So:
+
+| Lock state | Meaning | Disposition |
+|---|---|---|
+| pid is one of your ancestors | this session's subagent | tear down (3c) |
+| **no lock** | the agent finished and released it | tear down (3c) |
+| pid alive **and** is a `claude` process | another live session | **leave**, report |
+| pid gone, or recycled into a non-`claude` process | crashed session's orphan | tear down (3c) |
+
+The bundled discovery script does this classification for you and prints one line per
+worktree under `WORKTREES CLASSIFIED`, tagged `SELF` / `THIS-SESSION` /
+`STALE-UNLOCKED` / `FOREIGN-LIVE` / `ORPHAN-DEAD-PID` / `ORPHAN-PID-RECYCLED`, with the
+branch, the uncommitted-file count, and each worktree's Docker resources. Read the tags
+and act on them; do not re-derive the attribution by hand.
+
+Doing it by hand takes one command plus one liveness check per distinct pid:
+
+```
+git -C <MAIN_REPO> worktree list --porcelain     # 'locked claude agent … (pid N start …)'
+ps -o comm= -p <N>                               # basename not claude -> orphan
+```
+
+Your own ancestor pids come from walking `ps -o ppid= -p <pid>` up from `$PPID`.
+
+Compare the **basename** of what `ps` prints. On macOS it is the full executable path, so
+testing for `claude` anywhere in the string also matches an unrelated program living under
+a directory with `claude` in its name — and that reads a dead lock as a live session,
+preserving the worktree forever.
+
+**Do not use the `start` timestamp to confirm a pid.** The lock records it in UTC while
+`ps -o lstart=` prints local time, so they disagree by your UTC offset on a perfectly
+healthy lock. The command name is the recycling guard.
+
+Also check `ListAgents` for subagents of *this* session still running. If any are, their
+worktrees are in use: skip them, finish the rest of the sweep, and name them in the
+report rather than reaping a worktree out from under a working agent.
 
 ### Phase 1 — Stop ephemeral runtime (permission-free)
 
@@ -196,6 +268,34 @@ to downgrade `SELF_WORKTREE` to "probably another session's."
    `docker compose -f <repo>/<compose-file> down`. Add `-v` to also drop this session's
    volumes/local DB state — permission-free, no confirmation. `docker rm -f <cid>` for
    ad-hoc `--name` containers this session started.
+4. **Docker left by subagent stacks.** A subagent that ran compose inside its own worktree
+   created a *separate* project, named after that worktree's directory — so
+   `compose down` in the main checkout does not touch it, and its containers, volumes and
+   networks outlive the agent. For each worktree Phase 0c marked as in-scope, tear down
+   its project by label (`<proj>` = the worktree directory basename):
+
+   ```
+   docker compose -p <proj> down -v --remove-orphans --rmi local
+   ```
+
+   `--rmi local` drops the images that project built itself and leaves pulled base images
+   (`postgres:16`, `apache/kafka`, `localstack`) alone. If the project's compose file is
+   gone with the worktree, `compose -p` has nothing to read; remove by label instead, one
+   plain command per call:
+
+   ```
+   docker rm -f $(docker ps -aq --filter label=com.docker.compose.project=<proj>)
+   docker volume rm $(docker volume ls -q --filter label=com.docker.compose.project=<proj>)
+   docker network rm $(docker network ls -q --filter label=com.docker.compose.project=<proj>)
+   docker image rm $(docker image ls -q --filter label=com.docker.compose.project=<proj>)
+   ```
+
+   Then `docker image prune -f` for untagged layers. **Never** `docker system prune`,
+   `image prune -a`, or `volume prune`: those reach shared base images, the build cache,
+   and anonymous volumes that carry no project label and no owner — `volume prune` in
+   particular would destroy another session's database. Anonymous volumes
+   (`com.docker.volume.anonymous`) are unattributable; `compose down -v` removes the ones
+   bound to the project's own containers, and the rest stay.
 
 ### Phase 2 — Remove scratch files (permission-free)
 
@@ -209,7 +309,9 @@ Never blanket-wipe `/tmp` or `.claude/jobs/` — scope to this session's own pat
 
 ### Phase 3 — Git worktrees (permission-free)
 
-Two kinds of worktree get torn down here, and the first one is the whole point of the phase.
+Three kinds of worktree get torn down here. 3a is the one the session is standing in; 3c
+is the larger pile the session handed to its subagents, and the one this phase used to
+walk past.
 
 **3a. `SELF_WORKTREE` — the worktree this session is in (from Phase 0a).** Remove it
 unconditionally. You are inside it, so use the native tool, which relocates the session
@@ -243,8 +345,42 @@ outlive the process that took it; without the unlock, removal fails with `cannot
 locked working tree, lock reason: claude session <name> (pid …)`. `remove -f -f` overrides
 the lock too, if you prefer one command.
 
-Verify with `git -C <MAIN_REPO> worktree list` and confirm `SELF_WORKTREE` is gone from it.
-A run that ends with the session's own worktree still listed has failed this phase, even if
+**3c. Subagent and orphan worktrees (from Phase 0c).** Every worktree tagged
+`THIS-SESSION`, `STALE-UNLOCKED`, `ORPHAN-DEAD-PID`, or `ORPHAN-PID-RECYCLED` gets removed
+here. `FOREIGN-LIVE` ones do not — a running `claude` process is using them.
+
+Per worktree, in this order, one plain command per Bash call:
+
+```
+git -C <MAIN_REPO> worktree unlock <path>
+git -C <MAIN_REPO> worktree remove --force <path>
+```
+
+Then, once for the whole batch:
+
+```
+git -C <MAIN_REPO> worktree prune
+rm -rf <unregistered-worktree-dir>     # dirs prune leaves behind (script lists them)
+```
+
+Branches, after the worktrees are gone:
+
+- `worktree-agent-<id>` and `worktree-<name>` are **auto-generated throwaway** names.
+  Delete them: `git -C <MAIN_REPO> branch -D worktree-agent-<id>`.
+- A worktree on a **hand-named** branch (`worker-lib-split`, `fix-rustls-advisories`) holds
+  deliberate work. Remove the worktree, **keep the branch**, and list it in the report. The
+  commits survive the worktree; deleting the branch is what loses them.
+
+**The one preserve rule left.** A worktree whose uncommitted-file count is non-zero and
+that is *not* `SELF` or `THIS-SESSION` — i.e. another session's leftover, live or dead —
+is preserved, not forced. Its dirty files were never committed anywhere, so `remove
+--force` is the only irreversible step in this whole sweep. Report the path and the file
+count and move on. For `SELF` and `THIS-SESSION`, dirty is still teardown scope
+(Principle 4): force them.
+
+Verify with `git -C <MAIN_REPO> worktree list` and confirm `SELF_WORKTREE` and every
+in-scope agent worktree are gone from it. A run that ends with the session's own worktree —
+or a pile of `agent-*` entries it spawned — still listed has failed this phase, even if
 every other line of the report is green. Never remove a worktree tied to another active
 session.
 
@@ -280,9 +416,16 @@ If the wrap-up implies any of these, list the ready-to-paste command and stop th
   (volume/data wipe), scratch `rm`,
   `git worktree remove --force` **including worktrees with uncommitted changes**,
   `git worktree prune`, `git branch -d/-D` for merged/throwaway session branches,
-  `git fetch --prune`. No `AskUserQuestion` gate anywhere in teardown.
+  `git fetch --prune`, `docker compose -p <proj> down -v --rmi local` and the
+  label-filtered `docker rm` / `volume rm` / `network rm` / `image rm` for a subagent's
+  project, `docker image prune -f`. No `AskUserQuestion` gate anywhere in teardown.
 - **Never run — hand back:** `git push origin --delete`, `git reset --hard`, `gh pr merge`,
   force-push to main (still deny-listed).
+- **Never run at all — not even on request here:** `docker system prune`,
+  `docker image prune -a`, `docker volume prune`, `docker builder prune`. They are
+  unscoped: they reach base images, the build cache, and label-less anonymous volumes
+  belonging to sessions and projects this sweep has no claim on. Label-filtered removal is
+  the only correct path.
 
 ## Gotchas (environment-specific — do not assume otherwise)
 
@@ -305,12 +448,39 @@ If the wrap-up implies any of these, list the ready-to-paste command and stop th
   the only correct path.
 - **`worktree.baseRef` is `fresh`** — worktrees branch from a freshly-fetched base, not local
   `main`. Don't assume a branch's base is local HEAD when reasoning about merge status.
-- **A compacted context is not evidence of innocence.** The `EnterWorktree` call that
-  created this session's worktree is usually gone from context by teardown time — long
+- **A compacted context is not evidence of innocence.** The `EnterWorktree` and
+  `Agent(isolation:"worktree")` calls are usually gone from context by teardown time — long
   sessions compact repeatedly. Reasoning "I see no worktree creation in my history, so this
-  worktree must be another session's" is the single most common way this skill leaves its
-  own worktree behind. Phase 0a exists precisely so this judgement is never made from
+  worktree must be another session's" is the single most common way this skill leaves
+  worktrees behind. Phases 0a and 0c exist precisely so this judgement is never made from
   memory.
+- **Subagents get worktrees you never entered.** `Agent(isolation:"worktree")` and the
+  `worktree.bgIsolation: "worktree"` setting create `.claude/worktrees/agent-<17-hex>` per
+  agent, on a `worktree-agent-<id>` branch. A session that fanned out ten agents owns ten
+  worktrees that never appear in `ExitWorktree`'s view and that `SELF_WORKTREE` reasoning
+  never reaches — tens of gigabytes across a week. They are Phase 3c's job, and the lock
+  pid, not your memory, is what identifies them.
+- **The worktree lock reason names the holding pid**, as
+  `claude agent <name> (pid N start <ts>)`. `N` is the `claude` CLI process and an ancestor
+  of your own shell when the agent was yours. Do **not** compare the lock's `start` stamp
+  with `ps -o lstart=`: the lock is UTC, `ps` is local, so they disagree by your offset on
+  a perfectly healthy lock.
+- **Check the holder's *basename*, not a substring.** macOS `ps -o comm=` prints the full
+  executable path, so matching `*claude*` also matches an unrelated program under a
+  directory with `claude` in its name — and reads a dead lock as a live session. A zombie
+  reports `<defunct>` on macOS and nothing on Linux while still passing `kill -0`; both
+  mean the holder is gone.
+- **An unlocked `.claude/worktrees/*` entry means the agent finished and released it** —
+  that is the signal this skill was missing, not a reason for caution. Agents under
+  `bgIsolation` release the lock when they complete.
+- **Compose project name == worktree directory basename.** That is why a subagent's stack
+  survives `compose down` run from the main checkout: it is a different project. It is also
+  why attribution is exact — `com.docker.compose.project=<basename>` on every container,
+  volume, network, and locally built image. Networks named `<basename>_default` left in
+  `docker network ls` are the visible symptom.
+- **`--rmi local` vs `--rmi all`.** `local` drops only images the project built itself;
+  `all` would delete `postgres:16` and friends out from under every other project on the
+  machine. Use `local`.
 - **Give the discovery script `MAIN_REPO`, never the worktree.** Its on-disk scan looks at
   `<arg>/.claude/worktrees`. Pass a worktree path and that becomes
   `<worktree>/.claude/worktrees` — nonexistent — so the section is empty and the sweep
@@ -318,9 +488,17 @@ If the wrap-up implies any of these, list the ready-to-paste command and stop th
 - **Session worktrees are locked.** `git worktree remove --force` alone fails on them; run
   `git worktree unlock <path>` first (or `remove -f -f`). A stale lock naming a dead pid is
   still a lock.
+- **`worktree prune` leaves the directory.** It clears the admin ref, not the files on
+  disk, so a crashed session leaves a full checkout under `.claude/worktrees/<name>` that
+  no longer appears in `worktree list`. The discovery script lists these under
+  `UNREGISTERED WORKTREE DIRS`; they need `rm -rf`, not another `prune`.
 - **The branch is `worktree-<name>`, not `<name>`.** EnterWorktree prefixes it, so deleting
   by the worktree directory name silently deletes nothing (or the wrong branch). Read the
   real name from `git -C <repo> worktree list --porcelain` before `branch -D`.
+- **An agent's branch is not always auto-named.** A subagent that renamed its branch sits in
+  `agent-<hex>` on something like `fix-rustls-advisories`. The *directory* is still
+  throwaway; the *branch* is not. Delete only `worktree-*`-prefixed branches; keep the rest
+  and report them.
 - **Removing a worktree removes its `.env` copy.** `.worktreeinclude` puts a real
   credential file in every worktree, so teardown is also the only thing that cleans those
   copies up — intended. Never extend that reasoning to the *main* checkout's `.env`.
@@ -329,8 +507,9 @@ If the wrap-up implies any of these, list the ready-to-paste command and stop th
   shared one.
 - **Scratch lives in `.claude/jobs/<8-char-id>/tmp`** and assorted `/tmp/*` paths. Only remove
   this session's own IDs.
-- **Never treat another session's worktree/branch/container as yours** — preserve and report
-  them as untouched.
+- **Never treat a *live* session's worktree/branch/container as yours** — preserve and
+  report those as untouched. A worktree whose holder pid is gone is not a live session's;
+  it is debris, and reaping it is this phase's job.
 - Use absolute paths and `git -C <path>`; never `cd` (per the user's global CLAUDE.md) — a
   leading `cd` reintroduces the permission prompt this skill is built to avoid.
 
@@ -344,13 +523,16 @@ Print this summary first:
 Session teardown complete.
   Stopped:   <background tasks / servers / ports freed>
   Docker:    <stacks / containers brought down>
+  Docker (subagent projects): <projects down -v; volumes/networks/images removed, by count>
   Tilt/k8s:  <tilt down; port-forwards killed> (namespace left in place)
   Scratch:   <paths removed>
   Worktree:  <SELF_WORKTREE removed — this session's own> (or: none; ran from the main checkout)
-  Worktrees: <other paths removed + pruned>
-  Branches:  <merged local branches deleted>
+  Subagent worktrees: <N removed: this session's agents + released/orphaned> (or: none found)
+  Orphan dirs: <unregistered .claude/worktrees dirs rm -rf'd>
+  Branches:  <worktree-* branches deleted; hand-named branches kept>
   Left for you (still denied): <git push origin --delete / reset --hard / gh pr merge, if any>
-  Left untouched (other sessions): <worktrees/branches/containers preserved>
+  Left untouched (live sessions): <FOREIGN-LIVE worktrees + their containers, with holder pid>
+  Left untouched (dirty, not ours): <path — N uncommitted files>
 
 Exiting the CLI…
 ```
