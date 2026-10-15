@@ -50,29 +50,15 @@ idiom wins. Name which you applied, and why, in your report.
    earlier in this run. Confirm the symptom is really at that location before
    editing. If you cannot find it, report outcome: not-reproducible — do not
    edit a plausible-looking substitute.
-6. TESTS.
-   <IF can_run_safely>
-   Verification command: `<test_setup.test_command>`
-   Run it. If it fails, read the failure, adjust YOUR change — not the test's
-   expectations, unless this finding is about the test — and run it again.
-   KEEP GOING UNTIL IT PASSES. A failing test is not a reason to revert your
-   work, and not a reason to stop.
-   The only exits from that loop are:
-     - green, or
-     - the failure is NOT caused by your change (it was already failing, it is a
-       flake, it is an environment problem). Report outcome: not-reproducible
-       and say which, with the evidence.
-   If the same failure repeats with no new information across iterations, say so
-   explicitly in `verification` rather than permuting — the orchestrator will
-   escalate.
-   You may narrow intermediate runs to the affected module ONLY IF you can
-   determine the narrowing flag from this repo's own config or docs. Never guess
-   a flag. Run the full command once before reporting outcome: applied.
-   <ELSE>
-   Do not run the test suite: <test_setup.safety_notes>. CI is the backstop.
-   If `<build_system.commands.lint>` is a pure check that writes nothing, run it
-   and report the result. Apply your change once, carefully — there is no
-   iteration loop without a local signal.
+6. DO NOT RUN THE TEST SUITE. Several agents are editing this repository right
+   now. A suite that truncates a database, binds a port, or clears a temp dir
+   corrupts every other agent's run the moment a second copy starts. The
+   orchestrator runs it once, after the last commit in your partition.
+   Instead, give a reason to believe your change is correct, in
+   `verification`: the invariant it preserves, the call sites you read and what
+   they pass, the edge case you traced. "It compiles" is not one.
+   A pure check that writes nothing and takes no lock is fine — a type check, a
+   linter in check mode, a single file parsed. Name it and its result.
    <ENDIF>
 7. COMMENTS. Do not narrate your change. No "fixed", no "now handles", no
    address to a reviewer. If your change makes an existing comment wrong,
@@ -84,8 +70,8 @@ files_changed: <newline-separated repo-relative paths, or "none">
 refactoring_applied: <catalog name, or "none">
 idiom_divergence: <one line, or "none">
 behavior_preserved: yes | no — <how you established it>
-iterations: <how many times you ran the verification command>
-verification: <command run and its result, or "not run: <reason>">
+verification: <the reason to believe this is correct — invariant preserved, call
+  sites read, edge case traced, or the pure check you ran and its result>
 decision_needed: <outcome=needs-decision only: the one-sentence question a human
   must answer, plus each option you weighed and its consequence>
 adjacent: <smells you saw and did not touch, or "none">
@@ -100,9 +86,10 @@ Same prompt, with rule 1 and the report's preservation key replaced:
 ```
 1. THE BEHAVIOR CHANGE IS THE POINT. This is a correctness, security, or
    dependency finding, not a refactoring. Make the minimal correct fix.
-   ADD OR ADJUST A TEST that fails before your change and passes after. That
-   test is the evidence; name it in your report. If you cannot write such a
-   test, say why.
+   ADD OR ADJUST A TEST that fails before your change and passes after. Write
+   it; do not run the suite to confirm it. Name it in your report, and state
+   which assertion fails without your change. If you cannot write such a test,
+   say why.
 ```
 
 ```
@@ -110,8 +97,8 @@ behavior_changed: <before: … / after: …>
 covering_test: <test name and file>
 ```
 
-Everything else — scope, no-git, locate-by-content, iterate-to-green, no
-narration — is unchanged.
+Everything else — scope, no-git, locate-by-content, no suite run, no narration
+— is unchanged.
 
 ---
 

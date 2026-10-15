@@ -11,10 +11,9 @@ Quality Review Task passes on this array.
 | Pass | Skill / mechanism | Notes |
 |---|---|---|
 | Change analysis | `review:analyze` | Emits `risk_class` |
-| 3-pass bug-finder | Inline Task (opus/sonnet/haiku) | Crash/security hunter; expanded concurrency |
+| 2-pass bug-finder | Inline Task (opus/sonnet) | Crash/security hunter; expanded concurrency |
 | Security scan | `review:security-scan` | Always; deepen when `auth` ∈ risk_class |
 | Docs drift | `review:docs-drift` | Always (light DX fold) |
-| Codegen | `review:codegen` | Always |
 
 ## Risk-gated QR passes
 

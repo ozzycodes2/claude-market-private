@@ -39,10 +39,17 @@ PR_NUMBER=$(echo "$PR_URL" | grep -oE 'pull/[0-9]+' | grep -oE '[0-9]+')
 
 ## Prerequisites
 
+Both files must already exist in `$OUTPUT_DIR`; this skill reads, never
+produces them. Run `review:analyze` and `review:docs-drift` first.
+
 ```bash
 cat "$OUTPUT_DIR/pr-analysis-${PR_NUMBER}.json"
 cat "$OUTPUT_DIR/docs-drift-${PR_NUMBER}.json"
 ```
+
+**Stop if either `cat` fails.** Without the docs-drift findings there is no gap
+list, and the run produces an empty output file that reads like "nothing to
+generate".
 
 ## Step 1: Determine what to generate
 
@@ -156,8 +163,10 @@ reason and a manual-write recommendation (example in
 
 ## Integration & notes
 
-Called by `review` in Phase 3. Conservative by design: only
-easy, well-established patterns; skip anything ambiguous. Cost ~$0.50-1.50/PR.
+Standalone. `review` does not call it, and nothing it writes reaches the
+findings ledger, so `/review:fix` never sees its output — invoke it by name when
+you want drafts, and review them by hand. Conservative by design: only easy,
+well-established patterns; skip anything ambiguous. Cost ~$0.50-1.50/PR.
 
 ## Files
 

@@ -160,10 +160,15 @@ dispatched in a single message. Findings sharing any file collapse into one
 agent that handles them sequentially, re-reading the file between findings. Cap
 concurrency at `--max-concurrent` (default 4).
 
-**Agents edit; this skill commits.** There is one `.git/index` per worktree, so
-concurrent commits from several agents interleave and a commit ends up carrying
-another agent's half-finished work. The agent prompts forbid every `.git`-writing
-command; the orchestrator stages the reported paths itself.
+**Agents edit; this skill commits and verifies.** There is one `.git/index` per
+worktree, so concurrent commits from several agents interleave and a commit ends
+up carrying another agent's half-finished work; and a test suite with shared
+fixtures — a database it resets, a port it binds — corrupts the run when four
+agents start it at once. The agent prompts forbid every `.git`-writing command
+and every suite invocation; the orchestrator stages the reported paths and runs
+the suite itself.
+
+The partition is therefore both the concurrency unit and the verification unit.
 
 Pin **both** `subagent_type` and `model` on every dispatch — an omitted `model`
 inherits the session model and collapses the intended split:
@@ -189,34 +194,45 @@ In order: a command named literally in `remedy`; an entry in
 artifact. None resolves → **S6** `no-regen-command`. Commit only the generator's
 output, and prove idempotence by running it twice (`git diff --exit-code` clean).
 
-### S0 — run the repo's formatter, not the drafted diffs
+### S0 — run the repo's formatter, not a reported diff
 
-`codegen` emits `lint_fixes[]` but cannot apply them. Treat them as evidence that
-drift exists, discard the diffs, and run `context.build_system.commands.lint`
-autofix — the tool is authoritative and a review-time diff is stale by now. One
-batch commit. No lint command → **S6** `no-lint-command`.
+A formatting finding may arrive with a diff attached — from a linter the security
+scan ran, or from a CI job `monitor-pr` ingested. Treat it as evidence that drift
+exists, discard the diff, and run `context.build_system.commands.lint` autofix:
+the tool is authoritative and a review-time diff is stale by now. One batch
+commit. No lint command → **S6** `no-lint-command`.
 
-## Step 5: Iterate to green, then commit
+## Step 5: Commit per finding, verify per partition
 
-Per finding, after the agent reports `applied`:
+Agents never run the suite. As each agent reports `applied`, commit its finding
+as reported. After a partition's last commit, run
+`context.test_setup.test_command` once.
 
-1. Run `context.test_setup.test_command`.
-2. **Green → commit.**
-3. **Red → iterate.** Re-dispatch with the failure output attached. Adjust the
-   change, never the test's expectations unless the finding is about the test.
+Verifying per finding costs one suite run per finding; verifying per partition
+costs one per partition. On a suite that takes minutes — which is most of them —
+that difference is the dominant term in how long a fix round takes, and the
+information it buys is recoverable: a red partition is a handful of commits, and
+`git bisect` finds the guilty one in a couple of runs.
+
+**When the partition goes red:**
+
+1. `git bisect` across the partition's commits, using the suite as the test.
+2. Re-dispatch that finding with the failure output attached. Adjust the change,
+   never the test's expectations unless the finding is about the test.
    **Do not revert. Do not commit a WIP. Do not defer.**
+3. Re-run the suite. Repeat until green.
 
-**Keep going until green.** The only exits are green, or a determination that the
-failure is not attributable to this change — a pre-existing failure, a flake, an
-environment problem — which is a different finding.
-
-**Never commit red.** Every commit leaves the branch green, so `git bisect`
-across the run stays meaningful.
+**Never leave the branch red.** The claim each commit makes — that the branch is
+green at that commit — is written at commit time and made true at partition
+time. A fix round that ends red has not ended.
 
 **When the loop stalls**, escalate rather than abandon: if the failure output
 stops changing, re-dispatch on a stronger model with the full failure history. If
 that also stalls, **surface the finding to the user as a live question and pause
 on it.** Never silently defer it and never move on as though it were handled.
+
+No runnable suite (`context.test_setup.can_run_safely` is false) → commit as
+reported and say so in the Step 8 report; CI is the verification.
 
 Commit per `shared/fix-contract.md` — headline, body, preservation line, trailer
 — then record it:

@@ -5,6 +5,10 @@ match wins.** Scope is all findings, so nothing is filtered out at intake — S6
 how a finding with no mechanical remedy is handled honestly, not how the skill
 narrows itself to the easy cases.
 
+`praise` never reaches this table: the ledger drops it at build time, because a
+finding naming something the PR got right has no remedy and routing it produces
+a deferral that changes no file. It stays in the posted review comment.
+
 | | Strategy | Route when | Commit prefix |
 |---|---|---|---|
 | **S6** | Defer | the remedy names no action (`consider…`, `decide whether…`, `align with…`); or ≥2 defensible designs have different consequences; or it crosses a boundary this repo does not own; or `label == "question"`; or `kind == "design-decision"` | none |
@@ -87,14 +91,21 @@ forbid.
 
 ## Known overlaps, and who wins
 
-- **Lint fixes.** `codegen` drafts `lint_fixes[]` but cannot apply them: it never
-  writes repository files and always sets `review_required: true`. Treat its
-  drafts as *evidence that lint drift exists*, discard the diffs, and run the
-  repo's own formatter — the tool is authoritative, and a diff drafted during
-  review is stale by the time `fix` runs. One batch commit; N whitespace commits
-  is noise.
+- **Lint fixes.** A formatting finding may arrive with a diff attached, from a
+  linter the security scan ran or a CI job `monitor-pr` ingested. Treat it as
+  *evidence that lint drift exists*, discard the diff, and run the repo's own
+  formatter — the tool is authoritative, and a diff captured at review time is
+  stale by the time `fix` runs. One batch commit; N whitespace commits is
+  noise.
 - **Swallowed errors.** The catalog calls this Replace Error Code with Exception,
   which reads like a refactoring, but removing a swallowed error *changes
   observable behavior*. Route **S2**, not S1, and require a test.
 - **Generated artifacts.** Anything `rendered-lag` is S5 even when it looks like
   prose. Hand-editing it is reverted by the next generator run.
+
+## The partition
+
+Findings are partitioned by file set so concurrent agents never touch the same
+file. Agents neither commit nor run the suite — the orchestrator does both — so
+the partition is also the verification unit: one suite run after its last
+commit, and `git bisect` across the partition if that run is red.

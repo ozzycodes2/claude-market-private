@@ -15,19 +15,16 @@ Workflow:
 
 **Phase 1: Foundation**
 1. Analyze changes (languages, frameworks, impact, **risk_class**)
-2. Deep code review (3-pass bug hunting — expanded concurrency) **in parallel with** risk-gated QR passes
+2. Deep code review (2-pass bug hunting — expanded concurrency) **in parallel with** risk-gated QR passes
 
 **Phase 2: Quality Checks** (parallel)
 3. Security scanning (OWASP deepen)
 4. Documentation validation (incl. light DX fold)
 
-**Phase 3: Generation**
-5. Generate code/docs (simple fixes)
-
-**Phase 4: Synthesis**
-6. Combine all findings (bug-finder + QR passes + security + docs)
-7. Determine merge recommendation (Clean Code blockers count as critical/high)
-8. Post comprehensive review to PR
+**Phase 3: Synthesis**
+5. Combine all findings (bug-finder + QR passes + security + docs)
+6. Determine merge recommendation (Clean Code blockers count as critical/high)
+7. Post comprehensive review to PR
 
 ## Usage
 
@@ -70,7 +67,7 @@ If PR URL not found, ask user for it.
 
 ### 1.3 Locate this plugin's scripts
 
-Steps 8.5 and 9 run bundled scripts. A bare relative path resolves against the
+Steps 7.5 and 8 run bundled scripts. A bare relative path resolves against the
 **reviewed repo's** working directory, not this plugin — the same trap called out
 in Step 3.1 — so resolve the root once, here.
 
@@ -109,25 +106,24 @@ Store key findings:
 
 ## Step 3: Deep Code Review + Risk-Gated QR Passes (parallel Tasks)
 
-### 3.1 Three-pass bug-finder (always)
+### 3.1 Two-pass bug-finder (always)
 
-Spawn **3 independent bug-finders in parallel** with Task tool. Different models per pass — one model three times shares one set of blind spots, so a finding two models agree on is far stronger signal:
+Spawn **2 independent bug-finders in parallel** with Task tool. Different models per pass — one model twice shares one set of blind spots, so a finding both models agree on is far stronger signal:
 
 | Pass | `model` | Model ID | Role |
 |------|---------|----------|------|
 | 1 | `opus` | `claude-opus-4-8` | Deepest reasoning — subtle logic, races, security data-flow |
 | 2 | `sonnet` | `claude-sonnet-5` | Strong, different family — diversifies findings |
-| 3 | `haiku` | `claude-haiku-4-5` | Fast breadth — cheap third perspective |
 
 Each:
 - `subagent_type`: `general-purpose`
-- `model`: from table. **Do not omit** — an omitted `model` inherits the session model, collapsing all three passes onto one.
-- `description`: `Bug hunter pass [1 opus / 2 sonnet / 3 haiku]`
+- `model`: from table. **Do not omit** — an omitted `model` inherits the session model, collapsing both passes onto one.
+- `description`: `Bug hunter pass [1 opus / 2 sonnet]`
 - `prompt`: Bug-Finder Prompt below, with the PR diff inserted as `{{DIFF}}` and the contents of `references/anti-patterns.md` as `{{ANTI_PATTERNS}}`.
 
 Read `references/anti-patterns.md` yourself and paste it in. These are raw Task prompts, not skill invocations — the subagents run with the reviewed repo as their working directory and cannot resolve a path in this skill.
 
-### Bug-Finder Prompt (all 3 passes)
+### Bug-Finder Prompt (both passes)
 
 ```
 You are a bug hunter. Find bugs that will crash production or create security vulnerabilities. Trace, don't scan.
@@ -157,7 +153,7 @@ Return a JSON array of findings, each: {"severity":"critical|high|medium","label
 {{DIFF}}
 ```
 
-**Merge (Step 6):** group by `path`+`line`; prepend "[Found by N/3 models]" when 2+ passes agree; take highest severity.
+**Merge (Step 5):** group by `path`+`line`; prepend "[Found by 2/2 models]" when both passes agree; take highest severity.
 
 ### 3.2 Risk-gated QR passes (parallel with bug-finder)
 
@@ -217,21 +213,11 @@ Use Task tool:
     Write docs-drift-<PR_NUMBER>.json. One-line summary.
 ```
 
-**Send every Step 3 and Step 4 Task in ONE message** — 3 bug-finders, 0–4 QR passes, security-scan, docs-drift. They are independent and all read the same analysis JSON. Continue to Step 5 without waiting; collect in Step 6.
+**Send every Step 3 and Step 4 Task in ONE message** — 2 bug-finders, 0–4 QR passes, security-scan, docs-drift. They are independent and all read the same analysis JSON. Collect in Step 5.
 
-## Step 5: Phase 3 - Code Generation
+## Step 5: Collect Results
 
-```
-Use Skill tool:
-- skill: "review:codegen"
-- args: "<PR_URL> <OUTPUT_DIR>"
-```
-
-Wait and read `$OUTPUT_DIR/code-generation-<PR_NUMBER>.json`. Generated code is for review only — never auto-committed.
-
-## Step 6: Collect Results
-
-Wait for: bug-finder ×3, QR passes (if any), security-scan, docs-drift, codegen.
+Wait for: bug-finder ×2, QR passes (if any), security-scan, docs-drift.
 
 Parse:
 - `$OUTPUT_DIR/pr-analysis-*.json` — risk_class
@@ -239,14 +225,13 @@ Parse:
 - `$OUTPUT_DIR/domain-architecture-*.json`, `data-contracts-*.json`, `ops-reliability-*.json`, `change-evolution-*.json` — each `findings` array
 - `$OUTPUT_DIR/security-scan-*.json`
 - `$OUTPUT_DIR/docs-drift-*.json`
-- `$OUTPUT_DIR/code-generation-*.json`
 
-The three bug-finders return their findings in context, not on disk. **Write the
+Both bug-finders return their findings in context, not on disk. **Write the
 merged array to `$OUTPUT_DIR/bug-finder-<PR_NUMBER>.json`** as
-`{"findings": [...]}` — Step 8.5 collects the ledger from these files, and a pass
+`{"findings": [...]}` — Step 7.5 collects the ledger from these files, and a pass
 with no file on disk is a pass whose findings `/review:fix` will never see.
 
-## Step 7: Determine Merge Recommendation
+## Step 6: Determine Merge Recommendation
 
 ```
 IF (any finding carries decoration "blocking"):
@@ -268,19 +253,18 @@ author to ignore the decoration. One blocking finding is enough for
 
 Always default to COMMENT (never APPROVE) — human-in-the-loop.
 
-## Step 8: Build structured JSON for shared formatter
+## Step 7: Build structured JSON for shared formatter
 
 ### Sections
 
 1. **Change Analysis** — body: languages, impact, `risk_class`. No inline findings.
-2. **Code Review Results (3 Passes)** — bug-finder findings (inline when path+line).
+2. **Code Review Results (2 Passes)** — bug-finder findings (inline when path+line).
 3. **Domain & Architecture** — from `domain-architecture` (omit if skipped/empty).
 4. **Data & Contracts** — from `data-contracts` (omit if skipped/empty).
 5. **Ops & Reliability** — from `ops-reliability` (omit if skipped/empty).
 6. **Change & Evolution** — from `change-evolution` (omit if skipped/empty).
 7. **Security Analysis** — security-scan findings.
 8. **Documentation Check** — docs-drift body (+ inline if path+line).
-9. **Code Generation** — codegen body.
 
 Set `review_metadata.model` to your model ID. Note bug-finder pass models in Code Review body. Set `tool_version` from `.claude-plugin/plugin.json` (do not hardcode).
 
@@ -315,19 +299,18 @@ craft or design finding, name the resolving refactoring.
 {
   "pr_url": "<FULL_PR_URL>",
   "recommendation": "<REQUEST_CHANGES|COMMENT>",
-  "rationale": "<Brief summary from Step 7>",
+  "rationale": "<Brief summary from Step 6>",
   "required_actions": ["<action1>"],
   "optional_improvements": ["<suggestion1>"],
   "sections": [
     {"title": "Change Analysis", "summary_line": "...", "body": "..."},
-    {"title": "Code Review Results (3 Passes)", "summary_line": "...", "body": "...", "findings": []},
+    {"title": "Code Review Results (2 Passes)", "summary_line": "...", "body": "...", "findings": []},
     {"title": "Domain & Architecture", "summary_line": "...", "body": "...", "findings": []},
     {"title": "Data & Contracts", "summary_line": "...", "body": "...", "findings": []},
     {"title": "Ops & Reliability", "summary_line": "...", "body": "...", "findings": []},
     {"title": "Change & Evolution", "summary_line": "...", "body": "...", "findings": []},
     {"title": "Security Analysis", "summary_line": "...", "body": "...", "findings": []},
-    {"title": "Documentation Check", "summary_line": "...", "body": "..."},
-    {"title": "Code Generation", "summary_line": "...", "body": "..."}
+    {"title": "Documentation Check", "summary_line": "...", "body": "..."}
   ],
   "review_metadata": {
     "tool_name": "review",
@@ -340,12 +323,12 @@ craft or design finding, name the resolving refactoring.
 
 Omit skipped/failed/empty QR sections. Formatter omits empty sections.
 
-**Write this JSON to `$OUTPUT_DIR/review-payload.json`** — Steps 8.5 and 9 both
+**Write this JSON to `$OUTPUT_DIR/review-payload.json`** — Steps 7.5 and 8 both
 read it from there.
 
-## Step 8.5: Persist findings to the durable ledger
+## Step 7.5: Persist findings to the durable ledger
 
-Steps 1-8 wrote everything to `$OUTPUT_DIR`, which is a `/tmp` dir keyed on a
+Steps 1-7 wrote everything to `$OUTPUT_DIR`, which is a `/tmp` dir keyed on a
 random session id. A later session cannot find it, so the findings — and the
 refactorings they name — die with this run. Write them somewhere durable instead,
 so `/review:fix` can work the list to completion.
@@ -358,7 +341,7 @@ LEDGER=$(python3 "$PLUGIN_ROOT/scripts/findings_ledger.py" build \
   --run "$SESSION_ID" \
   $(for f in "$OUTPUT_DIR"/*-${PR_NUMBER}.json; do
       case "$(basename "$f")" in
-        pr-analysis-*|code-generation-*) continue ;;
+        pr-analysis-*) continue ;;
       esac
       printf ' --source %s=%s' "$(basename "$f" | sed "s/-${PR_NUMBER}\.json$//")" "$f"
     done) \
@@ -378,7 +361,7 @@ digest. Do not copy ledger contents into a log line or a PR comment.
 If this step fails, the review is still complete — report the failure and move
 on. The ledger is an optimization for `fix`, not part of the review verdict.
 
-## Step 9: Post review via shared formatter
+## Step 8: Post review via shared formatter
 
 ```bash
 cat "$OUTPUT_DIR/review-payload.json" \
@@ -387,7 +370,7 @@ cat "$OUTPUT_DIR/review-payload.json" \
 
 On failure, `--dry-run` and show the user.
 
-## Step 10: Provide User Summary
+## Step 9: Provide User Summary
 
 ```
 Comprehensive Review Complete
@@ -415,7 +398,7 @@ View full review: <PR_URL>
 ## Notes
 
 - Entry point for comprehensive reviews
-- Model-diverse 3-pass bug-finder (opus+sonnet+haiku) + risk-gated QR skills (`domain-architecture`, `data-contracts`, `ops-reliability`, `change-evolution`) + security-scan + docs-drift + codegen
+- Model-diverse 2-pass bug-finder (opus+sonnet) + risk-gated QR skills (`domain-architecture`, `data-contracts`, `ops-reliability`, `change-evolution`) + security-scan + docs-drift
 - Each pass owns its anti-pattern slice at `skills/<pass>/references/anti-patterns.md`, so it can address no other
 - Clean Code and category 4 design-quality findings are **blockers regardless of module reach**; blast radius sets severity only. Each names its resolving refactoring
 - Test execution/coverage left to CI

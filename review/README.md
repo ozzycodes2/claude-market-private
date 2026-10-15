@@ -1,11 +1,10 @@
 # review
 
 Comprehensive, language-agnostic PR review. One orchestrator skill coordinates a
-change analysis (with **risk_class** routing), a 3-pass deep
+change analysis (with **risk_class** routing), a 2-pass deep
 code review (expanded concurrency), risk-gated quality-review passes
 (`domain-architecture`, `data-contracts`, `ops-reliability`, `change-evolution`),
-security scanning (OWASP deepen), documentation-drift checks (light DX fold), and
-code-fix generation — then posts a single unified GitHub review (summary +
+security scanning (OWASP deepen), documentation-drift checks (light DX fold) — then posts a single unified GitHub review (summary +
 inline comments). Rust and Machinify `mac-ui` changes get first-class, tailored
 checks. Test execution and coverage analysis are intentionally left to CI.
 
@@ -37,7 +36,7 @@ keeping a human in the loop).
 | `change-evolution` | QR pass — CD readiness + design quality YAGNI/deep modules (categories 5 Change & evolution, 4 Design quality). Gated on size/mixed/CD/design. |
 | `security-scan` | Runs available static analyzers; deepens OWASP authz/IDOR, business-logic abuse, SSRF, PII-in-logs; degrades gracefully when tools aren't installed. |
 | `docs-drift` | Detects docs drift (ADRs, OpenAPI, rendered artifacts, READMEs, comments) plus light DX fold (runbooks / caller migration) and completeness gaps. |
-| `codegen` | Drafts tests, docstrings, and CHANGELOG entries to fill surfaced gaps (human review required before committing). |
+| `codegen` | Drafts tests, docstrings, and CHANGELOG entries to fill surfaced gaps. Standalone — invoke it by name; `review` does not call it. |
 | `fix` | Applies the recorded findings — refactors each smell by its named Fowler/Kerievsky move in the language's own idiom, rewrites flagged docs and comments, regenerates stale artifacts, defers design decisions. One commit per finding, then replies to and resolves the review comments that raised them; **never pushes**. |
 | `monitor-pr` | Continuously watches a PR (drive with `/loop`) for CI failures and new review comments, appends them to the findings ledger, delegates every edit to `fix`, pushes, and resolves/acknowledges each comment once its fix is pushed. |
 
@@ -169,20 +168,20 @@ the record. It never merges or force-pushes — that stays with you.
 /review:review <PR_URL>
   │
   ├─ Phase 1  analyze → risk_class
-  │            ├─ 3-pass bug-finder (parallel, model-diverse)
+  │            ├─ 2-pass bug-finder (parallel, model-diverse)
   │            └─ QR passes gated by risk_class (parallel Task)
   ├─ Phase 2  security-scan · docs-drift               (parallel)
-  ├─ Phase 3  codegen
-  └─ Phase 4  synthesize → merge recommendation → post unified review
+  └─ Phase 3  synthesize → merge recommendation → post unified review
               └─ write the findings ledger
 
 /review:fix [<PR>]            reads the ledger → routes → commits one per finding
+                              → suite once per partition → green
                               → replies to and resolves the threads it answered
 /monitor-pr <PR>              polls → appends to the ledger → calls fix → pushes
                               → acknowledges what the push made visible
 ```
 
-The deep code review is self-contained: the orchestrator spawns three independent
+The deep code review is self-contained: the orchestrator spawns two independent
 bug-finders (NPE/lifecycle tracing, resource leaks, security sinks, races,
 deadlocks, TOCTOU, async cancellation, concurrent idempotency, DLQ/poison,
 control-flow, architectural consistency) and merges their findings, flagging any
@@ -198,13 +197,16 @@ issue found by multiple passes as high-confidence.
 
 ## Notes
 
-- Generated code (from `codegen`) is for review only — never auto-committed. Its
-  drafted lint diffs are evidence that drift exists; `fix` discards them and runs
-  the repo's own formatter, which is authoritative.
+- `codegen` is standalone: `review` does not call it, and nothing it writes
+  reaches the findings ledger. Generated code is for review only — never
+  auto-committed.
+- Fix agents edit; they never commit and never run the test suite. The `fix`
+  orchestrator commits each finding and runs the suite once per partition,
+  bisecting the partition if it goes red.
 - `fix` is the only skill in the plugin that writes to the repository, and it is
   `disable-model-invocation` — it fires only when you ask for it by name, or when
   `monitor-pr` delegates to it.
 - Test execution and coverage/test-gap analysis are intentionally out of scope —
   CI already runs the suite and measures coverage, so the review doesn't duplicate it.
-- Cost: roughly ~$4–10 per PR depending on how many QR passes gate on
-  (3-pass deep review + analysis/generation + zero-to-four QR skills).
+- Cost: roughly ~$3–8 per PR depending on how many QR passes gate on
+  (2-pass deep review + analysis + zero-to-four QR skills).

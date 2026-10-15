@@ -220,7 +220,8 @@ Skill review:fix <n> --no-push
 ```
 
 It takes the ledger lock, routes every `open` finding to a strategy, applies it,
-iterates to green, and makes one commit per finding. `--no-push` is its default —
+makes one commit per finding, and runs the suite once per partition — iterating
+until the branch is green before it returns. `--no-push` is its default —
 pass it anyway, so the division of labour is visible at the call site.
 
 Do not pass a finding list. Selection is `status == "open"`, which is exactly the

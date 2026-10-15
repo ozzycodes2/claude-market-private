@@ -13,6 +13,7 @@ own copy of the contract.
 | Edit working-tree files | **yes** | yes (mechanical strategies) | no |
 | Write to `.git` | **never** | yes | no |
 | Commit | **never** | yes, one per finding | no |
+| Run the test suite | **never** | yes, once per partition | no |
 | Push | never | **never** | yes |
 | Reply in a review thread | never | yes, for pushed work | yes |
 | Resolve a review thread | never | yes, for pushed work | yes |
@@ -73,7 +74,8 @@ to tell.
 5. **Never write to `.git`.** No `add`, `commit`, `stash`, `checkout`,
    `restore`, `reset`, `rebase`, `push`. Leave your edits in the working tree
    and report the paths.
-6. **Iterate to green** (see below).
+6. **Never run the test suite** (see below). Pure checks that write nothing and
+   take no lock — a type check, a linter in check mode — are fine.
 7. **Never narrate your change in a comment.** No `// fixed`, no `// now
    handles the edge case`, no address to a reviewer. That belongs in the commit
    message; git remembers. If your change makes an existing comment wrong,
@@ -89,8 +91,9 @@ files_changed:       repo-relative paths, newline-separated, or "none"
 refactoring_applied: catalog name, or "none"
 idiom_divergence:    one line, or "none"
 behavior_preserved:  yes | no — and how you established it
-iterations:          how many test runs it took
-verification:        the command run and its result, or "not run: <reason>"
+verification:        the reason to believe the change is correct — the invariant
+                     it preserves, the call sites you read, the pure check you
+                     ran. Not a suite result; you did not run one.
 decision_needed:     needs-decision only — the one-sentence question a human
                      must answer, each option, and its consequence
 adjacent:            smells seen and not touched, or "none"
@@ -98,31 +101,39 @@ adjacent:            smells seen and not touched, or "none"
 
 ## Red, green, refactor
 
-**You cannot refactor on red.** Establish a green baseline before the first
-finding. If the suite is already failing, that is the first thing to resolve —
-or stop and say so. Refactoring discipline against a red suite is meaningless,
-because nothing distinguishes the breakage you caused from the breakage you
-inherited.
+**You cannot refactor on red.** The orchestrator establishes a green baseline
+before the first finding. If the suite is already failing, that is the first
+thing to resolve — or stop and say so. Refactoring discipline against a red
+suite is meaningless, because nothing distinguishes the breakage you caused from
+the breakage you inherited.
 
-Per finding:
+**Only the orchestrator runs the suite, once per partition.** Agents run
+concurrently and a suite with shared fixtures — a database it truncates, a port
+it binds, a temp dir it clears — corrupts every other agent's run when a second
+copy starts. Even where it is safe, verifying per finding costs one suite run
+per finding instead of one per partition; on a suite that takes minutes that is
+the dominant term in a fix round's wall clock.
 
-1. Apply the change.
-2. Run the repo's test command (`context.test_setup.test_command`).
-3. **Green → the orchestrator commits. Red → iterate.** Read the failure, adjust
-   *your change* — not the test's expectations, unless the finding is itself
-   about the test — and run again.
+The information is recoverable. A red partition is a handful of commits, and
+`git bisect` across them finds the guilty one in a couple of runs — cheaper than
+the runs that would have caught it eagerly.
 
-**Keep going until it is green.** A failing test is not a reason to revert, not a
-reason to commit a WIP, and not a reason to defer the finding. The only exits
-from the loop are:
+### When the partition goes red
 
-- **Green.** Commit, move to the next finding.
-- **The failure is not attributable to this change** — it was already failing, it
-  is a flake, it is an environment problem. That is a different finding; say so
-  and hand it back.
+1. `git bisect` across the partition's commits, with the suite as the test.
+2. Re-dispatch that finding with the failure output attached. Adjust *the
+   change* — not the test's expectations, unless the finding is itself about the
+   test. A failing test is not a reason to revert, not a reason to commit a WIP,
+   and not a reason to defer the finding.
+3. Re-run the suite. Repeat until green.
 
-**Never commit red.** Every commit this skill produces leaves the branch green,
-so a `git bisect` across them stays meaningful.
+The only other exit is **the failure is not attributable to this run** — it was
+already failing, it is a flake, it is an environment problem. That is a
+different finding; say so and hand it back.
+
+**Never leave the branch red.** Each commit claims the branch is green at that
+commit; the claim is written at commit time and made true at partition time. A
+fix round that ends red has not ended.
 
 ### When the loop stalls
 
@@ -133,16 +144,13 @@ history attached. If that also stalls, surface the finding to the user as a live
 question and **pause on it** — do not silently defer it, and do not move on
 pretending it was handled.
 
-Intermediate iterations may narrow the test run to the affected module **only if
-the narrowing flag is determinable from the repo's own config or docs.** Never
-guess a flag. Run the full command once before reporting `applied`.
-
 ### When there is no local signal
 
-If `context.test_setup.can_run_safely` is false, there is no green to iterate
-toward, so there is no loop. Apply the change once, carefully, and commit it —
-CI is the backstop. The commit body must say the suite was not run, and why.
-Run the lint command instead if it is a pure check that writes nothing.
+If `context.test_setup.can_run_safely` is false, there is nothing to verify
+against, so the partition run is skipped too. Apply each change once, carefully,
+and commit it — CI is the backstop. The commit body must say the suite was not
+run, and why. Run the lint command instead if it is a pure check that writes
+nothing.
 
 ## Commit rules
 
@@ -202,7 +210,7 @@ established, because an unbacked claim is worse than no claim:
 | Situation | Line |
 |---|---|
 | Refactor, green | `Behavior-preserving; <test command> passes unchanged.` |
-| Refactor, green after N iterations | `Behavior-preserving; <test command> passes. Reached after N iterations; the first attempt <one clause on what was wrong>.` |
+| Refactor, green after a red partition | `Behavior-preserving; <test command> passes. Reached after N iterations; the first attempt <one clause on what was wrong>.` |
 | Refactor, no local suite | `Behavior-preserving refactoring. Suite not run locally (<reason>); CI gates it.` |
 | Repair | **No preservation claim.** State the before and after behavior, and name the test that now covers it. |
 | Prose / comments | None. Add `No code change.` when only comments moved. |

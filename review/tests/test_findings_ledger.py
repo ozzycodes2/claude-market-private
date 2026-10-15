@@ -112,6 +112,28 @@ class BugFinderShapeTest(unittest.TestCase):
         }]}))
         self.assertEqual(f["kind"], "design-decision")
 
+    def test_praise_is_dropped(self):
+        """Praise has no remedy, so it must never reach the fix worklist."""
+        self.assertEqual(normalize("bug-finder", {"findings": [{
+            "severity": "low", "label": "praise",
+            "title": "Clean separation of the parser and the writer",
+        }]}), [])
+
+    def test_praise_is_dropped_from_every_label_carrying_source(self):
+        for source in ("domain-architecture", "data-contracts", "ops-reliability"):
+            with self.subTest(source=source):
+                self.assertEqual(normalize(source, {"findings": [{
+                    "severity": "low", "label": "praise", "title": "Nice",
+                }]}), [])
+
+    def test_praise_drop_leaves_siblings_intact_and_ids_contiguous(self):
+        ledger = build_ledger(pr_url=PR_URL, sources={"bug-finder": {"findings": [
+            {"severity": "low", "label": "praise", "title": "Nice newtype"},
+            {"severity": "high", "label": "issue", "title": "Unchecked index"},
+        ]}})
+        self.assertEqual([f["title"] for f in ledger["findings"]], ["Unchecked index"])
+        self.assertEqual(ledger["action_order"], ["F001"])
+
     def test_medium_severity_does_not_block(self):
         f = _only(normalize("bug-finder", {"findings": [{
             "severity": "medium", "title": "Extract helper",

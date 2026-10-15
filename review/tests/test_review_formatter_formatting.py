@@ -125,7 +125,7 @@ class SectionIconTest(unittest.TestCase):
     def test_each_category_gets_a_distinct_relevant_icon(self):
         expected = {
             "Change Analysis": ":mag:",
-            "Code Review Results (3 Passes)": ":bug:",
+            "Code Review Results (2 Passes)": ":bug:",
             "Test Analysis": ":test_tube:",
             "Domain & Architecture": ":triangular_ruler:",
             "Data & Contracts": ":handshake:",

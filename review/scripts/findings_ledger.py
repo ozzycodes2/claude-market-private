@@ -754,14 +754,21 @@ NORMALIZERS = {
 
 
 def normalize(source: str, payload) -> list:
-    """Dispatch to the normalizer for `source`."""
+    """Dispatch to the normalizer for `source`, dropping praise.
+
+    A `praise` finding names something the PR got right, so it has no remedy and
+    nothing for `fix` to do. Left in, it reaches strategy routing anyway and
+    comes out as an improvised deferral. The posted review comment is built from
+    the payload, not the ledger, so dropping it here keeps the praise visible to
+    the author and out of the fix worklist.
+    """
     if source in NORMALIZERS:
-        return NORMALIZERS[source](payload, source)
-    if source in BUGFINDER_SHAPED:
-        return normalize_bugfinder(payload, source)
-    # Unknown pass: assume the bug-finder shape, which every quality-review pass
-    # is contracted to emit.
-    return normalize_bugfinder(payload, source)
+        out = NORMALIZERS[source](payload, source)
+    else:
+        # Unknown pass: assume the bug-finder shape, which every quality-review
+        # pass is contracted to emit.
+        out = normalize_bugfinder(payload, source)
+    return [f for f in out if f.get("label") != "praise"]
 
 
 # --------------------------------------------------------------------------

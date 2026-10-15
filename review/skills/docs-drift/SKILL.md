@@ -62,7 +62,7 @@ Progress:
 - [ ] Step 5 — Rendered-artifact staleness (source ↔ generated)
 - [ ] Step 6 — Completeness gaps (+ light DX fold)
 - [ ] Step 7 — Score + emit JSON
-- [ ] Step 8 — Validate every finding before writing it out
+- [ ] Step 8 — Validate every finding, drop the confirmations, then write it out
 
 ### Step 0: Parse arguments
 
@@ -132,8 +132,22 @@ dangerous; **low** = cosmetic/index bookkeeping. Emit JSON per the asset templat
 ### Step 8: Validation loop
 
 For each finding: (1) quotes the doc line, (2) names contradicting code or missing
-artifact, (3) severity matches rubric. Drop unverifiable claims. Then write
-`docs-drift-<PR_NUMBER>.json`.
+artifact, (3) severity matches rubric. Drop unverifiable claims.
+
+**Then drop every finding whose remedy is a confirmation.** `fix` works this
+list to completion, so a finding with nothing to edit becomes a deferral that
+costs a routing decision and a report line and changes no file. Drop it when:
+
+- the remedy's verb is *confirm*, *verify*, *check*, *ensure*, *consider*,
+  *be aware*, or *no action needed*;
+- it restates that the doc and the code agree;
+- it reports an absence the repo has no policy about (no CHANGELOG in a repo
+  that keeps none, no ADR for a change the ADR index does not cover);
+- it is cosmetic drift in a generated artifact that the next regeneration fixes.
+
+Keep the finding when a reader of the current doc would act wrongly.
+
+Then write `docs-drift-<PR_NUMBER>.json`.
 
 ## mac-ui repos (Machinify Web Components)
 
