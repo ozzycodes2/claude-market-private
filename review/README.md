@@ -37,7 +37,7 @@ keeping a human in the loop).
 | `security-scan` | Runs available static analyzers, scoped to the diff's added lines; deepens OWASP authz/IDOR, business-logic abuse, SSRF, PII-in-logs; audits dependencies only when the PR changes a manifest; degrades gracefully when tools aren't installed. |
 | `docs-drift` | Detects docs drift (ADRs, OpenAPI, rendered artifacts, READMEs, comments) plus light DX fold (runbooks / caller migration) and completeness gaps. |
 | `codegen` | Drafts tests, docstrings, and CHANGELOG entries to fill surfaced gaps. Standalone — invoke it by name; `review` does not call it. |
-| `fix` | Applies the recorded findings — refactors each smell by its named Fowler/Kerievsky move in the language's own idiom, rewrites flagged docs and comments, regenerates stale artifacts, defers design decisions. One commit per finding, then replies to and resolves the review comments that raised them; **never pushes**. |
+| `fix` | Applies the recorded findings — refactors each smell by its named Fowler/Kerievsky move in the language's own idiom, rewrites flagged docs and comments, regenerates stale artifacts, defers design decisions. One commit per finding, then pushes the head branch once the suite is green and replies to and resolves the review comments that raised them; **never merges or force-pushes**. |
 | `monitor-pr` | Continuously watches a PR (drive with `/loop`) for CI failures and new review comments, appends them to the findings ledger, delegates every edit to `fix`, pushes, and resolves/acknowledges each comment once its fix is pushed. |
 
 **Anti-patterns:** each pass owns its slice at
@@ -83,22 +83,23 @@ Then it answers the review. `review` raised each finding as an inline comment, s
 thread. A **deferred** finding gets a reply stating the decision it needs and the
 thread stays open — it is the one finding that most needs a human to see it.
 
-A thread is resolved only once its commit is on the remote, which `fix` never
-pushes to. So the usual sequence is:
+A thread is resolved only once its commit is on the remote, so `fix` pushes the
+head branch itself — but only once the suite is green — and then answers:
 
 ```
-/review:fix 123                 # fixes, commits, pushes nothing
-git push                        # your call
-/review:fix 123 --ack-only      # answers and resolves the threads
+/review:fix 123                 # fixes, commits, pushes when green, answers
 ```
 
-The report names the unacknowledged findings and that last command, so it is not
-something you have to remember. `--no-ack` skips GitHub entirely.
+When it cannot push — the suite went red, the branch diverged from origin, or
+you passed `--no-push` — it acknowledges nothing and says so, and you finish
+with `/review:fix 123 --ack-only` after pushing. `--no-ack` skips GitHub
+entirely; `--no-push` keeps the commits local.
 
 What it will not do:
 
-- **It never pushes, merges, or force-pushes.** The commits sit on your branch,
-  ahead of the remote, for you to review.
+- **It never merges or force-pushes.** Its one push is a fast-forward of the
+  PR's own head branch from a green tree; a rejected push is reported, not
+  forced around.
 - **It never resolves a thread it cannot back.** Not a deferral, not a thread
   this run did not fix, and not a commit that exists only on your machine.
   Acknowledgements are recorded in the ledger, so no reviewer is answered twice —
@@ -155,8 +156,8 @@ calls `/review:fix` to do the editing. **It edits nothing itself** — the divis
 threads are handled automatically; human comments and nits are reported for your
 decision and never reach `fix` until you agree.
 
-`fix` commits but does not push, so `monitor-pr` pushes the branch afterwards and
-then acknowledges: **every comment whose fix ships gets answered** — the review
+`monitor-pr` calls `fix` with `--no-push`, so it keeps the push itself and
+acknowledges afterwards: **every comment whose fix ships gets answered** — the review
 thread is resolved, or, if it isn't inline/resolvable, a new comment replies
 `@author` with the sha. `.claude/pr-monitor/pr-<n>.md` is a human-readable mirror of
 the ledger, deleted once everything is handled and CI is green; the ledger stays as
@@ -175,9 +176,10 @@ the record. It never merges or force-pushes — that stays with you.
               └─ write the findings ledger
 
 /review:fix [<PR>]            reads the ledger → routes → commits one per finding
-                              → suite once per partition → green
+                              → suite once per partition → green → pushes
                               → replies to and resolves the threads it answered
-/monitor-pr <PR>              polls → appends to the ledger → calls fix → pushes
+/monitor-pr <PR>              polls → appends to the ledger → calls fix --no-push
+                              → pushes
                               → acknowledges what the push made visible
 ```
 

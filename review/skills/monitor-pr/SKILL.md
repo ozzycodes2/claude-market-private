@@ -40,9 +40,11 @@ pushes, and talks to GitHub. Editing is `/review:fix`'s job.
    single copy both skills work from. Never `gh pr merge`, never force-push, never
    `git reset --hard`, never touch the default branch. Fixes are pushed to the *PR
    branch*. Merging stays with the user; surface the command, don't run it.
-   The one line that differs between the two callers: **`/review:fix` never pushes
-   — the push is this skill's job**, and nothing it committed reaches GitHub until
-   Phase 3 runs.
+   The one line that differs between the two callers: **`/review:fix` pushes when
+   invoked directly, but not here — the push is this skill's job.** Phase 2 passes
+   `--no-push` for exactly that reason, and nothing it committed reaches GitHub
+   until Phase 3 runs. Dropping that flag would hand the push to the fixer
+   mid-tick, before this skill has reconciled the tracker.
 
 ## Inputs
 
@@ -221,8 +223,9 @@ Skill review:fix <n> --no-push
 
 It takes the ledger lock, routes every `open` finding to a strategy, applies it,
 makes one commit per finding, and runs the suite once per partition — iterating
-until the branch is green before it returns. `--no-push` is its default —
-pass it anyway, so the division of labour is visible at the call site.
+until the branch is green before it returns. **`--no-push` is required, not
+decorative:** invoked without it the fixer pushes its own green branch and
+acknowledges its own threads, which would double up with Phase 3.
 
 Do not pass a finding list. Selection is `status == "open"`, which is exactly the
 set just appended plus anything an earlier tick could not finish.

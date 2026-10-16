@@ -14,7 +14,7 @@ own copy of the contract.
 | Write to `.git` | **never** | yes | no |
 | Commit | **never** | yes, one per finding | no |
 | Run the test suite | **never** | yes, once per partition | no |
-| Push | never | **never** | yes |
+| Push | never | yes — PR head branch, green tree, unless `--no-push` | yes |
 | Reply in a review thread | never | yes, for pushed work | yes |
 | Resolve a review thread | never | yes, for pushed work | yes |
 | Any other GitHub state | never | never | yes |
@@ -33,13 +33,15 @@ Both callers can reply and resolve, so they need a rule that cannot double-fire.
 commit is an ancestor of `origin/<head-branch>`. Resolving a thread for a commit
 that exists on one machine tells a reviewer to look at something they cannot see.
 
-That single rule partitions the work with no flag and no coordination:
+That single rule partitions the work, and `--no-push` decides which side each
+caller lands on:
 
-- `review:fix` does not push, so on an ordinary run its fresh commits fail the
-  check and it acknowledges nothing. After the user pushes, `--ack-only`
-  completes it.
-- Under `monitor-pr`, `fix` is called *before* the push, so again it acknowledges
-  nothing, and `monitor-pr` acknowledges after its own push.
+- Invoked directly, `review:fix` pushes the green branch itself, so the check
+  passes for its own commits and it acknowledges them in the same run. A run
+  that could not push — red suite, diverged branch, `--no-push` — acknowledges
+  nothing, and `--ack-only` completes it after the user pushes.
+- Under `monitor-pr`, `fix` is called with `--no-push` and *before* the push, so
+  it acknowledges nothing and `monitor-pr` acknowledges after its own push.
 
 The ledger is the backstop. Every acknowledgement is recorded with
 `findings_ledger.py ack`, which is idempotent per `(finding, thread)`, and the
@@ -230,7 +232,10 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 Never, at any level:
 
-- `git push` — only `monitor-pr` pushes, and only to the PR's head branch
+- `git push`, except one case: a fast-forward push of the PR's own head branch
+  to `origin`, from a verified-green tree, by `monitor-pr` or by `review:fix`
+  without `--no-push`. A rejected push is reported, never forced or rebased
+  around.
 - `gh pr merge` — surface the command, let the user run it
 - force-push anything
 - commit to, or reset, the repository's default branch

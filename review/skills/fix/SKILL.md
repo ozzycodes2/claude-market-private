@@ -1,6 +1,6 @@
 ---
 name: fix
-description: Apply and commit fixes for the findings a prior /review:review recorded — refactor code smells using the named Fowler/Kerievsky refactoring in the language's own idiom, rewrite flagged documentation and comments for clarity, regenerate stale generated artifacts, and defer anything needing a human design decision rather than guessing. Then answer the review comments that raised them: reply with the fix and resolve the thread once the commit is on the PR. Use after /review:review when you want the findings actually resolved in the working tree, one commit per finding. Edits files, commits, and replies on the PR; never pushes, never merges. Also the fix engine behind monitor-pr.
+description: Apply and commit fixes for the findings a prior /review:review recorded — refactor code smells using the named Fowler/Kerievsky refactoring in the language's own idiom, rewrite flagged documentation and comments for clarity, regenerate stale generated artifacts, and defer anything needing a human design decision rather than guessing. Then push the head branch once the suite is green and answer the review comments that raised them: reply with the fix and resolve the thread. Use after /review:review when you want the findings actually resolved on the PR, one commit per finding. Edits files, commits, pushes the PR branch, replies and resolves; never force-pushes, never merges. Also the fix engine behind monitor-pr.
 allowed-tools: Bash Read Write Edit Grep Glob Skill Task Agent
 disable-model-invocation: false
 ---
@@ -12,10 +12,12 @@ it as a comment. This skill is the consumer that `required_actions` was written
 for: it reads the durable findings ledger, applies each fix, commits one finding
 at a time, and answers the comment that asked.
 
-It **edits, commits, and replies on the PR. It never pushes.** Pushing belongs to
-`monitor-pr`, which delegates its editing here. Because it does not push, it
-resolves a thread only once that thread's commit is visible on the remote — see
-Step 7.1.
+It **edits, commits, pushes the PR's head branch once the suite is green, then
+replies and resolves.** The push is what makes acknowledgement honest: a thread
+is resolved only when its commit is visible on the remote (Step 7.1), so the run
+that pushes is the run that can close the loop.
+
+Under `monitor-pr` the push stays with the caller, which passes `--no-push`.
 
 ## Inputs
 
@@ -24,12 +26,14 @@ Step 7.1.
             [--dry-run]            plan and partition only; write nothing
             [--max-concurrent N]   parallel agents, default 4
             [--force]              break a stale ledger lock
-            [--ack-only]           skip Steps 1–6; only answer review comments
+            [--ack-only]           skip Steps 1–6.5; only answer review comments
                                    for findings whose commits are already pushed
-            [--no-ack]             fix and commit, write nothing to GitHub
+            [--no-ack]             fix, commit, and push; reply to and resolve
+                                   nothing
             [--post-deferred]      post one PR comment for deferrals that have
                                    no thread to reply to (off by default)
-            [--no-push]            no-op; documents the default so monitor-pr can be explicit
+            [--no-push]            commit only; leave the branch ahead of origin
+                                   (what monitor-pr passes — it owns the push)
 ```
 
 With no argument, infer the PR from the current branch (`gh pr view --json
@@ -252,6 +256,62 @@ A deferred finding gets **no edit and no commit**, keeps its original severity,
 and never gets a bare `TODO` as a consolation prize. This skill does not file
 tickets.
 
+## Step 6.5: Push the head branch
+
+Every commit from Step 5 sits on a branch that is green and verified. Push it —
+that is what lets Step 7 resolve the threads in this same run instead of handing
+the user a second command.
+
+Skip entirely under `--no-push`, `--dry-run`, or `--ack-only`, and skip when
+Step 5 made no commits.
+
+### 6.5.1 Gate on green
+
+Push only when **all** of these hold:
+
+- Every partition's final suite run passed. A partition still red, or a finding
+  Step 5 paused on, blocks the push for the whole run — do not push "the green
+  part". The branch tip is what CI and reviewers see.
+- No finding is in `claimed` or `applied` state. Everything is `committed` or
+  `deferred`.
+- The tree is clean: `git status --porcelain` is empty apart from the
+  `.claude/pr-monitor/pr-*.md` exemption from Step 1.2.
+
+Deferrals do **not** block the push. A deferral produced no commit, so the
+pushed branch is exactly the verified work.
+
+Where `context.test_setup.can_run_safely` is false there is no local green
+signal and CI is the verification — push, and mark every commit `Unverified` in
+the Step 8 report. Withholding the push there withholds the only signal
+available.
+
+### 6.5.2 Push
+
+```bash
+HEAD_BRANCH=$(gh pr view "$PR_NUMBER" --json headRefName -q .headRefName)
+CROSS_REPO=$(gh pr view "$PR_NUMBER" --json isCrossRepository -q .isCrossRepository)
+
+test "$(git rev-parse --abbrev-ref HEAD)" = "$HEAD_BRANCH"   # refuse otherwise
+test "$CROSS_REPO" = "false"                                  # refuse otherwise
+
+git push origin "HEAD:refs/heads/$HEAD_BRANCH"
+```
+
+Checked out somewhere other than the PR's head branch, or the PR comes from a
+fork whose head repo is not `origin` → **do not push.** Report it and let Step 7
+fall back to acknowledging nothing. Guessing a remote pushes someone's work to
+the wrong place.
+
+**A rejected push is reported, never forced around.** `non-fast-forward` means
+the remote moved while this run was working. Do not force-push, do not rebase,
+do not pull — all three are on the deny-list and all three can discard a
+collaborator's commit. Say the branch diverged, name the commits that stayed
+local, and stop; the user re-runs after reconciling.
+
+Push once, after the last partition. Pushing per commit re-triggers CI on every
+one of them, which costs a full pipeline per finding and leaves a trail of runs
+nobody reads.
+
 ## Step 7: Answer the review comments
 
 `/review:review` asked each of these questions as an inline comment. A finding
@@ -266,21 +326,25 @@ git fetch origin "$HEAD_BRANCH" --quiet
 git merge-base --is-ancestor <sha> "origin/$HEAD_BRANCH"   # per committed finding
 ```
 
-**A thread is resolved only when its commit is on the remote.** This skill does
-not push, so on a normal run that check fails for everything it just committed —
-and that is the correct outcome, not a bug. Resolving a thread for a commit that
-exists only on this machine tells a reviewer to go look at something they cannot
-see.
+**A thread is resolved only when its commit is on the remote.** Run the check
+even on a run that just pushed — it is what catches a partial push, a rejected
+push, and a sha the ledger recorded from an earlier run that no longer exists.
+Resolving a thread for a commit that exists only on this machine tells a
+reviewer to go look at something they cannot see.
 
-So the flow is: `fix` commits, you push, then acknowledgement happens:
+After a successful Step 6.5 the check passes for everything this run committed,
+and the loop closes in one command. When Step 6.5 was skipped or refused, it
+fails for those commits — that is the correct outcome, not a bug — and the work
+finishes later:
 
 ```
-/review:fix 123 --ack-only      # skip Steps 1–6; acknowledge pushed work only
+/review:fix 123 --ack-only      # acknowledge pushed work only
 ```
 
-Under `monitor-pr` this resolves itself — it calls `fix` before pushing, so
-nothing is acknowledged here, and `monitor-pr` acknowledges in its Phase 3 after
-its push. One acknowledgement per thread, from whoever can see the commit.
+Under `monitor-pr` this resolves itself — it passes `--no-push` and calls `fix`
+before pushing, so nothing is acknowledged here, and `monitor-pr` acknowledges
+in its Phase 3 after its push. One acknowledgement per thread, from whoever can
+see the commit.
 
 ### 7.2 Map findings to threads
 
@@ -388,11 +452,19 @@ Acknowledged (<n>):
   F012  replied, left open   PRRT_y   (deferred)
 
 Not acknowledged (<n>):
-  F007  commit not pushed — push, then `/review:fix <N> --ack-only`
   F009  ambiguous: PRRT_z fits F009 and F011 equally well
   F005  no inline comment to answer (CI finding)
 
-Nothing was pushed. <n> commit(s) on <branch>, ahead of origin.
+Pushed <n> commit(s) to origin/<branch> (<sha>..<sha>). CI is re-running.
+```
+
+The last line states what reached the remote. When Step 6.5 was skipped or
+refused, say which and name the command that finishes the job:
+
+```
+Not pushed — <reason: --no-push | suite red on partition 2 | branch diverged
+from origin/<branch>>. <n> commit(s) on <branch>, ahead of origin.
+Push, then `/review:fix <N> --ack-only`.
 ```
 
 Then `python3 "$LEDGER_PY" unlock --ledger "$LEDGER"`.
@@ -400,9 +472,14 @@ Then `python3 "$LEDGER_PY" unlock --ledger "$LEDGER"`.
 Make the deferral count prominent. A run that defers most of its findings has
 mis-routed them, and that has to be visible rather than buried.
 
-Make **Not acknowledged** equally prominent. An unanswered thread is work the
-reviewer cannot see, and the usual cause — nothing pushed — needs one command
-from the user to fix.
+Make **Not acknowledged** equally prominent. An unanswered thread is a question
+the reviewer is still waiting on. On a run that pushed, the only entries left
+are genuine gaps — an ambiguous match, a finding with no inline comment — and
+each needs a human. On a run that did not push, the whole list is one push away
+from closing.
+
+And `unlock` runs on every exit path, including a refused or rejected push. A
+run that dies holding the lock blocks the next one for two hours.
 
 `--post-deferred` posts one PR-level comment listing deferrals that had **no
 thread to reply to**. Deferrals with a thread are answered in Step 7.3 instead,
@@ -410,11 +487,15 @@ where the reviewer who raised them is actually looking. Off by default.
 
 ## Deny-list
 
-From `shared/fix-contract.md`, which is the single copy: never `git push`, never
-`gh pr merge`, never force-push, never touch the default branch, never
-`git reset --hard`, never `git rebase`, never `--amend` a pushed commit, never
-`git stash`, never `--no-verify`. A pre-commit hook rejection is a finding to
-report, not an obstacle to route around.
+From `shared/fix-contract.md`, which is the single copy: never `gh pr merge`,
+never force-push, never touch the default branch, never `git reset --hard`,
+never `git rebase`, never `--amend` a pushed commit, never `git stash`, never
+`--no-verify`. A pre-commit hook rejection is a finding to report, not an
+obstacle to route around.
+
+The one permitted `git push` is Step 6.5's: fast-forward, to the PR's own head
+branch on `origin`, from a green tree. Every other push — a different branch, a
+fork remote, a force, a push to recover from a rejection — stays forbidden.
 
 On GitHub, Step 7 is the whole permitted surface: reply in a review thread, and
 resolve a thread whose commit is on the remote. Never resolve a thread this run
@@ -434,9 +515,10 @@ paths>` to discard a dead run's in-flight edits after the user confirms (Step
   directory layout is hardcoded.
 - Resumable. State lives in the ledger, outside the repository, so it survives
   compaction, `git clean`, and worktree switches.
-- Idempotent. A second run with no new findings makes no commits, replies to
-  nobody twice, and says so.
+- Idempotent. A second run with no new findings makes no commits, pushes
+  nothing, replies to nobody twice, and says so.
 - `monitor-pr` drives this skill for live CI failures and review threads; it
-  keeps the polling and the push. Acknowledgement belongs to whichever of the two
-  can see the commit on the remote — under `monitor-pr` that is always
-  `monitor-pr`, because it calls this skill before pushing.
+  keeps the polling and the push, and passes `--no-push` to say so.
+  Acknowledgement belongs to whichever of the two can see the commit on the
+  remote — under `monitor-pr` that is always `monitor-pr`, because `--no-push`
+  leaves this skill's commits local.

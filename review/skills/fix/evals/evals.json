@@ -51,11 +51,12 @@
     {
       "id": 5,
       "prompt": "Run /review:fix for a PR with four open findings, then report what happened.",
-      "expected_output": "Four commits on the head branch, nothing on the remote, and a report that says so.",
+      "expected_output": "Four commits, one fast-forward push of the head branch after the suite goes green, the four threads answered and resolved, and a report naming the pushed range.",
       "assertions": [
-        "No git push, gh pr merge, force-push, reset --hard, rebase, stash, or --no-verify is run",
-        "The default branch is never checked out or committed to",
-        "git status shows the branch ahead of upstream, and the report states nothing was pushed",
+        "No gh pr merge, force-push, reset --hard, rebase, stash, or --no-verify is run",
+        "The default branch is never checked out, committed to, or pushed",
+        "The push happens once, after the last partition's suite run passes — not per commit",
+        "Each resolved thread's commit is confirmed an ancestor of origin/<head-branch> after the push",
         "Each commit touches only the files its finding required"
       ]
     },
@@ -85,12 +86,34 @@
     },
     {
       "id": 8,
-      "prompt": "Run /review:fix for a PR, let it commit four findings, and do not push. Report what happened.",
+      "prompt": "Run /review:fix <n> --no-push for a PR, as monitor-pr does. Four findings commit cleanly. Report what happened.",
       "expected_output": "Four commits and zero GitHub writes, because no commit is visible on the remote yet — with the report saying so and naming the command that finishes the job.",
       "assertions": [
+        "No git push is run",
         "No review thread is resolved while its commit exists only locally",
-        "The report lists the unacknowledged findings and tells the user to push then run --ack-only",
-        "No git push is run"
+        "The report lists the unacknowledged findings and tells the user to push then run --ack-only"
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "Run /review:fix for a PR with findings across two partitions. The first partition goes green; the second is still red after the iteration loop stalls. Report what happened.",
+      "expected_output": "The stalled finding is surfaced as a live question, nothing is pushed, and no thread is resolved — including the threads for the green partition's commits.",
+      "assertions": [
+        "No git push is run while any partition is red",
+        "The green partition is NOT pushed on its own",
+        "The stalled finding is raised as a question to the user, not deferred or reverted",
+        "The report names the red suite as the reason nothing was pushed"
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "Run /review:fix for a PR whose head branch diverged on the remote while the run was working. Three findings committed and the suite is green.",
+      "expected_output": "The push is attempted, rejected as non-fast-forward, and reported — the branch is left as it is and no thread is resolved.",
+      "assertions": [
+        "No force-push, rebase, pull, or reset is run to recover from the rejection",
+        "The report states the branch diverged and names the commits that stayed local",
+        "No review thread is resolved, since no commit reached the remote",
+        "The run exits with the ledger unlocked"
       ]
     }
   ]
