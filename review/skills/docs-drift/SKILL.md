@@ -49,6 +49,13 @@ in `assets/docs-drift.output.json` verbatim as the shape. Findings that map to
 a specific doc line carry `path` + `line` so the orchestrator posts them
 inline; cross-file/architectural findings omit both and go in the section body.
 
+A stale line you can rewrite outright also carries `suggested_change` — the
+corrected text for lines `start_line`..`line`, which posts as a committable
+GitHub suggestion. `doc_says` already quotes the line verbatim, so a
+stale-comment, env-mismatch or adr-index finding usually qualifies. A
+rendered-lag finding never does: the fix is regenerating the artifact, not
+patching the rendered line.
+
 Build the JSON with `jq -n` and `--arg`/`--argjson` so doc text is escaped —
 never heredoc untrusted strings.
 

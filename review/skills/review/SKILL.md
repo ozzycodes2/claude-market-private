@@ -142,10 +142,11 @@ You are a bug hunter. Find bugs that will crash production or create security vu
 - **Clean Code (blocking):** silent catch / swallowed errors, shared mutable globals, or craft issues that hit correctness/invariants — emit as critical/high, not nits, **regardless of module reach**. Blast radius sets critical-vs-high, not blocking-vs-not. Name the resolving refactoring (Fowler/Kerievsky) in `suggestion`. Style-only with no domain-language conflict → omit or nitpick.
 
 ## Output
-Return a JSON array of findings, each: {"severity":"critical|high|medium","label":"issue|suggestion|nitpick|question|thought|praise","decoration":"blocking|non-blocking|if-minor","path":"exact/path","line":N,"title":"5-10 words","body":"explanation with lifecycle/data-flow trace","suggestion":"concrete fix"}.
+Return a JSON array of findings, each: {"severity":"critical|high|medium","label":"issue|suggestion|nitpick|question|thought|praise","decoration":"blocking|non-blocking|if-minor","path":"exact/path","line":N,"title":"5-10 words","body":"explanation with lifecycle/data-flow trace","suggestion":"concrete fix","suggested_change":"exact replacement for lines start_line..line"}.
 - `severity`: `critical` (crashes/security), `high` (fix soon), `medium` (fix later).
 - `label`/`decoration` optional — omit for severity defaults (`critical`/`high` → `issue (blocking)`, `medium` → `suggestion (non-blocking)`).
 - `path`/`line` required when mapped to diff (`line` = NEW-file line); add `start_line` for a multi-line range. Omit both for general findings.
+- `suggested_change` posts as a GitHub suggested change — one click commits it to the branch. Emit it only when **every** condition holds: the fix is confined to the commented lines (no new import, no second call site, no cross-file edit); you can reproduce every line from `start_line` through `line` verbatim, indentation included, from the diff you were given; the whole range is inside the diff; and it is under ~10 lines. Otherwise omit it. It is the file's new text for that range — never a fragment, a `...` elision, or a diff with `+`/`-` markers. Always set `suggestion` as well; it is what the author reads when the range cannot be anchored.
 - Wrap code refs in backticks; keep `body` to 1–2 terse sentences.
 - After the JSON, add a 1-2 sentence summary. Focus on crashes and vulnerabilities, not style.
 
@@ -272,6 +273,19 @@ Set `review_metadata.model` to your model ID. Note bug-finder pass models in Cod
 
 Formatter applies `<label> [decoration]: <subject>`. Finding fields match bug-finder schema. Severity defaults per `shared/severity-rubric.md`. **Clean Code and category 4 design quality → blocking regardless of module reach.**
 
+### Suggested changes
+
+Carry each finding's `suggested_change` through to the section `findings` array
+verbatim — the formatter renders it as a committable inline suggestion and drops
+the prose remedy for that comment. QR, security and docs passes use the same
+field; where one reports only prose (`fix`, `remedy`) and the diff gives you the
+exact replacement for the mapped range, write `suggested_change` yourself under
+the Bug-Finder Prompt's conditions. Where it does not, leave prose.
+
+Do not invent the replacement from the finding's description. The author commits
+it with one click, so a suggestion reconstructed from memory lands as a broken
+commit under your name.
+
 ### Formatting rules
 
 - Code refs in backticks; bullets not paragraphs; lead with takeaway.
@@ -393,6 +407,8 @@ View full review: <PR_URL>
 - bug-finder fails → omit Code Review section; recommend manual review
 - a QR pass fails → omit that section; continue
 - both analyze and bug-finder fail → do not post incomplete review
+- GitHub rejects the review (422) → the formatter re-posts suggested changes as
+  prose, then without inline comments at all; nothing to do by hand
 - post fails → dry-run + save JSON under `$OUTPUT_DIR`
 
 ## Notes
@@ -401,6 +417,7 @@ View full review: <PR_URL>
 - Model-diverse 2-pass bug-finder (opus+sonnet) + risk-gated QR skills (`domain-architecture`, `data-contracts`, `ops-reliability`, `change-evolution`) + security-scan + docs-drift
 - Each pass owns its anti-pattern slice at `skills/<pass>/references/anti-patterns.md`, so it can address no other
 - Clean Code and category 4 design-quality findings are **blockers regardless of module reach**; blast radius sets severity only. Each names its resolving refactoring
+- A finding whose fix is mechanical and confined to the lines it flags posts as a committable GitHub suggestion, not a prose remedy in the body
 - Test execution/coverage left to CI
 - Never auto-approves/merges
 - Cost: higher when QR passes gate on; still prefer gated runs over always-on four extras

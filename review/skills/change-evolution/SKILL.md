@@ -31,11 +31,18 @@ Writes `$OUTPUT_DIR/change-evolution-<PR_NUMBER>.json`:
       "line": 42,
       "title": "5-10 words",
       "body": "explanation",
-      "suggestion": "concrete fix"
+      "suggestion": "concrete fix",
+      "suggested_change": "exact replacement for lines start_line..line, or omit"
     }
   ]
 }
 ```
+
+`suggested_change` posts as a committable GitHub suggestion. Emit it only
+when the fix is confined to the commented lines, you can reproduce the range
+verbatim from the diff, and it runs under ~10 lines; otherwise leave the prose
+`suggestion` alone. Most findings in this pass are design-level and will not
+qualify.
 
 ## Step 0: Parse arguments
 

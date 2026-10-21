@@ -20,10 +20,12 @@
       "doc_says": "verbatim quote of the drifted doc line",
       "code_says": "the contradicting code location (path:line or symbol) or 'removed by <sha>'",
       "body": "one-paragraph explanation tying the doc claim to the code fact",
-      "fix": "concrete correction (or 'regenerate <artifact>' for rendered lag)"
+      "fix": "concrete correction (or 'regenerate <artifact>' for rendered lag)",
+      "suggested_change": "corrected text for lines start_line..line, or omit"
     }
   ],
   "notes": [
-    "Findings with path+line are posted inline; omit both for cross-file/architectural drift."
+    "Findings with path+line are posted inline; omit both for cross-file/architectural drift.",
+    "suggested_change posts as a committable suggestion: emit it only when the corrected line text is exact."
   ]
 }

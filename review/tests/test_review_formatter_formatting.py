@@ -6,7 +6,9 @@ with:
 
     python3 -m unittest discover review/tests
 """
+import contextlib
 import importlib.util
+import io
 import unittest
 from pathlib import Path
 
@@ -19,6 +21,8 @@ ReviewFormatter = review_formatter.ReviewFormatter
 DEFAULT_SECTION_ICON = review_formatter.DEFAULT_SECTION_ICON
 conventional_prefix = review_formatter.conventional_prefix
 emojify_summary = review_formatter.emojify_summary
+suggestion_fence = review_formatter.suggestion_fence
+has_suggested_change = review_formatter.has_suggested_change
 
 
 def _section(title, **extra):
@@ -261,6 +265,195 @@ class AllFindingsConventionalTest(unittest.TestCase):
             ":yellow_circle: **suggestion (non-blocking):** Extract helper `MEDIUM` (`a.py:4`)",
             rendered,
         )
+
+
+class SuggestionFenceTest(unittest.TestCase):
+    def test_wraps_replacement_in_a_suggestion_fence(self):
+        self.assertEqual(
+            suggestion_fence("    return None"),
+            "```suggestion\n    return None\n```",
+        )
+
+    def test_trailing_newlines_are_dropped(self):
+        """A trailing blank line would commit as an extra line."""
+        self.assertEqual(suggestion_fence("x = 1\n\n"), "```suggestion\nx = 1\n```")
+
+    def test_multi_line_replacement_keeps_its_lines(self):
+        got = suggestion_fence("if x is None:\n    return\n")
+        self.assertEqual(got, "```suggestion\nif x is None:\n    return\n```")
+
+    def test_fence_widens_past_backticks_in_the_replacement(self):
+        got = suggestion_fence("Run ```make test``` first")
+        self.assertTrue(got.startswith("````suggestion\n"))
+        self.assertTrue(got.endswith("\n````"))
+
+    def test_has_suggested_change_requires_non_blank_text(self):
+        self.assertTrue(has_suggested_change({"suggested_change": "x = 1"}))
+        for value in ("", "   ", None, 42, ["x = 1"]):
+            self.assertFalse(has_suggested_change({"suggested_change": value}))
+        self.assertFalse(has_suggested_change({}))
+
+
+class InlineSuggestionBodyTest(unittest.TestCase):
+    def setUp(self):
+        self.f = ReviewFormatter({})
+        self.finding = {
+            "severity": "high", "title": "Unclosed cursor", "body": "leaks on raise",
+            "suggestion": "wrap in a context manager",
+            "suggested_change": "    with conn.cursor() as cur:",
+        }
+
+    def test_fence_replaces_the_prose_remedy(self):
+        body = self.f._format_inline_body(self.finding)
+        self.assertIn("```suggestion\n    with conn.cursor() as cur:\n```", body)
+        self.assertNotIn("**Suggestion:**", body)
+
+    def test_fence_is_not_nested_in_the_severity_alert_quote(self):
+        """A fence inside a blockquote renders as text, with no Apply button."""
+        body = self.f._format_inline_body(self.finding)
+        for line in body.splitlines():
+            if line.startswith(">"):
+                self.assertNotIn("suggestion", line)
+
+    def test_prose_remedy_returns_when_suggestions_are_off(self):
+        body = self.f._format_inline_body(self.finding, suggest=False)
+        self.assertIn("**Suggestion:** wrap in a context manager", body)
+        self.assertNotIn("```suggestion", body)
+
+    def test_explanation_survives_alongside_the_fence(self):
+        self.assertIn("leaks on raise", self.f._format_inline_body(self.finding))
+
+
+class InlineSuggestionAnchorTest(unittest.TestCase):
+    """A suggested change needs a line anchor; everything else keeps position."""
+
+    DIFF_MAP = {("a.py", 4): 7, ("a.py", 5): 8, ("a.py", 6): 9}
+
+    def _formatter(self, **finding):
+        base = {"path": "a.py", "line": 6, "severity": "medium", "title": "t"}
+        return ReviewFormatter({"sections": [{"findings": [{**base, **finding}]}]})
+
+    def test_suggestion_anchors_on_line_and_right_side(self):
+        f = self._formatter(suggested_change="x = 1")
+        comment, = f.extract_inline_comments(diff_map=self.DIFF_MAP)
+        self.assertEqual(comment["line"], 6)
+        self.assertEqual(comment["side"], "RIGHT")
+        self.assertNotIn("position", comment)
+        self.assertEqual(f._suggestion_count, 1)
+
+    def test_multi_line_range_inside_the_diff_anchors_both_ends(self):
+        comment, = self._formatter(
+            start_line=4, suggested_change="x = 1\ny = 2\nz = 3"
+        ).extract_inline_comments(diff_map=self.DIFF_MAP)
+        self.assertEqual((comment["start_line"], comment["line"]), (4, 6))
+        self.assertEqual(comment["start_side"], "RIGHT")
+
+    def test_range_reaching_outside_the_diff_falls_back_to_prose(self):
+        comment, = self._formatter(
+            start_line=2, suggestion="do it by hand", suggested_change="x = 1",
+        ).extract_inline_comments(diff_map=self.DIFF_MAP)
+        self.assertEqual(comment["position"], 9)
+        self.assertNotIn("line", comment)
+        self.assertIn("**Suggestion:** do it by hand", comment["body"])
+
+    def test_line_outside_the_diff_stays_body_only(self):
+        f = self._formatter(line=99, suggested_change="x = 1")
+        self.assertEqual(f.extract_inline_comments(diff_map=self.DIFF_MAP), [])
+        self.assertEqual(f._filtered_inline_count, 1)
+
+    def test_findings_without_a_suggestion_keep_the_position_anchor(self):
+        comment, = self._formatter(suggestion="prose only").extract_inline_comments(
+            diff_map=self.DIFF_MAP
+        )
+        self.assertEqual(comment, {
+            "path": "a.py", "position": 9,
+            "body": comment["body"],
+        })
+
+    def test_allow_suggestions_false_reverts_to_position(self):
+        f = self._formatter(suggested_change="x = 1")
+        comment, = f.extract_inline_comments(
+            diff_map=self.DIFF_MAP, allow_suggestions=False
+        )
+        self.assertEqual(comment["position"], 9)
+        self.assertNotIn("```suggestion", comment["body"])
+        self.assertEqual(f._suggestion_count, 0)
+
+    def test_without_a_diff_map_the_fence_still_renders(self):
+        """--dry-run has no diff; the suggestion must still be previewable."""
+        comment, = self._formatter(
+            start_line=4, suggested_change="x = 1"
+        ).extract_inline_comments()
+        self.assertEqual((comment["start_line"], comment["line"]), (4, 6))
+        self.assertIn("```suggestion", comment["body"])
+
+    def test_unusable_start_line_is_dropped(self):
+        for start in ("nope", None, 6, 9, 0):
+            comment, = self._formatter(
+                start_line=start, suggested_change="x = 1"
+            ).extract_inline_comments(diff_map=self.DIFF_MAP)
+            self.assertNotIn("start_line", comment)
+
+    def test_string_start_line_is_coerced(self):
+        comment, = self._formatter(
+            start_line="4", suggested_change="x = 1"
+        ).extract_inline_comments(diff_map=self.DIFF_MAP)
+        self.assertEqual(comment["start_line"], 4)
+
+
+class RetryAfter422Test(unittest.TestCase):
+    """One bad anchor costs the whole review, so shed the least first."""
+
+    DIFF_MAP = {("a.py", 6): 9}
+
+    def setUp(self):
+        self.f = ReviewFormatter({"sections": [{"findings": [
+            {"path": "a.py", "line": 6, "severity": "medium", "title": "t",
+             "suggestion": "prose", "suggested_change": "x = 1"},
+        ]}]})
+        self.posted = []
+
+    def _post(self, reject_rounds):
+        def fake(owner, repo, number, payload):
+            self.posted.append(payload)
+            if len(self.posted) <= reject_rounds:
+                raise RuntimeError("gh api failed: HTTP 422")
+            return {"id": len(self.posted)}
+        self.f._post_review = fake
+
+    def test_suggestions_are_shed_before_inline_comments(self):
+        self.f.extract_inline_comments(diff_map=self.DIFF_MAP)  # seeds the count
+        self._post(reject_rounds=0)
+        with contextlib.redirect_stderr(io.StringIO()) as err:
+            self.f._retry_after_422("o", "r", 1, self.DIFF_MAP)
+        retry, = self.posted
+        self.assertIn("comments", retry)
+        self.assertNotIn("```suggestion", retry["comments"][0]["body"])
+        self.assertIn("1 suggested change(s) as prose", err.getvalue())
+
+    def test_inline_comments_go_only_after_the_prose_retry_also_fails(self):
+        self.f.extract_inline_comments(diff_map=self.DIFF_MAP)
+        self._post(reject_rounds=1)
+        self.f._retry_after_422("o", "r", 1, self.DIFF_MAP)
+        self.assertEqual(len(self.posted), 2)
+        self.assertNotIn("comments", self.posted[-1])
+
+    def test_a_review_with_no_suggestions_drops_comments_outright(self):
+        self.f.sections[0]["findings"][0].pop("suggested_change")
+        self.f.extract_inline_comments(diff_map=self.DIFF_MAP)
+        self._post(reject_rounds=0)
+        self.f._retry_after_422("o", "r", 1, self.DIFF_MAP)
+        retry, = self.posted
+        self.assertNotIn("comments", retry)
+
+    def test_a_non_422_failure_on_retry_propagates(self):
+        self.f.extract_inline_comments(diff_map=self.DIFF_MAP)
+
+        def fake(owner, repo, number, payload):
+            raise RuntimeError("gh api failed: HTTP 500")
+        self.f._post_review = fake
+        with self.assertRaises(RuntimeError):
+            self.f._retry_after_422("o", "r", 1, self.DIFF_MAP)
 
 
 if __name__ == "__main__":

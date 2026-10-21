@@ -148,6 +148,27 @@ def conventional_prefix(finding: dict) -> str:
     return f"{label} ({decoration})" if decoration else label
 
 
+def suggestion_fence(replacement: str) -> str:
+    """Wrap replacement text in a GitHub suggested-change block.
+
+    GitHub renders an *Apply suggestion* button for a ```suggestion fence in an
+    inline review comment, committing the fenced text over the comment's line
+    range. The fence is widened past the longest backtick run in the
+    replacement, so suggesting a line that itself contains a fence (Markdown,
+    docstrings) does not terminate the block early.
+    """
+    text = replacement.rstrip("\n")
+    longest = max((len(run) for run in re.findall(r"`+", text)), default=0)
+    fence = "`" * max(3, longest + 1)
+    return f"{fence}suggestion\n{text}\n{fence}"
+
+
+def has_suggested_change(finding: dict) -> bool:
+    """Whether a finding carries a committable replacement, not just prose."""
+    replacement = finding.get("suggested_change")
+    return isinstance(replacement, str) and replacement.strip() != ""
+
+
 _DECORATION_ICONS = {
     "blocking": ":no_entry:",
     "non-blocking": ":speech_balloon:",
@@ -1094,20 +1115,28 @@ class ReviewFormatter:
                 lines.append(f"  **Suggestion:** {f['suggestion']}")
         return "\n".join(lines)
 
-    def extract_inline_comments(self, diff_map: dict | None = None) -> list[dict]:
+    def extract_inline_comments(
+        self, diff_map: dict | None = None, allow_suggestions: bool = True
+    ) -> list[dict]:
         """Extract inline comments from findings.
 
         If diff_map is provided, only include findings whose (path, line) appears
         in the diff, and use the diff hunk position instead of the source line.
         diff_map format: {(path, source_line): position}
 
-        Note: when diff_map is used, ``side`` and ``start_line`` fields are
+        A finding carrying a ``suggested_change`` is anchored with ``line`` /
+        ``start_line`` instead, because a suggested change commits over an exact
+        line range and the position offset cannot name one. Findings whose range
+        is not wholly inside the diff fall back to a position anchor and their
+        prose remedy — an unapplicable suggestion is worse than none.
+
+        Note: on the position anchor, ``side`` and ``start_line`` are
         intentionally omitted because position-based comments encode the diff
-        side implicitly.  Multi-line ranges (start_line) are not supported in
-        position mode by the GitHub Review API.
+        side implicitly.
         """
         comments = []
         self._filtered_inline_count = 0
+        self._suggestion_count = 0
         for section in self.sections:
             for finding in section.get("findings", []):
                 path = finding.get("path")
@@ -1118,23 +1147,51 @@ class ReviewFormatter:
                     line_int = int(line)
                 except (ValueError, TypeError):
                     continue
+                suggest = allow_suggestions and has_suggested_change(finding)
+                start_line = self._start_line(finding, line_int)
                 if diff_map is not None:
-                    position = diff_map.get((path, line_int))
-                    if position is None:
-                        self._filtered_inline_count += 1
-                        continue  # Finding stays in body summary, just not posted inline
-                    comment = {"path": path, "position": position}
+                    anchored = suggest and self._range_in_diff(
+                        diff_map, path, start_line or line_int, line_int
+                    )
+                    if anchored:
+                        comment = {"path": path, "line": line_int, "side": "RIGHT"}
+                        if start_line:
+                            comment["start_line"] = start_line
+                            comment["start_side"] = "RIGHT"
+                    else:
+                        suggest = False
+                        position = diff_map.get((path, line_int))
+                        if position is None:
+                            self._filtered_inline_count += 1
+                            continue  # Finding stays in body summary, just not posted inline
+                        comment = {"path": path, "position": position}
                 else:
                     comment = {"path": path, "line": line_int}
                     if finding.get("side"):
                         comment["side"] = finding["side"]
-                    if finding.get("start_line"):
-                        comment["start_line"] = finding["start_line"]
-                comment["body"] = self._format_inline_body(finding)
+                    if start_line:
+                        comment["start_line"] = start_line
+                if suggest:
+                    self._suggestion_count += 1
+                comment["body"] = self._format_inline_body(finding, suggest=suggest)
                 comments.append(comment)
         return comments
 
-    def _format_inline_body(self, finding: dict) -> str:
+    @staticmethod
+    def _start_line(finding: dict, line_int: int) -> int | None:
+        """Normalize ``start_line`` to an int below ``line``, else None."""
+        try:
+            start = int(finding.get("start_line"))
+        except (ValueError, TypeError):
+            return None
+        return start if 0 < start < line_int else None
+
+    @staticmethod
+    def _range_in_diff(diff_map: dict, path: str, start: int, end: int) -> bool:
+        """Whether every line in start..end is on the diff's right side."""
+        return all((path, n) in diff_map for n in range(start, end + 1))
+
+    def _format_inline_body(self, finding: dict, suggest: bool = True) -> str:
         # Conventional Comments header: `**label (decoration):** subject`, with
         # the severity kept as a trailing badge for at-a-glance triage.
         sev_key = finding.get("severity", "")
@@ -1156,12 +1213,19 @@ class ReviewFormatter:
         if body_text:
             lines.append("")
             lines.append(body_text)
-        if finding.get("suggestion"):
+        if suggest and has_suggested_change(finding):
+            # The fence carries the fix, so the prose remedy would only repeat
+            # it. It stays in the body summary for findings posted there.
+            lines.append("")
+            lines.append(suggestion_fence(finding["suggested_change"]))
+        elif finding.get("suggestion"):
             lines.append("")
             lines.append(f"**Suggestion:** {finding['suggestion']}")
         return "\n".join(lines)
 
-    def build_api_payload(self, diff_map: dict | None = None) -> dict:
+    def build_api_payload(
+        self, diff_map: dict | None = None, allow_suggestions: bool = True
+    ) -> dict:
         event = EVENT_MAP.get(self.recommendation, "COMMENT")
         # GitHub rejects APPROVE / REQUEST_CHANGES review *events* on the
         # author's own PR with HTTP 422 ("Can not request changes on your own
@@ -1176,7 +1240,9 @@ class ReviewFormatter:
             "body": self.format_body(),
             "event": event,
         }
-        comments = self.extract_inline_comments(diff_map=diff_map)
+        comments = self.extract_inline_comments(
+            diff_map=diff_map, allow_suggestions=allow_suggestions
+        )
         if comments:
             payload["comments"] = comments
         return payload
@@ -1241,6 +1307,36 @@ class ReviewFormatter:
         if result.returncode != 0:
             raise RuntimeError(f"gh api failed: {result.stderr}")
         return json.loads(result.stdout)
+
+    def _retry_after_422(
+        self, owner: str, repo: str, number: int, diff_map: dict | None
+    ) -> dict:
+        """Re-post a rejected review, shedding the least first.
+
+        GitHub rejects a whole review when one comment is invalid, so a single
+        bad anchor costs every inline comment. Suggested changes carry the
+        fragile anchor — a line range GitHub rejects outright once a newer
+        commit moves it — so shed those first and keep the comments. Only if
+        that is also rejected do the comments go, stranding every finding in
+        the body.
+        """
+        n_suggestions = getattr(self, "_suggestion_count", 0)
+        if n_suggestions:
+            # Rebuilding resets the count, so report the shed total, not the new one.
+            retry = self.build_api_payload(diff_map=diff_map, allow_suggestions=False)
+            print(f"[review_formatter] Review failed (422). Retrying with "
+                  f"{n_suggestions} suggested change(s) as prose.", file=sys.stderr)
+            try:
+                return self._post_review(owner, repo, number, retry)
+            except RuntimeError as exc:
+                if "422" not in str(exc):
+                    raise
+        else:
+            retry = self.build_api_payload(diff_map=diff_map)
+        n_dropped = len(retry.pop("comments", []))
+        print(f"[review_formatter] Inline comments failed (422). "
+              f"Retrying without {n_dropped} inline comment(s).", file=sys.stderr)
+        return self._post_review(owner, repo, number, retry)
 
     def apply_labels(self) -> bool:
         """Apply APPROVED/BLOCKED labels based on recommendation.
@@ -1313,11 +1409,7 @@ class ReviewFormatter:
         except RuntimeError as exc:
             if "422" not in str(exc) or "comments" not in payload:
                 raise
-            n_dropped = len(payload["comments"])
-            print(f"[review_formatter] Inline comments failed (422). "
-                  f"Retrying without {n_dropped} inline comment(s).", file=sys.stderr)
-            del payload["comments"]
-            response = self._post_review(owner, repo, number, payload)
+            response = self._retry_after_422(owner, repo, number, diff_map)
 
         # Apply labels regardless of review event (works even for self-reviews)
         if apply_labels:
