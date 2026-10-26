@@ -13,7 +13,6 @@ import {
   spinnerRow,
   terminalCard,
   toolRow,
-  usageBand,
 } from './rows'
 import type { Look } from './rows'
 import { codeRows } from './code-rows'
@@ -100,11 +99,6 @@ export function galleryPane(look: Look, columns: number) {
             desktopSpinnerRow(look, svg, 'responding', 'Writing the reply'),
             desktopSpinnerRow(look, svg, 'requesting', 'Waiting for the model'),
           )}
-      {section(
-        'Band above the prompt: normal, then nudging to compact',
-        usageBand(look, [{ label: 'context', percent: 42 }, { label: '5h', percent: 18 }], look.prefs.compact, () => undefined),
-        usageBand(look, [{ label: 'context', percent: 85 }, { label: '5h', percent: 61 }], look.prefs.compact, () => undefined),
-      )}
       {section('Band above a question', askBand(look, ['Approach', 'Store']))}
       {section('Turn footer (terminal)', footerRow(look, look.skin.done[0] ?? 'Done', 41_000, { tools: 6, added: 18, removed: 3 }))}
     </Box>

@@ -11,7 +11,6 @@ import { CONTROL_SLOT, fitText, measure as measureAt, settled } from '../hooks/s
 import { diffLines, diffSvg, hunksOf } from '../hooks/svg-diff'
 import { fitColumns, kindOfCell, measure, tableSvg, wrapCell } from '../hooks/svg-table'
 import { outputLines, shellOutputOf, terminalSvg } from '../hooks/svg-terminal'
-import { countdownOf, countdownsOf, limitLabel, meterColor, metersKey, metersOf, usageSvg } from '../hooks/svg-usage'
 import { deepen, forTheme, gnomeDark, isLightTheme, macDark, resolveLight, toLight, windowsDark } from '../hooks/light'
 import { parseFolders, prefsFor, withFolder, withoutFolder } from '../hooks/folders'
 import { kindOf, summarize, toolLabel } from '../hooks/tools'
@@ -286,17 +285,6 @@ test('expand opens every tool group, is off by default, and anything but a boole
   expect(runSkinCommand('list', { ...DEFAULT_PREFS, expand: true }, NAMES).message).toMatch(/\| expand +\| on +\|/)
 })
 
-test('compact keeps the band’s Compact button by default, and anything but a boolean stored reads as on', async () => {
-  expect(DEFAULT_PREFS.compact).toBe(true)
-  expect(parsePrefs({ compact: false }, NAMES).compact).toBe(false)
-  expect(parsePrefs({ compact: 'no' }, NAMES).compact).toBe(true)
-  expect(parsePrefs({}, NAMES).compact).toBe(true)
-  expect(runSkinCommand('compact off', DEFAULT_PREFS, NAMES).prefs.compact).toBe(false)
-  expect(runSkinCommand('compact on', { ...DEFAULT_PREFS, compact: false }, NAMES).prefs.compact).toBe(true)
-  expect(runSkinCommand('compact maybe', DEFAULT_PREFS, NAMES).message).toBe('usage: /skin compact on|off')
-  expect(runSkinCommand('list', { ...DEFAULT_PREFS, compact: false }, NAMES).message).toMatch(/\| compact +\| off +\|/)
-})
-
 test('cells are read as colours, diffs, numbers, code or text', async () => {
   expect(kindOfCell('#7aa2f7')).toBe('colour')
   expect(kindOfCell('+18 −3')).toBe('diff')
@@ -371,29 +359,6 @@ test('code is split into comments, strings, numbers and keywords by language', a
   ])
   expect(tokenize('x = 1  # note', 'python').at(-1)).toEqual({ text: '# note', role: 'comment' })
   expect(codeSvg('a\nb', 'ts', tokyoNight.palette, 600).source).toContain('TS')
-})
-
-test('plan limits read as 5h and 7d, and a meter warns as it fills', async () => {
-  expect(limitLabel('five_hour')).toBe('5h')
-  expect(limitLabel('seven_day')).toBe('7d')
-  expect(metersOf({ context: 42.4, limits: [{ label: '5h', percent: 120 }] })).toEqual([
-    { label: 'context', percent: 42 },
-    { label: '5h', percent: 100 },
-  ])
-  expect(meterColor(85, tokyoNight.palette)).toBe(tokyoNight.palette.warn)
-  expect(usageSvg([{ label: 'context', percent: 42 }], tokyoNight.palette).alt).toBe('context 42%')
-})
-
-test('a countdown reads to the minute, rounding up, and only for the limits that reset', async () => {
-  const minutes = (n: number) => n * 60_000
-
-  expect(countdownOf(minutes(3 * 1440 + 4 * 60 + 30))).toBe('3d4h')
-  expect(countdownOf(minutes(65))).toBe('1h05')
-  expect(countdownOf(minutes(11) + 1)).toBe('12m')
-  expect(countdownOf(0)).toBe('now')
-  expect(countdownOf(-5000)).toBe('now')
-  expect(countdownsOf({ context: 10, limits: [{ label: '5h', percent: 1, resetsAt: minutes(100) }, { label: '7d', percent: 2 }] }, 0)).toEqual({ '5h': '1h40' })
-  expect(metersKey(metersOf({ context: null, limits: [{ label: '5h', percent: 1 }] }, { '5h': '1h40' }))).toBe(metersKey(metersOf({ context: null, limits: [{ label: '5h', percent: 1 }] })))
 })
 
 test('a long cell wraps on its words, breaks a word too long for the column, and caps its lines', async () => {
@@ -1230,20 +1195,12 @@ test('a card says when its entrance ends, and no entrance lasts past a second', 
     diff100: diff(100),
     shell0: shell(0),
     shell100: shell(100),
-    usage: usageSvg([{ label: 'context', percent: 42 }], tokyoNight.palette),
   }
 
   for (const [name, card] of Object.entries(cards)) {
     expect(card.entranceMs, `${name} settles only after its last animation ends`).toBeGreaterThanOrEqual(animationEndsMs(card.source))
     expect(card.entranceMs, `${name} entrance stays short`).toBeLessThanOrEqual(1000)
   }
-})
-
-test('a settled usage band keeps its rings full and still', async () => {
-  const source = settled(usageSvg([{ label: 'context', percent: 42 }], tokyoNight.palette).source)
-
-  expect(source).toContain('class="fill"')
-  expect(source).toContain('.fill{animation:none!important')
 })
 
 test('calm saves what it changes and calm off puts exactly that back', () => {

@@ -71,7 +71,12 @@ const runSkin = ($: Engine, args: string) =>
 
 // The engine's own answers, so a hook can mount without a session. A test answering
 // the environment or the store itself leaves them out.
-function stubEngine(on: On, own: { env?: boolean; store?: boolean; toast?: boolean; usage?: boolean; log?: boolean } = {}) {
+type Found = { find: (query: { type: string }) => Promise<unknown> }
+
+// The skin insets everything it draws in one Box; the drawing is that Box's only child.
+const drawing = async (ui: Found): Promise<unknown> => ((await ui.find({ type: 'Box' })) as { children?: readonly unknown[] } | undefined)?.children?.[0]
+
+function stubEngine(on: On, own: { env?: boolean; store?: boolean; toast?: boolean; log?: boolean } = {}) {
   const clock = mock.clock(on, { now: 10_000 })
   on('session.cwd', () => ({ value: '/work' }))
   if (!own.env) {
@@ -88,9 +93,6 @@ function stubEngine(on: On, own: { env?: boolean; store?: boolean; toast?: boole
   if (!own.log) {
     on('ui.log', () => ({ value: undefined }))
   }
-  if (!own.usage) {
-    on('session.usage', () => ({ value: { startedAt: 0, context: { window: 200000, percent: 42 }, rateLimits: [{ kind: 'five_hour', percentUsed: 18 }] } }))
-  }
   // The dialog must hold Claude Code's own drawing, which a real engine hands back by reference.
   on('ui.render', ($, e) => (e.component === 'AskUserQuestion' ? { type: 'engine', ref: 0 } : STOCK))
 
@@ -106,7 +108,7 @@ async function startDesktop($: Engine, on: On) {
   await $.session.start({ surface: 'desktop', isInteractive: true, cwd: '/work' })
 }
 
-// Every drawing in the mount: the usage band draws one per meter.
+// Every drawing in the mount, joined.
 const svgSource = async (ui: { findAll: (q: { type: string }) => Promise<unknown> }) =>
   ((await ui.findAll({ type: 'Svg' })) as { props: { source: string } }[]).map(el => el.props.source).join('')
 
@@ -150,7 +152,6 @@ const COUNTDOWN: Plugin = {
 
       return started
     })
-    on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => next(e))
     on('ui.render', { component: 'Pane' }, async ($, e, next) => next(e))
   },
 }
@@ -329,7 +330,7 @@ test('a typed prompt sits in an outline sized to its text, other senders keep th
     ({ ...SITE, surface: 'terminal', component: 'UserMessage', requestId: 'm1', props: { text: 'fix the build', origin: { kind }, isExpanded: false } }) as const
 
   const typed = await $.ui.mount(prompt('composer'))
-  const column = (await typed.find({ type: 'Box' })) as { props: { alignItems?: string }; children?: readonly { props?: { borderStyle?: string } }[] } | undefined
+  const column = (await drawing(typed)) as { props: { alignItems?: string }; children?: readonly { props?: { borderStyle?: string } }[] } | undefined
   // The outline hugs the text: its column does not stretch it to the full width.
   expect(column?.props.alignItems).toBe('flex-start')
   expect(column?.children?.[0]?.props?.borderStyle).toBe('round')
@@ -368,7 +369,7 @@ test('/skin prompt right moves the outline to the right, and the settings pane m
   stubEngine(on)
   const alignOf = async () => {
     const typed = await $.ui.mount({ ...SITE, surface: 'terminal', component: 'UserMessage', requestId: 'm1', props: { text: 'fix the build', origin: { kind: 'composer' }, isExpanded: false } })
-    const column = (await typed.find({ type: 'Box' })) as { props: { alignItems?: string } } | undefined
+    const column = (await drawing(typed)) as { props: { alignItems?: string } } | undefined
     await typed.unmount()
 
     return column?.props.alignItems
@@ -398,7 +399,7 @@ test('/skin prompt plain draws the prompt without an outline, and the settings p
   expect(await press()).toBe('prompt plain')
 
   const typed = await $.ui.mount({ ...SITE, surface: 'terminal', component: 'UserMessage', requestId: 'm1', props: { text: 'fix the build', origin: { kind: 'composer' }, isExpanded: false } })
-  const column = (await typed.find({ type: 'Box' })) as { props: { alignItems?: string }; children?: readonly { props?: { borderStyle?: string } }[] } | undefined
+  const column = (await drawing(typed)) as { props: { alignItems?: string }; children?: readonly { props?: { borderStyle?: string } }[] } | undefined
   expect(column?.props.alignItems).toBe('flex-start')
   expect(column?.children?.[0]?.props?.borderStyle).toBeUndefined()
   expect(await typed.find({ type: 'Text', text: '▍ ' })).toBeDefined()
@@ -407,6 +408,26 @@ test('/skin prompt plain draws the prompt without an outline, and the settings p
 
   expect(await press()).toBe('prompt left')
   await pane.unmount()
+})
+
+test('a prompt sent with images keeps Claude Code\'s drawing of them under the outline', async ($, on) => {
+  stubEngine(on)
+  on('prompt.submit', ($, e) => ({ text: e.text }))
+  const prompt = (text: string) =>
+    ({ ...SITE, surface: 'terminal', component: 'UserMessage', requestId: 'm1', props: { text, origin: { kind: 'composer' }, isExpanded: false } }) as const
+  const stockRows = async (text: string) => {
+    const row = await $.ui.mount(prompt(text))
+    const stock = await row.find({ type: 'Text', text: 'stock row' })
+    await row.unmount()
+
+    return stock !== undefined
+  }
+
+  expect(await stockRows('look at this'), 'no images: the outline alone').toBe(false)
+
+  await $.prompt.submit({ text: ' look at this ', wait: false, origin: { kind: 'composer' }, attachments: [{ type: 'image' }] } as never)
+  expect(await stockRows('look at this'), 'images: the stock row follows the outline').toBe(true)
+  expect(await stockRows('another prompt'), 'other prompts are unchanged').toBe(false)
 })
 
 test('a reply with a table draws the table, a reply without one keeps its own drawing', async ($, on) => {
@@ -650,7 +671,7 @@ test('a table wider than its share spans the column instead of running off it', 
       props: { text: wide, isFirstOfReply: true },
     })
     type Node = { props?: { width?: unknown; position?: unknown; top?: unknown; borderStyle?: unknown }; children?: readonly Node[] }
-    const reply = (await ui.find({ type: 'Box' })) as Node
+    const reply = (await drawing(ui)) as Node
     const frame = reply.children?.[0]
     // Copy sits on the bordered box's top row, laid over it from the plain Box around it:
     // inside the bordered box, Windows Terminal drew the border over it (#54).
@@ -997,132 +1018,6 @@ test('with charts off, or Mermaid the parser cannot read, the fence keeps its co
   expect(await off.find({ type: 'Svg' })).toBeUndefined()
 })
 
-test('while charts are on, the system prompt tells Claude it can answer with one', async ($, on) => {
-  stubEngine(on)
-  on('prompt.compose', () => ({ sections: [{ id: 'base', text: 'You are Claude.', scope: 'shared' as const }] }))
-
-  const compose = (traits: readonly string[] = []) =>
-    $.prompt.compose({ model: 'm', promptModel: 'm', surfaces: ['terminal'], tools: [], outputStyle: null, traits: traits as never })
-
-  expect((await compose()).sections.map(section => section.id)).toEqual(['base', 'fabric:charts'])
-  expect((await compose(['print'])).sections.map(section => section.id)).toEqual(['base'])
-
-  await runSkin($, 'hints off')
-  expect((await compose()).sections.map(section => section.id)).toEqual(['base'])
-  await runSkin($, 'hints on')
-  await runSkin($, 'charts off')
-  expect((await compose()).sections.map(section => section.id)).toEqual(['base'])
-})
-
-const BAND = (surface: (typeof SURFACES)[number], isWorking: boolean) =>
-  ({
-    ...SITE,
-    surface,
-    component: 'AbovePrompt',
-    requestId: 'band',
-    props: { hasSurvey: false, isWorking, maxRows: 4, bodyColumns: 100, scroll: { offset: 0, bodyRows: 4 }, view: {} },
-  }) as const
-
-test('the band offers Compact, nudges at 70% context, and compacts on a press', async ($, on) => {
-  let compacted = 0
-  const toasts: string[] = []
-  const clock = mock.clock(on, { now: 10_000 })
-  on('session.cwd', () => ({ value: '/work' }))
-  on('store.get', () => ({ value: undefined }))
-  on('ui.toast', ($, e) => {
-    toasts.push(e.text)
-    return { value: undefined }
-  })
-  on('ui.render', () => STOCK)
-  on('command.run', ($, e) => {
-    if (e.command === 'compact') {
-      compacted += 1
-    }
-
-    return {}
-  })
-  on('session.usage', () => ({ value: { startedAt: 0, context: { window: 200000, percent: 85 }, rateLimits: [] } }))
-  on('session.start', () => ({ cwd: '/work' }))
-  on('command.register', () => ({ value: { command: 'skin' } }))
-  on('tool.register', () => ({ value: { tool: 'mcp__fabric__design' } }))
-
-  await $.session.start({ surface: 'desktop', isInteractive: true, cwd: '/work' })
-
-  const band = await $.ui.mount(BAND('desktop', false))
-  expect(await band.find({ type: 'Text', text: 'Context is 85% full' })).toBeDefined()
-  // A digit hotkey reaches it from an empty prompt where the terminal reports no clicks.
-  expect(((await band.find({ key: 'compact' })) as { props: { hotkey?: string } } | undefined)?.props.hotkey).toBe('0')
-  await band.press({ key: 'compact' })
-  // It starts on a timer, outside the press, so the press ending cannot cancel it.
-  expect(compacted).toBe(0)
-  // Hidden until that run ends, so more presses cannot queue more runs.
-  expect(await band.find({ key: 'compact' })).toBeUndefined()
-  await clock.advance(1)
-  expect(compacted).toBe(1)
-  expect(await band.find({ key: 'compact' })).toBeDefined()
-  expect(toasts).toEqual([])
-  await band.unmount()
-
-  const busy = await $.ui.mount(BAND('terminal', true))
-  expect(await busy.find({ key: 'compact' })).toBeUndefined()
-})
-
-// Three meters, the context full enough for the nudge.
-const bandEngine = (on: On) => {
-  stubEngine(on, { usage: true })
-  on('session.usage', () => ({
-    value: {
-      startedAt: 0,
-      context: { window: 200000, percent: 85 },
-      rateLimits: [
-        { kind: 'five_hour', percentUsed: 36 },
-        { kind: 'seven_day', percentUsed: 28 },
-      ],
-    },
-  }))
-}
-
-const spreadsEvenly = async (ui: { findAll: (q: { type: string }) => Promise<unknown> }) =>
-  ((await ui.findAll({ type: 'Box' })) as { props: { justifyContent?: string; flexGrow?: number } }[]).some(
-    el => el.props.justifyContent === 'space-evenly' && el.props.flexGrow === 1,
-  )
-
-test('the band draws each meter on its own, sized to its words, spread evenly beside Compact', async ($, on) => {
-  bandEngine(on)
-  await startDesktop($, on)
-
-  const band = await $.ui.mount(BAND('desktop', false))
-  const meters = (await band.findAll({ type: 'Svg' })) as unknown as { props: { alt: string; width: number } }[]
-  expect(meters.map(el => el.props.alt)).toEqual([expect.stringContaining('context'), expect.stringContaining('5h'), expect.stringContaining('7d')])
-  // Each as wide as its ring and words, not a fixed 132px slot, so the gaps between them are what spreads.
-  for (const meter of meters) expect(meter.props.width).toBeLessThan(132)
-  expect(await spreadsEvenly(band)).toBe(true)
-  expect(await band.find({ key: 'compact' })).toBeDefined()
-  await band.unmount()
-
-  const line = await $.ui.mount(BAND('terminal', false))
-  expect(await spreadsEvenly(line)).toBe(true)
-})
-
-test('/skin compact off leaves the band to the meters, compact on brings the button back', async ($, on) => {
-  bandEngine(on)
-  await startDesktop($, on)
-
-  await runSkin($, 'compact off')
-  for (const surface of SURFACES) {
-    const band = await $.ui.mount(BAND(surface, false))
-    expect(await band.find({ key: 'compact' }), `${surface}: no button`).toBeUndefined()
-    expect(await band.find({ type: 'Text', text: 'Context is 85% full' }), `${surface}: no nudge`).toBeUndefined()
-    expect(await spreadsEvenly(band), `${surface}: the meters still spread`).toBe(true)
-    await band.unmount()
-  }
-
-  await runSkin($, 'compact on')
-  const band = await $.ui.mount(BAND('desktop', false))
-  expect(await band.find({ key: 'compact' })).toBeDefined()
-  expect(await band.find({ type: 'Text', text: 'Context is 85% full' })).toBeDefined()
-})
-
 test('cards draw no background of their own', async ($, on) => {
   stubEngine(on)
 
@@ -1147,7 +1042,7 @@ test('/skin gallery opens a pane with every element, numbered, on both surfaces'
     const ui = await $.ui.mount({ ...PANE, requestId: 'fabric-gallery', surface })
 
     expect(await ui.find({ type: 'Text', text: /^1  Your prompt/ })).toBeDefined()
-    expect(await ui.find({ type: 'Text', text: /^11  Turn footer/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /^10  Turn footer/ })).toBeDefined()
     await ui.unmount()
   }
 })
@@ -1206,7 +1101,7 @@ test('on the desktop the Copy button is laid over the card, in the corner the ca
     props: { text: '```ts\nconst a = 1\n```', isFirstOfReply: true },
   })
   type Node = { type?: string; props?: Record<string, unknown>; children?: readonly Node[] }
-  const reply = (await ui.find({ type: 'Box' })) as Node
+  const reply = (await drawing(ui)) as Node
   const card = reply.children?.[0]
   const overlay = card?.children?.[1]
 
@@ -1305,9 +1200,7 @@ test('/skin pin keeps a look to this folder, /skin unpin returns to the default'
   expect((store.prefs as { skin: string }).skin).toBe('dracula')
 })
 
-// On a Team or Enterprise plan the built-in guard holds classic.SessionStart back from
-// user-tier mods, so /clear reaches skins only as the new session's first appended row.
-test('the first row of a new session loads the saved prefs again, without classic.SessionStart', async ($, on) => {
+test('the first turn of a new session loads the saved prefs again', async ($, on) => {
   const store: Record<string, unknown> = {}
   let session = 's1'
   stubEngine(on, { store: true })
@@ -1318,15 +1211,10 @@ test('the first row of a new session loads the saved prefs again, without classi
   })
   on('session.id', () => ({ value: session }))
   on('session.start', () => ({ cwd: '/work' }))
+  on('turn.start', ($, e) => ({ turnId: e.turnId }))
   on('command.register', () => ({ value: { command: 'skin' } }))
   on('tool.register', () => ({ value: { tool: 'mcp__fabric__design' } }))
   on('config.list', () => ({ value: [] }))
-  const note = { message: { type: 'user', content: [{ type: 'text', text: 'hi' }] } } as never
-
-  // An older kit (the pinned CI build) cannot append a row at all: nothing to check there.
-  if (!(await $.session.append(note).then(() => true, () => false))) {
-    return
-  }
 
   await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })
   const colorNow = async (id: string) =>
@@ -1335,16 +1223,16 @@ test('the first row of a new session loads the saved prefs again, without classi
 
   // Saved by another session: the same session's rows leave the loaded prefs alone.
   store.prefs = { skin: 'dracula' }
-  await $.session.append(note)
+  await $.turn.start({ text: 'hi', turnId: 't1' })
   expect(await colorNow('b2')).toBe(before)
 
   session = 's2'
-  await $.session.append(note)
+  await $.turn.start({ text: 'hi', turnId: 't2' })
   expect(await colorNow('b3')).not.toBe(before)
 })
 
 // A scheduled task's session, resumed in the desktop app, can start before Claude Code binds it (#64).
-test('a resume before the session is bound shows no error, and the next row loads it', async ($, on) => {
+test('a first turn before the session is bound shows no error, and the next turn loads it', async ($, on) => {
   const logs: string[] = []
   let isBound = false
   let themeReads = 0
@@ -1354,6 +1242,7 @@ test('a resume before the session is bound shows no error, and the next row load
     return { value: undefined }
   })
   on('session.id', () => ({ value: 's1' }))
+  on('turn.start', ($, e) => ({ turnId: e.turnId }))
   on('config.list', () => {
     if (!isBound) {
       throw new Error('$.config.list is not available in this mode: no session is bound in this process')
@@ -1361,46 +1250,14 @@ test('a resume before the session is bound shows no error, and the next row load
     themeReads += 1
     return { value: [] }
   })
-  on('classic.SessionStart', () => ({}) as never)
-  const note = { message: { type: 'user', content: [{ type: 'text', text: 'hi' }] } } as never
 
-  await $.classic.SessionStart({ source: 'resume' } as never)
+  await $.turn.start({ text: 'hi', turnId: 't1' })
   expect(logs.filter(text => text.startsWith('not loaded yet:')), 'the prefs load without the theme').toHaveLength(0)
   expect(logs.filter(text => text.startsWith('theme not read yet:'))).toHaveLength(1)
 
-  // An older kit (the pinned CI build) cannot append a row at all: nothing more to check there.
   isBound = true
-  if (!(await $.session.append(note).then(() => true, () => false))) {
-    return
-  }
-  expect(themeReads, 'the row after the bind reads the theme').toBeGreaterThan(0)
-})
-
-// A terminal /resume appends no row until the next prompt, and $.session.id() can still answer
-// the old session there: the hook's own session_id loads the prefs for the history (#77).
-test('/resume loads the saved prefs from the hook session id, before any row is appended', async ($, on) => {
-  const store: Record<string, unknown> = {}
-  stubEngine(on, { store: true })
-  on('store.get', ($, e) => ({ value: store[e.key] }))
-  on('store.set', ($, e) => {
-    store[e.key] = e.value
-    return { value: undefined }
-  })
-  on('session.id', () => ({ value: 's1' }))
-  on('session.start', () => ({ cwd: '/work' }))
-  on('command.register', () => ({ value: { command: 'skin' } }))
-  on('tool.register', () => ({ value: { tool: 'mcp__fabric__design' } }))
-  on('config.list', () => ({ value: [] }))
-  on('classic.SessionStart', () => ({}) as never)
-
-  await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })
-  const colorNow = async (id: string) =>
-    spanColor((await (await $.ui.mount(toolUse(call('Bash', { command: 'ls' }, { tool_use_id: id })))).find({ type: 'Text', text: /Bash/ })) as Found, 'Bash')
-  const before = await colorNow('r1')
-
-  store.prefs = { skin: 'dracula' }
-  await $.classic.SessionStart({ source: 'resume', session_id: 's2' } as never)
-  expect(await colorNow('r2')).not.toBe(before)
+  await $.turn.start({ text: 'hi', turnId: 't2' })
+  expect(themeReads, 'the turn after the bind reads the theme').toBeGreaterThan(0)
 })
 
 test('quiet output folds a read-only call to its row, a failure to its error line', async ($, on) => {
@@ -1584,90 +1441,6 @@ test('a card settles by itself once its entrance ends, so a repaint of the store
   expect(isSettled(await svgSource(spinner))).toBe(false)
 })
 
-test('the band holds its rings still while the numbers stay and fills them once when they change', async ($, on) => {
-  let percent = 42
-  on('session.usage', () => ({ value: { startedAt: 0, context: { window: 200000, percent }, rateLimits: [{ kind: 'five_hour', percentUsed: 18 }] } }))
-  on('session.measure', () => ({ changed: [] }) as never)
-  const clock = stubEngine(on, { usage: true })
-  await startDesktop($, on)
-
-  const band = await $.ui.mount(BAND('desktop', false))
-  expect(isSettled(await svgSource(band)), 'the first rings fill in').toBe(false)
-
-  await band.redraw()
-  expect(isSettled(await svgSource(band)), 'the same numbers drawn again stay still').toBe(true)
-
-  percent = 55
-  await $.session.measure({ context: { window: 200000, percent }, rateLimits: [{ kind: 'five_hour', percentUsed: 18 }] } as never)
-  const changed = await svgSource(band)
-  expect(changed).toContain('55%')
-  expect(isSettled(changed), 'new numbers fill in once').toBe(false)
-
-  await clock.advance(1200)
-  expect(isSettled(await svgSource(band)), 'and then stay still').toBe(true)
-})
-
-// The stub clock starts at 10 s; this 5h window resets 100 minutes after that.
-const resetting = { startedAt: 0, context: { window: 200000, percent: 42 }, rateLimits: [{ kind: 'five_hour', percentUsed: 18, resetsAt: new Date(10_000 + 100 * 60_000).toISOString() }] }
-
-test('with countdown on, the band says when each limit resets, on both surfaces', async ($, on) => {
-  on('session.usage', () => ({ value: resetting }))
-  stubEngine(on, { usage: true })
-  await startDesktop($, on)
-
-  const desktop = await $.ui.mount(BAND('desktop', false))
-  expect(await svgSource(desktop), 'off by default').not.toContain('1h40')
-  await desktop.unmount()
-
-  await runSkin($, 'countdown on')
-  const band = await $.ui.mount(BAND('desktop', false))
-  expect(await svgSource(band)).toContain('5h · 1h40')
-  expect(((await band.findAll({ type: 'Svg' })) as unknown as { props: { alt: string } }[]).map(el => el.props.alt).join(', ')).toContain('5h 18%, resets in 1h40')
-
-  const line = await $.ui.mount(BAND('terminal', false))
-  expect(await line.find({ type: 'Text', text: ' 18% 5h · 1h40' })).toBeDefined()
-})
-
-test('a countdown ticking down redraws the band without filling its rings again', async ($, on) => {
-  on('session.usage', () => ({ value: resetting }))
-  const clock = stubEngine(on, { usage: true })
-  await startDesktop($, on)
-  await runSkin($, 'countdown on')
-
-  const band = await $.ui.mount(BAND('desktop', false))
-  expect(isSettled(await svgSource(band)), 'the first rings fill in').toBe(false)
-
-  await clock.advance(60_000)
-  const ticked = await svgSource(band)
-  expect(ticked).toContain('5h · 1h39')
-  expect(isSettled(ticked), 'the new minute keeps the rings still').toBe(true)
-})
-
-test('another mod redrawing the band every second replays neither the rings nor the tables', { plugins: [COUNTDOWN] }, async ($, on) => {
-  const clock = stubEngine(on)
-  await startDesktop($, on)
-
-  const reply = await $.ui.mount({
-    ...SITE,
-    surface: 'desktop',
-    component: 'AssistantMessage',
-    requestId: 'm1',
-    props: { text: 'Limits:\n\n| Route | Limit |\n|---|--:|\n| /chat | 60 |', isFirstOfReply: true },
-  })
-  const band = await $.ui.mount(BAND('desktop', false))
-  const rings: boolean[] = [isSettled(await svgSource(band))]
-  const tables: boolean[] = [isSettled(await svgSource(reply))]
-
-  for (let second = 1; second <= 5; second += 1) {
-    await clock.advance(1000)
-    rings.push(isSettled(await svgSource(band)))
-    tables.push(isSettled(await svgSource(reply)))
-  }
-
-  expect(rings).toEqual([false, true, true, true, true, true])
-  expect(tables).toEqual([false, true, true, true, true, true])
-})
-
 test('more cards than the skin remembers still settle once instead of animating forever', { timeoutMs: 120_000 }, async ($, on) => {
   const writes: number[] = []
   on('state.set', ($, e, next) => {
@@ -1797,42 +1570,6 @@ test('a terminal drawing of a reply never waits on another surface settling', as
   expect(reads.length - afterPhone, 'settle reads by the terminal drawing').toBe(0)
 })
 
-test('a band hidden while its rings fill still fills new numbers when it shows again', async ($, on) => {
-  let percent = 42
-  on('session.usage', () => ({ value: { startedAt: 0, context: { window: 200000, percent }, rateLimits: [{ kind: 'five_hour', percentUsed: 18 }] } }))
-  on('session.measure', () => ({ changed: [] }) as never)
-  const clock = stubEngine(on, { usage: true })
-  await startDesktop($, on)
-
-  const band = await $.ui.mount(BAND('desktop', false))
-  expect(isSettled(await svgSource(band)), 'the first rings fill in').toBe(false)
-  await band.redraw({ ...BAND('desktop', false).props, hasSurvey: true })
-  await clock.advance(1500)
-
-  percent = 55
-  await $.session.measure({ context: { window: 200000, percent }, rateLimits: [{ kind: 'five_hour', percentUsed: 18 }] } as never)
-  await band.redraw(BAND('desktop', false).props)
-  const source = await svgSource(band)
-
-  expect(source).toContain('55%')
-  expect(isSettled(source), 'the new numbers fill in').toBe(false)
-})
-
-test('a reply still entering when the session is cleared ends settled, with at most one settle write', async ($, on) => {
-  const writes = writesOf(on, ['settle'])
-  on('classic.SessionStart', () => ({}) as never)
-  const clock = stubEngine(on)
-  await startDesktop($, on)
-
-  const reply = await $.ui.mount(tableReply('desktop'))
-  await clock.advance(300)
-  await $.classic.SessionStart({ source: 'clear' } as never)
-  await clock.advance(1500)
-
-  expect(isSettled(await svgSource(reply)), 'the card ends settled').toBe(true)
-  expect(writes.length, 'settle writes').toBeLessThanOrEqual(1)
-})
-
 test('a refused settle write is tried again until it lands', async ($, on) => {
   let isRefused = true
   on('state.set', ($, e, next) => (e.key === 'settle' && isRefused ? { deny: 'refused once' } : next(e)))
@@ -1875,55 +1612,6 @@ test('a running tool row does not wait on its duration, so the tool finishing re
   expect(reads.length, 'a finished row reads its duration').toBeGreaterThan(0)
 })
 
-test('new usage numbers settle the cards still entering before the band redraws', async ($, on) => {
-  const writes = writesOf(on, ['settle', 'usage'])
-  let percent = 42
-  on('session.usage', () => ({ value: { startedAt: 0, context: { window: 200000, percent }, rateLimits: [] } }))
-  on('session.measure', () => ({ changed: [] }) as never)
-  const clock = stubEngine(on, { usage: true })
-  await startDesktop($, on)
-
-  const reply = await $.ui.mount(tableReply('desktop'))
-  await clock.advance(300)
-  writes.length = 0
-  percent = 55
-  await $.session.measure({ context: { window: 200000, percent }, rateLimits: [] } as never)
-
-  expect(writes, 'the settle lands before the new numbers').toEqual(['settle', 'usage'])
-  expect(isSettled(await svgSource(reply))).toBe(true)
-})
-
-test('a turn ending with the same usage numbers lets a card still entering finish its entrance', async ($, on) => {
-  const writes = writesOf(on, ['settle', 'usage', 'turns'])
-  on('turn.complete', () => ({ text: '' }))
-  const clock = stubEngine(on)
-  await startDesktop($, on)
-
-  const reply = await $.ui.mount(tableReply('desktop'))
-  await clock.advance(300)
-  writes.length = 0
-  await $.turn.complete({ answer: '', durationMs: 4200, isAborted: false, turnId: 't1', reason: 'answer' })
-
-  expect(writes, 'the turn footers are drawn in the terminal only, so nothing settles for them').toEqual(['turns'])
-  expect(isSettled(await svgSource(reply)), 'the card keeps entering').toBe(false)
-
-  await clock.advance(1500)
-  expect(isSettled(await svgSource(reply)), 'and settles as its entrance ends').toBe(true)
-})
-
-test('the same usage numbers again write nothing, so the desktop is not asked to redraw', async ($, on) => {
-  const writes = writesOf(on, ['settle', 'usage'])
-  on('session.measure', () => ({ changed: [] }) as never)
-  stubEngine(on)
-  await startDesktop($, on)
-
-  await $.ui.mount(tableReply('desktop'))
-  writes.length = 0
-  await $.session.measure({ context: { window: 200000, percent: 42 }, rateLimits: [{ kind: 'five_hour', percentUsed: 18 }] } as never)
-
-  expect(writes, 'writes for unchanged numbers').toEqual([])
-})
-
 test('a settle write that is always refused backs off to about once a second', async ($, on) => {
   let attempts = 0
   const logs: string[] = []
@@ -1952,58 +1640,6 @@ test('a settle write that is always refused backs off to about once a second', a
   expect(attempts, 'attempts in ten seconds').toBeLessThanOrEqual(20)
   expect(attempts - early, 'attempts in the last five seconds').toBeLessThanOrEqual(6)
   expect(logs.filter(text => text.startsWith('settle:')).length, 'one debug line per attempt').toBe(attempts)
-})
-
-const BAND_INVALIDATOR: Plugin = {
-  name: 'band-invalidator',
-  register(on) {
-    let hasInvalidated = false
-
-    on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-      const drawn = await next(e)
-
-      if (!hasInvalidated) {
-        hasInvalidated = true
-        $.ui.invalidate('ui.render')
-      }
-
-      return drawn
-    })
-  },
-}
-
-test('a mod beneath the band invalidating while it draws still settles the entering cards first', { plugins: [BAND_INVALIDATOR] }, async ($, on) => {
-  const order: string[] = []
-  on('ui.log', ($, e) => {
-    if (e.text.startsWith('settle:')) {
-      order.push('refused')
-    }
-
-    return { value: undefined }
-  })
-  on('state.set', async ($, e, next) => {
-    const result = await next(e)
-
-    if (e.key === 'settle') {
-      order.push('settled')
-    }
-
-    return result
-  })
-  on('ui.invalidate', ($, e, next) => {
-    order.push('invalidate')
-
-    return next(e)
-  })
-  const clock = stubEngine(on, { log: true })
-  await startDesktop($, on)
-
-  await $.ui.mount(tableReply('desktop'))
-  await clock.advance(300)
-  await $.ui.mount(BAND('desktop', false))
-  await clock.advance(40)
-
-  expect(order, 'the write refused inside the band drawing is retried and lands before the invalidate goes on').toEqual(['refused', 'settled', 'invalidate'])
 })
 
 const CLOCK_STEP: Plugin = {
@@ -2044,135 +1680,6 @@ test('a settle refused for seconds lands before the next redraw by another mod o
   isRefused = false
   await clock.advance(420)
   expect(isSettled(await svgSource(reply)), 'settled by the redraw at five seconds').toBe(true)
-})
-
-test('a settle refused for seconds lands before new usage numbers once the refusal lifts', async ($, on) => {
-  let isRefused = true
-  let percent = 42
-  on('session.usage', () => ({ value: { startedAt: 0, context: { window: 200000, percent }, rateLimits: [] } }))
-  on('session.measure', () => ({ changed: [] }) as never)
-  on('state.set', ($, e, next) => (e.key === 'settle' && isRefused ? { deny: 'refused for seconds' } : next(e)))
-  const clock = stubEngine(on, { usage: true })
-  await startDesktop($, on)
-
-  const reply = await $.ui.mount(tableReply('desktop'))
-  await clock.advance(4600)
-  expect(isSettled(await svgSource(reply)), 'still animated while refused').toBe(false)
-
-  isRefused = false
-  percent = 55
-  await $.session.measure({ context: { window: 200000, percent }, rateLimits: [] } as never)
-
-  expect(isSettled(await svgSource(reply)), 'settled before the band redraws the new numbers').toBe(true)
-})
-
-const usageOf = (context: number, fiveHour: number) => ({ startedAt: 0, context: { window: 200000, percent: context }, rateLimits: [{ kind: 'five_hour', percentUsed: fiveHour }] })
-
-test('a turn end moving the 5h limit inside the drawn percent leaves the band and the entering card alone', async ($, on) => {
-  let fiveHour = 18.1
-  const writes = writesOf(on, ['settle', 'usage', 'turns'])
-  on('session.usage', () => ({ value: usageOf(42, fiveHour) }))
-  on('turn.complete', () => ({ text: '' }))
-  const clock = stubEngine(on, { usage: true })
-  await startDesktop($, on)
-
-  const band = await $.ui.mount(BAND('desktop', false))
-  await clock.advance(1200)
-  const before = await svgSource(band)
-  expect(before).toContain('18%')
-  expect(isSettled(before), 'the band has settled').toBe(true)
-
-  const reply = await $.ui.mount(tableReply('desktop'))
-  await clock.advance(300)
-  writes.length = 0
-  fiveHour = 18.4
-  await $.turn.complete({ answer: '', durationMs: 4200, isAborted: false, turnId: 't1', reason: 'answer' })
-
-  const after = await svgSource(band)
-  expect(after, 'the band draws the same rings').toBe(before)
-  expect(writes, 'writes at the turn end').toEqual(['turns'])
-  expect(isSettled(await svgSource(reply)), 'the card keeps entering').toBe(false)
-})
-
-test('a measure moving the 5h limit inside the drawn percent writes nothing', async ($, on) => {
-  let fiveHour = 18.1
-  const writes = writesOf(on, ['settle', 'usage'])
-  on('session.usage', () => ({ value: usageOf(42, fiveHour) }))
-  on('session.measure', () => ({ changed: [] }) as never)
-  const clock = stubEngine(on, { usage: true })
-  await startDesktop($, on)
-
-  const reply = await $.ui.mount(tableReply('desktop'))
-  await clock.advance(300)
-  writes.length = 0
-  fiveHour = 18.4
-  await $.session.measure(usageOf(42, 18.4) as never)
-
-  expect(writes, 'writes for a move the band cannot show').toEqual([])
-  expect(isSettled(await svgSource(reply)), 'the card keeps entering').toBe(false)
-})
-
-test('skipped tenths still let a later move across the rounding show, and the band ends exact', async ($, on) => {
-  let fiveHour = 18.1
-  const writes = writesOf(on, ['settle', 'usage'])
-  on('session.usage', () => ({ value: usageOf(42, fiveHour) }))
-  on('session.measure', () => ({ changed: [] }) as never)
-  const clock = stubEngine(on, { usage: true })
-  await startDesktop($, on)
-
-  const band = await $.ui.mount(BAND('desktop', false))
-  await clock.advance(1200)
-  writes.length = 0
-
-  for (const next of [18.2, 18.3, 18.4, 18.49]) {
-    fiveHour = next
-    await $.session.measure(usageOf(42, next) as never)
-  }
-
-  expect(writes, 'no write while the drawn percent stays 18').toEqual([])
-  expect(await svgSource(band)).toContain('18%')
-
-  fiveHour = 18.5
-  await $.session.measure(usageOf(42, 18.5) as never)
-  expect(writes, 'the move to 19 writes').toEqual(['usage'])
-  const moved = await svgSource(band)
-  expect(moved).toContain('19%')
-  expect(isSettled(moved), 'the new rings fill in once').toBe(false)
-
-  fiveHour = 18.1
-  await $.session.measure(usageOf(42, 18.1) as never)
-  expect(await svgSource(band), 'back down to 18 is drawn').toContain('18%')
-})
-
-test('a limit appearing, leaving or clamping past 100 is still compared by what is drawn', async ($, on) => {
-  let usage: object = { startedAt: 0, context: { window: 200000, percent: 42 }, rateLimits: [] }
-  const writes = writesOf(on, ['settle', 'usage'])
-  on('session.usage', () => ({ value: usage as never }))
-  on('session.measure', () => ({ changed: [] }) as never)
-  const clock = stubEngine(on, { usage: true })
-  await startDesktop($, on)
-
-  const band = await $.ui.mount(BAND('desktop', false))
-  await clock.advance(1200)
-  writes.length = 0
-
-  usage = { startedAt: 0, context: { window: 200000, percent: 42 }, rateLimits: [{ kind: 'spend_limit', percentUsed: 101.2 }] }
-  await $.session.measure(usage as never)
-  expect(writes).toEqual(['usage'])
-  expect(await svgSource(band)).toContain('100%')
-
-  writes.length = 0
-  usage = { startedAt: 0, context: { window: 200000, percent: 42 }, rateLimits: [{ kind: 'spend_limit', percentUsed: 104.7 }] }
-  await $.session.measure(usage as never)
-  expect(writes, 'past 100 draws 100 both times').toEqual([])
-  expect(isSettled(await svgSource(band)), 'the 100% rings are still filling').toBe(false)
-
-  await clock.advance(1200)
-  writes.length = 0
-  usage = { startedAt: 0, context: { window: 200000, percent: 42 }, rateLimits: [] }
-  await $.session.measure(usage as never)
-  expect(writes, 'the limit leaving writes').toEqual(['usage'])
-  expect(await svgSource(band)).not.toContain('spend')
 })
 
 test('a display formula is stacked art in the terminal and a vector card on the desktop', async ($, on) => {
@@ -2388,4 +1895,20 @@ test('/skin calm off puts back the settings it changed, and keeps changes made m
   const listed = await runSkin($, 'list')
   expect(JSON.stringify(listed)).toContain('nord (current)')
   expect(JSON.stringify(listed)).toMatch(/\| calm +\| off +\|/)
+})
+
+test('what the skin draws is inset one cell each side, and Claude Code’s own drawing is not', async ($, on) => {
+  stubEngine(on)
+
+  const footer = await $.ui.mount({ ...SITE, surface: 'terminal', component: 'TurnDuration', requestId: 'f1', props: { durationMs: 41_000, word: 'Done' } })
+  const outer = (await footer.find({ type: 'Box' })) as { props: { paddingX?: number } } | undefined
+
+  expect(outer?.props.paddingX).toBe(1)
+  await footer.unmount()
+
+  const theirs = await $.ui.mount({ ...SITE, surface: 'terminal', component: 'UserMessage', requestId: 'm2', props: { text: 'hello', origin: { kind: 'task-notification' }, isExpanded: false } })
+  const box = (await theirs.find({ type: 'Box' })) as { props: { paddingX?: number } } | undefined
+
+  expect(box?.props.paddingX).not.toBe(1)
+  await theirs.unmount()
 })

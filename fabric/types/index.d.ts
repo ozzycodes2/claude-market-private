@@ -31,9 +31,6 @@ export type Prefs = {
   // 'text' keeps the skin but draws tables and code as text the desktop can select.
   tables: 'on' | 'text' | 'off'
   shimmer: boolean
-  band: boolean
-  // When each plan limit resets, beside its meter in the band.
-  countdown: boolean
   clipOutput: boolean
   markdown: boolean
   quiet: boolean
@@ -46,8 +43,6 @@ export type Prefs = {
   shell: boolean
   // Fenced code on the terminal and shell output in the skin's colours.
   highlight: boolean
-  // The model-only note that charts and diagrams draw here.
-  hints: boolean
   // Bare URLs as links: OSC 8 where the terminal draws it, anchors on the desktop.
   links: boolean
   // Copy buttons on tables, code, diagrams and whole replies.
@@ -56,8 +51,6 @@ export type Prefs = {
   fold: boolean
   // Runs of reads and searches drawn open, as if each had been expanded, not as one line.
   expand: boolean
-  // The band's Compact button, and its nudge once the context is full enough to be worth it.
-  compact: boolean
   // While /skin calm is on, the parts it changed as they were before it, for calm off to
   // put back; null while it is off.
   calm: CalmSnapshot | null
@@ -76,10 +69,6 @@ export type CustomSkin = {
   spinner: string[]
   done: string[]
 }
-
-// How full the context window is and how much of each plan limit is spent, in percent,
-// as the band above the prompt shows them, and when each limit resets (epoch ms) where known.
-export type UsageSnap = { context: number | null; limits: { label: string; percent: number; resetsAt?: number }[] }
 
 // What one turn did, shown in its footer.
 export type TurnStats = { tools: number; added: number; removed: number }
@@ -119,11 +108,7 @@ declare module 'claude-code' {
       turns: Record<string, TurnStats>
       duration: StateFamily<number>
       editing: SkinSlot
-      usage: UsageSnap
-      // The usage band's countdowns by limit label, as last drawn.
-      countdowns: Record<string, string>
       isLight: boolean
-      images: StateFamily<boolean>
       quiet: StateFamily<boolean>
       // A shell call's command, for its output card's header: ToolResult does not carry it.
       command: StateFamily<string>
@@ -134,7 +119,6 @@ declare module 'claude-code' {
       touched: Record<string, Touch>
       // Per drawing, the keys of the blocks the person unfolded.
       folds: StateFamily<string[]>
-      compacting: boolean
       pinned: boolean
       settle: number
       lastReply: string

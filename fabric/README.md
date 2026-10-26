@@ -6,7 +6,7 @@ diagrams in `architecture-design`, so the transcript and the figures match.
 
 Fabric is a mod, not a skill. It redraws the transcript: tool rows that open onto their
 input and answer, diff, table, code, math, Mermaid and shell cards, links, folding, a
-usage band and a calm mode. It is a fork of
+calm mode. It is a fork of
 [hellosverre/claude-skins](https://github.com/hellosverre/claude-skins) (MIT, v0.5.15,
 commit `985ad63`), with its own palette and defaults.
 

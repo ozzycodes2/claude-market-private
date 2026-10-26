@@ -1,7 +1,7 @@
 import { atom, memberOf, read, update } from 'claude-code'
 import type { EngineInterface, Register, RenderElement, RenderSurface, Timer } from 'claude-code'
 
-import type { CustomSkin, Disclosure, Prefs, SkinSlot, SkinsMarkdownArgs, Touch, TurnStats, UsageSnap } from '../types'
+import type { CustomSkin, Disclosure, Prefs, SkinSlot, SkinsMarkdownArgs, Touch, TurnStats } from '../types'
 import { DEFAULT_PREFS, listing, nextTables, parsePrefs, runSkinCommand, TOGGLES, withCalm } from './command'
 import { buildCustom, resolveSkin, skinNames, withSlot } from './custom'
 import { forTheme, gnomeDark, macDark, resolveLight, windowsDark } from './light'
@@ -12,9 +12,8 @@ import { clipLines, diffstat, pick } from './format'
 import { bodyOf, inputFields, isOpen } from './detail'
 import { disclosedRow, openedRows } from './detail-rows'
 import { copyOf } from './markdown'
-import { CHART_HINT } from './mermaid'
 import { commandSegments } from './command-output'
-import { askBand, desktopSpinnerRow, diffCard, footerRow, terminalCard, usageBand, groupRow, promptRow, quietResult, replyRows, spinnerRow, toolRow } from './rows'
+import { askBand, desktopSpinnerRow, diffCard, footerRow, terminalCard, groupRow, promptRow, quietResult, replyRows, spinnerRow, toolRow } from './rows'
 import type { Look, SvgElement, Ui } from './rows'
 import { galleryPane } from './gallery'
 import { keepsOwnRow, SHELLS, shellResultOf } from './shell'
@@ -25,7 +24,6 @@ import { ICONS } from './skin'
 import type { Skin } from './skin'
 import { hunksOf } from './svg-diff'
 import { shellOutputOf } from './svg-terminal'
-import { countdownsOf, limitLabel, metersOf } from './svg-usage'
 import { shortenPath } from './format'
 import { kindOf, summarize, toolLabel } from './tools'
 import { commandOf, errorLine, isQuiet, quietLabel } from './quiet'
@@ -44,11 +42,13 @@ const MAX_PROMPT = 4000
 // The settings pane's prompt button cycles through these.
 const PROMPT_NEXT: Readonly<Record<Prefs['prompt'], Prefs['prompt']>> = { left: 'right', right: 'plain', plain: 'left' }
 
+// The text of each prompt submitted with images. A row carries no image flag, and
+// session.append, which sees the stored message, is held back on Team and Enterprise plans.
+const imagePrompts = new Set<string>()
+
 const CLIP_HEAD = 8
 const CLIP_TAIL = 4
 const FRAME_MS = 90
-// Countdowns read to the minute, so they are looked at once a minute.
-const COUNTDOWN_MS = 60_000
 const SETTLE_LEAD_MS = FRAME_MS
 const FAST_RETRIES = 4
 const RETRY_MAX_MS = 1000
@@ -65,14 +65,9 @@ const turnsAtom = atom({ plugin: 'fabric', key: 'turns' } as const, {})
 const durationAtom = atom({ plugin: 'fabric', key: 'duration' } as const, -1)
 const editingAtom = atom({ plugin: 'fabric', key: 'editing' } as const, 'user' as SkinSlot)
 const lightAtom = atom({ plugin: 'fabric', key: 'isLight' } as const, false)
-const imagesAtom = atom({ plugin: 'fabric', key: 'images' } as const, false)
 // Whether a call only looked, so quiet output folds its result away.
 const quietAtom = atom({ plugin: 'fabric', key: 'quiet' } as const, false)
 const commandAtom = atom({ plugin: 'fabric', key: 'command' } as const, '')
-const usageAtom = atom({ plugin: 'fabric', key: 'usage' } as const, { context: null, limits: [] } as UsageSnap)
-// The band's countdowns as last drawn; it changes only when one of them reads differently.
-const countdownsAtom = atom({ plugin: 'fabric', key: 'countdowns' } as const, {} as Record<string, string>)
-const compactingAtom = atom({ plugin: 'fabric', key: 'compacting' } as const, false)
 const pinnedAtom = atom({ plugin: 'fabric', key: 'pinned' } as const, false)
 const settleAtom = atom({ plugin: 'fabric', key: 'settle' } as const, 0)
 // Whether each tool row is open, as the person left it; `auto` opens a failed call.
@@ -400,10 +395,8 @@ async function load($: EngineInterface): Promise<void> {
 }
 
 // The session the prefs were last loaded for. /clear, /resume and /branch reset $.state to its
-// defaults and skip session.start, and on a Team or Enterprise plan the built-in guard
-// (cc-plugin-sec-default) keeps classic.SessionStart from user-tier mods: the new session's first
-// appended rows catch the change instead. No await between the check and the write, so a burst of
-// appends loads once.
+// defaults and skip session.start; the new session's first turn loads them again. No await
+// between the check and the write, so concurrent turns load once.
 let loadedFor: string | undefined
 
 // Undefined where nothing answers for the session's id (a test's engine): then there is nothing to compare.
@@ -426,9 +419,8 @@ async function retryTheme($: EngineInterface): Promise<void> {
   })
 }
 
-// `known` is the id a hook was handed: on /resume, $.session.id() can still answer the old one.
-async function reloadIfNewSession($: EngineInterface, known?: string): Promise<void> {
-  const id = known ?? (await sessionId($))
+async function reloadIfNewSession($: EngineInterface): Promise<void> {
+  const id = await sessionId($)
 
   if (id === undefined || id === loadedFor) {
     return
@@ -496,46 +488,6 @@ async function runFolderCommand($: EngineInterface, word: string): Promise<strin
   }
 }
 
-async function refreshUsage($: EngineInterface): Promise<void> {
-  const usage = await $.session.usage()
-  const snap: UsageSnap = {
-    context: usage.context.percent ?? null,
-    limits: usage.rateLimits.map(limit => {
-      const resetsAt = limit.resetsAt === undefined ? NaN : Date.parse(limit.resetsAt)
-
-      return { label: limitLabel(limit.kind), percent: limit.percentUsed, ...(Number.isNaN(resetsAt) ? {} : { resetsAt }) }
-    }),
-  }
-  // A window that resets moves its reset time even where its percent stays the same.
-  const drawn = (of: UsageSnap) => JSON.stringify([metersOf(of), of.limits.map(limit => limit.resetsAt ?? null)])
-
-  if (drawn(await read($, usageAtom)) === drawn(snap)) {
-    return
-  }
-
-  await settleEntrances($, true)
-  await update($, usageAtom, () => snap)
-}
-
-// Redraws the band when a countdown it shows would read differently, and not otherwise:
-// a redraw settles the cards still entering first, as a usage change does.
-async function tickCountdowns($: EngineInterface): Promise<void> {
-  const prefs = await read($, prefsAtom)
-
-  if (!prefs.countdown || !prefs.band) {
-    return
-  }
-
-  const next = countdownsOf(await read($, usageAtom), await $.clock.now())
-
-  if (JSON.stringify(next) === JSON.stringify(await read($, countdownsAtom))) {
-    return
-  }
-
-  await settleEntrances($, true)
-  await update($, countdownsAtom, () => next)
-}
-
 async function commit($: EngineInterface, state: DesignState): Promise<void> {
   await update($, customAtom, () => state.custom)
   await update($, prefsAtom, () => state.prefs)
@@ -571,6 +523,37 @@ async function drawMarkdown($: EngineInterface, args: SkinsMarkdownArgs): Promis
   return replyRows({ ...lookOf(ui, active, args.surface), links, isFirstDraw: () => false }, segments, Math.max(20, Math.floor(args.columns)), svg)
 }
 
+// Cells of breathing room either side of everything the skin draws.
+const SIDE_PAD = 1
+
+const drawnColumns = (e: { viewport?: { columns: number } }): number => (e.viewport?.columns ?? 100) - 2 * SIDE_PAD
+
+// Insets what `draw` returns, and leaves alone what it hands back from `next`: Claude Code's
+// own drawing keeps its own margins.
+async function inset<E extends { surface: RenderSurface; requestId: string }, N extends (e: E) => Promise<unknown>, R>(
+  $: EngineInterface,
+  e: E,
+  next: N,
+  draw: (next: N) => Promise<R>,
+): Promise<R | RenderElement> {
+  const theirs = new Set<unknown>()
+  const drawn = await draw((async (passed: E) => {
+    const result = await next(passed)
+
+    theirs.add(result)
+
+    return result
+  }) as N)
+
+  if (drawn === undefined || theirs.has(drawn)) {
+    return drawn
+  }
+
+  const { Box } = $.ui.resolve(e)
+
+  return <Box flexDirection="column" paddingX={SIDE_PAD}>{drawn as RenderElement}</Box>
+}
+
 export const register: Register = on => {
   // Adds `$.fabric` for other mods. A call is the `fabric.markdown` event, which the hook
   // below answers with this session's `$`; the method itself is the chain's floor.
@@ -586,7 +569,6 @@ export const register: Register = on => {
   let stats: TurnStats = NO_STATS
   let isWorking = false
   let ticker: Timer | undefined
-  let countdownTicker: Timer | undefined
   // The width the last reply was drawn at, shown by /skin list to tune table sizing.
   let lastColumns: number | undefined
 
@@ -594,7 +576,7 @@ export const register: Register = on => {
     await $.command.register({
       name: 'skin',
       description: 'Open the skin settings, or /skin <name | list | help | off>',
-      argumentHint: '[help | gallery | copy | copy code | name | list | off | calm | pin | unpin | share | rail | tables | shimmer | band | countdown | clip | markdown | quiet | charts | math | commands | shell | highlight | hints | links | fold | expand | compact | icons | prompt | words]',
+      argumentHint: '[help | gallery | copy | copy code | name | list | off | calm | pin | unpin | share | rail | tables | shimmer | clip | markdown | quiet | charts | math | commands | shell | highlight | links | fold | expand | icons | prompt | words]',
       immediate: true,
     })
     const designTool = $.tool
@@ -615,7 +597,6 @@ export const register: Register = on => {
     })
     loadedFor = await sessionId($)
     await load($)
-    await refreshUsage($)
     await followTheme($)
 
     // Only the spinner reads the frame, so a tick redraws the spinner and nothing else.
@@ -629,19 +610,6 @@ export const register: Register = on => {
         void settleEntrances($)
       }
     })
-    countdownTicker?.cancel()
-    countdownTicker = $.clock.every(COUNTDOWN_MS, () => {
-      void tickCountdowns($).catch((error: unknown) => {
-        $.ui.log(`countdown tick: ${error instanceof Error ? error.message : String(error)}`, { to: 'debug' })
-      })
-    })
-
-    return next(e)
-  })
-
-  // Where the guard does not hold it back, this comes first; session.append then finds the session loaded.
-  on('classic.SessionStart', { source: ['clear', 'resume', 'fork'] }, async ($, e, next) => {
-    await reloadIfNewSession($, typeof e.session_id === 'string' && e.session_id !== '' ? e.session_id : undefined)
 
     return next(e)
   })
@@ -658,6 +626,8 @@ export const register: Register = on => {
   })
 
   on('turn.start', async ($, e, next) => {
+    await retryTheme($)
+    await reloadIfNewSession($)
     stats = NO_STATS
     isWorking = true
     // A worktree can move the session between turns.
@@ -681,31 +651,8 @@ export const register: Register = on => {
     return result
   })
 
-  // Loads the prefs again for a new session (see loadedFor), and notes which prompts carried images,
-  // so their row keeps Claude Code's drawing of them.
-  on('session.append', async ($, e, next) => {
-    await reloadIfNewSession($)
-    await retryTheme($)
-    const stored = await next(e)
-    const hasImage = e.door === 'prompt' && e.message.content.some(block => block.type === 'image')
-
-    if (hasImage && stored.uuid !== undefined) {
-      await update($, memberOf(imagesAtom, { requestId: stored.uuid }), () => true)
-    }
-
-    return stored
-  })
-
-  // A turn's end and a plan limit's move are when the band's numbers change.
-  on('session.measure', async ($, e, next) => {
-    await refreshUsage($)
-
-    return next(e)
-  })
-
   on('turn.complete', async ($, e, next) => {
     if (e.agentId === undefined) {
-      await refreshUsage($)
       isWorking = false
       const finished = stats
       await update($, turnsAtom, turns =>
@@ -888,356 +835,313 @@ export const register: Register = on => {
     return withSettle($, e, galleryPane({ ...look, ...(look.svg === undefined ? {} : { isFirstDraw: await firstDraws($, e, active.prefs) }) }, e.props.bodyColumns))
   })
 
-  on('ui.render', { component: 'ToolUse' }, async ($, e, next) => {
-    const kind = kindOf(e.props.tool)
-    const active = await activeSkin($)
+  on('ui.render', { component: 'ToolUse' }, async ($, e, next) =>
+    inset($, e, next, async stock => {
+      const kind = kindOf(e.props.tool)
+      const active = await activeSkin($)
 
-    if (kind === null || active === null) {
-      return next(e)
+      if (kind === null || active === null) {
+        return stock(e)
+      }
+
+      const cwd = await cwdOf($)
+      const ms = e.props.isRunning ? -1 : await read($, memberOf(durationAtom, e))
+      const diff = diffstat(e.props.output)
+      const target = summarize(e.props.tool, e.props.input, cwd)
+
+      const meta = {
+        ...(ms >= 0 && !e.props.isRunning ? { ms } : {}),
+        ...(diff === null ? {} : diff),
+      }
+      const copy = (text: string) => {
+        void $.ui.copy({ text, surface: e.surface }).then(result => $.ui.toast(result.isCopied ? 'Copied' : 'Could not copy here'))
+      }
+      const fields = (e.props.input ?? {}) as { file_path?: unknown; notebook_path?: unknown }
+      const path = fields.file_path ?? fields.notebook_path
+      // The chevron opens the row onto the call's input and its answer.
+      const disclosure = memberOf(disclosureAtom, e)
+      const open = isOpen(await read($, disclosure), e.props.isErrored)
+      const base = await sessionLook($, e, lookOf($.ui.resolve(e), active, e.surface, copy), {
+        touched: typeof path === 'string',
+        folds: open,
+        cwd,
+      })
+      const look = base.svg === undefined ? base : { ...base, isFirstDraw: await firstDraws($, e, active.prefs) }
+      // A file this turn made or changed keeps its colour in every row that names it.
+      const touch = typeof path === 'string' && look.touched !== undefined ? touchOf(look.touched.files, path, cwd) : undefined
+      const label = active.prefs.quiet && isQuiet(e.props.tool, e.props.input) ? quietLabel(e.props.tool) : toolLabel(e.props.tool)
+      const row = toolRow(look, e.props, kind, target, meta, label, touch)
+      const toggle = () => void update($, disclosure, () => (open ? 'closed' : 'open'))
+
+      if (!open) {
+        return withSettle($, e, disclosedRow(look, row, false, toggle))
+      }
+
+      const all = memberOf(allAtom, e)
+      const isAll = await read($, all)
+      const opened = await openedRows(look, {
+        fields: inputFields(e.props.tool, e.props.input, cwd),
+        body: bodyOf(e.props.tool, e.props.output, e.props.isErrored, e.props.isRunning, cwd),
+        command: commandOf(e.props.input),
+        isErrored: e.props.isErrored,
+        cwd,
+        columns: drawnColumns(e),
+        isAll,
+        toggleAll: () => void update($, all, () => !isAll),
+        stock: () => stock(e),
+      })
+
+      return withSettle($, e, disclosedRow(look, row, true, toggle, opened))
+    }))
+
+  on('ui.render', { component: 'ToolGroup' }, async ($, e, next) =>
+    inset($, e, next, async stock => {
+      const active = await activeSkin($)
+
+      if (active === null) {
+        return stock(e)
+      }
+
+      const drawing = drawingOf(e)
+
+      if (active.prefs.expand) {
+        // expand opens every group for Claude Code to draw, as if the person had. A click on
+        // the group's line moves Claude Code's flag off the value it began at, and a second
+        // click puts it back: the first folds the group, the second opens it again.
+        const start = groupStarts.get(drawing) ?? e.props.isExpanded
+        groupStarts.set(drawing, start)
+
+        if (e.props.isExpanded === start) {
+          return stock({ ...e, props: { ...e.props, isExpanded: true } })
+        }
+      } else {
+        groupStarts.delete(drawing)
+
+        if (e.props.isExpanded) {
+          return stock(e)
+        }
+      }
+
+      return groupRow(lookOf($.ui.resolve(e), active, e.surface), e.props.calls)
+    }))
+
+  on('ui.render', { component: 'ToolResult' }, async ($, e, next) =>
+    inset($, e, next, async stock => {
+      const active = await activeSkin($)
+      const output = e.props.output as { stdout?: unknown } | null
+      const copy = (text: string) => {
+        void $.ui.copy({ text, surface: e.surface }).then(result => $.ui.toast(result.isCopied ? 'Copied' : 'Could not copy here'))
+      }
+      // Only the terminal's shell card has a fold control here.
+      const needs = { folds: e.surface === 'terminal' && SHELLS.has(e.props.tool) }
+      const look = active === null ? undefined : await sessionLook($, e, lookOf($.ui.resolve(e), active, e.surface, copy), needs)
+      const columns = drawnColumns(e)
+      // An opened row draws the answer itself; one it cannot draw keeps Claude Code's here.
+      const isOpened =
+        active !== null &&
+        kindOf(e.props.tool) !== null &&
+        isOpen(await read($, memberOf(disclosureAtom, e)), e.props.isErrored) &&
+        bodyOf(e.props.tool, e.props.output, e.props.isErrored, false, '').kind !== 'stock'
+
+      if (isOpened) {
+        const { Box } = $.ui.resolve(e)
+
+        return <Box />
+      }
+
+      // Calm never folds a failure away: it is drawn whole, past quiet and the clip.
+      const isCalmFailure = look !== undefined && look.prefs.calm !== null && e.props.isErrored
+
+      // A call that only looked folds away; a failure keeps the line that says why.
+      if (look !== undefined && look.prefs.quiet && !isCalmFailure && (await read($, memberOf(quietAtom, e)))) {
+        return quietResult(look, e.props.isErrored ? errorLine(e.props.output) : null)
+      }
+
+      // The desktop gets cards: a diff for an edit, a terminal for a shell command.
+      if (look?.svg !== undefined && EDITS.has(e.props.tool) && !e.props.isErrored) {
+        const diff = hunksOf(e.props.output)
+
+        if (diff !== null) {
+          const shown = shortenPath(diff.path, await $.session.cwd())
+
+          return withSettle($, e, diffCard({ ...look, isFirstDraw: await firstDraws($, e, look.prefs) }, look.svg, diff, shown, columns))
+        }
+      }
+
+      const isShellCard = look !== undefined && look.prefs.shell && SHELLS.has(e.props.tool) && !keepsOwnRow(e.props.output)
+
+      if (look?.svg !== undefined && isShellCard) {
+        const shell = shellOutputOf(e.props.output)
+
+        if (shell !== null) {
+          return withSettle($, e, terminalCard({ ...look, isFirstDraw: await firstDraws($, e, look.prefs) }, look.svg, shell, e.props.isErrored, columns))
+        }
+      }
+
+      // The terminal's card is text: the command and its exit status, stderr apart, folded.
+      if (look !== undefined && e.surface === 'terminal' && isShellCard) {
+        const shell = shellResultOf(e.props.output, e.props.isErrored)
+
+        if (shell !== null) {
+          // `/skin fold off`, or the person's `▾ N more`, shows the output whole.
+          const isWhole = !look.prefs.fold || look.folds?.open.has(OUTPUT_FOLD) === true
+          const fold = isWhole ? null : { head: CLIP_HEAD, tail: CLIP_TAIL }
+
+          return shellRows(look, await read($, memberOf(commandAtom, e)), shell, e.props.isErrored, {
+            stdout: fold,
+            stderr: isCalmFailure ? null : fold,
+          })
+        }
+      }
+
+      if (!active?.prefs.clipOutput || isCalmFailure || !SHELLS.has(e.props.tool) || typeof output?.stdout !== 'string') {
+        return stock(e)
+      }
+
+      const stdout = clipLines(output.stdout, CLIP_HEAD, CLIP_TAIL)
+
+      return stdout === output.stdout
+        ? stock(e)
+        : stock({ ...e, props: { ...e.props, output: { ...output, stdout } } })
+    }))
+
+  on('prompt.submit', async ($, e, next) => {
+    if (e.attachments !== undefined && e.attachments.length > 0) {
+      imagePrompts.add(e.text.trim())
     }
 
-    const cwd = await cwdOf($)
-    const ms = e.props.isRunning ? -1 : await read($, memberOf(durationAtom, e))
-    const diff = diffstat(e.props.output)
-    const target = summarize(e.props.tool, e.props.input, cwd)
-
-    const meta = {
-      ...(ms >= 0 && !e.props.isRunning ? { ms } : {}),
-      ...(diff === null ? {} : diff),
-    }
-    const copy = (text: string) => {
-      void $.ui.copy({ text, surface: e.surface }).then(result => $.ui.toast(result.isCopied ? 'Copied' : 'Could not copy here'))
-    }
-    const fields = (e.props.input ?? {}) as { file_path?: unknown; notebook_path?: unknown }
-    const path = fields.file_path ?? fields.notebook_path
-    // The chevron opens the row onto the call's input and its answer.
-    const disclosure = memberOf(disclosureAtom, e)
-    const open = isOpen(await read($, disclosure), e.props.isErrored)
-    const base = await sessionLook($, e, lookOf($.ui.resolve(e), active, e.surface, copy), {
-      touched: typeof path === 'string',
-      folds: open,
-      cwd,
-    })
-    const look = base.svg === undefined ? base : { ...base, isFirstDraw: await firstDraws($, e, active.prefs) }
-    // A file this turn made or changed keeps its colour in every row that names it.
-    const touch = typeof path === 'string' && look.touched !== undefined ? touchOf(look.touched.files, path, cwd) : undefined
-    const label = active.prefs.quiet && isQuiet(e.props.tool, e.props.input) ? quietLabel(e.props.tool) : toolLabel(e.props.tool)
-    const row = toolRow(look, e.props, kind, target, meta, label, touch)
-    const toggle = () => void update($, disclosure, () => (open ? 'closed' : 'open'))
-
-    if (!open) {
-      return withSettle($, e, disclosedRow(look, row, false, toggle))
-    }
-
-    const all = memberOf(allAtom, e)
-    const isAll = await read($, all)
-    const opened = await openedRows(look, {
-      fields: inputFields(e.props.tool, e.props.input, cwd),
-      body: bodyOf(e.props.tool, e.props.output, e.props.isErrored, e.props.isRunning, cwd),
-      command: commandOf(e.props.input),
-      isErrored: e.props.isErrored,
-      cwd,
-      columns: e.viewport?.columns ?? 100,
-      isAll,
-      toggleAll: () => void update($, all, () => !isAll),
-      stock: () => next(e),
-    })
-
-    return withSettle($, e, disclosedRow(look, row, true, toggle, opened))
+    return next(e)
   })
 
-  on('ui.render', { component: 'ToolGroup' }, async ($, e, next) => {
-    const active = await activeSkin($)
+  on('ui.render', { component: 'UserMessage' }, async ($, e, next) =>
+    inset($, e, next, async stock => {
+      const active = await activeSkin($)
 
-    if (active === null) {
-      return next(e)
-    }
-
-    const drawing = drawingOf(e)
-
-    if (active.prefs.expand) {
-      // expand opens every group for Claude Code to draw, as if the person had. A click on
-      // the group's line moves Claude Code's flag off the value it began at, and a second
-      // click puts it back: the first folds the group, the second opens it again.
-      const start = groupStarts.get(drawing) ?? e.props.isExpanded
-      groupStarts.set(drawing, start)
-
-      if (e.props.isExpanded === start) {
-        return next({ ...e, props: { ...e.props, isExpanded: true } })
+      // Off the terminal your messages keep Claude Code's own component: it carries the copy
+      // and rewind buttons, the context menu and selectable text, which an outline would lose.
+      if (active === null || e.surface !== 'terminal' || !TYPED.has(e.props.origin.kind) || e.props.text.length > MAX_PROMPT) {
+        return stock(e)
       }
-    } else {
-      groupStarts.delete(drawing)
 
-      if (e.props.isExpanded) {
-        return next(e)
-      }
-    }
+      const look = lookOf($.ui.resolve(e), active, e.surface)
+      const hasImages = imagePrompts.has(e.props.text.trim())
 
-    return groupRow(lookOf($.ui.resolve(e), active, e.surface), e.props.calls)
-  })
-
-  on('ui.render', { component: 'ToolResult' }, async ($, e, next) => {
-    const active = await activeSkin($)
-    const output = e.props.output as { stdout?: unknown } | null
-    const copy = (text: string) => {
-      void $.ui.copy({ text, surface: e.surface }).then(result => $.ui.toast(result.isCopied ? 'Copied' : 'Could not copy here'))
-    }
-    // Only the terminal's shell card has a fold control here.
-    const needs = { folds: e.surface === 'terminal' && SHELLS.has(e.props.tool) }
-    const look = active === null ? undefined : await sessionLook($, e, lookOf($.ui.resolve(e), active, e.surface, copy), needs)
-    const columns = e.viewport?.columns ?? 100
-    // An opened row draws the answer itself; one it cannot draw keeps Claude Code's here.
-    const isOpened =
-      active !== null &&
-      kindOf(e.props.tool) !== null &&
-      isOpen(await read($, memberOf(disclosureAtom, e)), e.props.isErrored) &&
-      bodyOf(e.props.tool, e.props.output, e.props.isErrored, false, '').kind !== 'stock'
-
-    if (isOpened) {
-      const { Box } = $.ui.resolve(e)
-
-      return <Box />
-    }
-
-    // Calm never folds a failure away: it is drawn whole, past quiet and the clip.
-    const isCalmFailure = look !== undefined && look.prefs.calm !== null && e.props.isErrored
-
-    // A call that only looked folds away; a failure keeps the line that says why.
-    if (look !== undefined && look.prefs.quiet && !isCalmFailure && (await read($, memberOf(quietAtom, e)))) {
-      return quietResult(look, e.props.isErrored ? errorLine(e.props.output) : null)
-    }
-
-    // The desktop gets cards: a diff for an edit, a terminal for a shell command.
-    if (look?.svg !== undefined && EDITS.has(e.props.tool) && !e.props.isErrored) {
-      const diff = hunksOf(e.props.output)
-
-      if (diff !== null) {
-        const shown = shortenPath(diff.path, await $.session.cwd())
-
-        return withSettle($, e, diffCard({ ...look, isFirstDraw: await firstDraws($, e, look.prefs) }, look.svg, diff, shown, columns))
-      }
-    }
-
-    const isShellCard = look !== undefined && look.prefs.shell && SHELLS.has(e.props.tool) && !keepsOwnRow(e.props.output)
-
-    if (look?.svg !== undefined && isShellCard) {
-      const shell = shellOutputOf(e.props.output)
-
-      if (shell !== null) {
-        return withSettle($, e, terminalCard({ ...look, isFirstDraw: await firstDraws($, e, look.prefs) }, look.svg, shell, e.props.isErrored, columns))
-      }
-    }
-
-    // The terminal's card is text: the command and its exit status, stderr apart, folded.
-    if (look !== undefined && e.surface === 'terminal' && isShellCard) {
-      const shell = shellResultOf(e.props.output, e.props.isErrored)
-
-      if (shell !== null) {
-        // `/skin fold off`, or the person's `▾ N more`, shows the output whole.
-        const isWhole = !look.prefs.fold || look.folds?.open.has(OUTPUT_FOLD) === true
-        const fold = isWhole ? null : { head: CLIP_HEAD, tail: CLIP_TAIL }
-
-        return shellRows(look, await read($, memberOf(commandAtom, e)), shell, e.props.isErrored, {
-          stdout: fold,
-          stderr: isCalmFailure ? null : fold,
-        })
-      }
-    }
-
-    if (!active?.prefs.clipOutput || isCalmFailure || !SHELLS.has(e.props.tool) || typeof output?.stdout !== 'string') {
-      return next(e)
-    }
-
-    const stdout = clipLines(output.stdout, CLIP_HEAD, CLIP_TAIL)
-
-    return stdout === output.stdout
-      ? next(e)
-      : next({ ...e, props: { ...e.props, output: { ...output, stdout } } })
-  })
-
-  on('ui.render', { component: 'UserMessage' }, async ($, e, next) => {
-    const active = await activeSkin($)
-
-    // Off the terminal your messages keep Claude Code's own component: it carries the copy
-    // and rewind buttons, the context menu and selectable text, which an outline would lose.
-    if (active === null || e.surface !== 'terminal' || !TYPED.has(e.props.origin.kind) || e.props.text.length > MAX_PROMPT) {
-      return next(e)
-    }
-
-    const look = lookOf($.ui.resolve(e), active, e.surface)
-    const hasImages = await read($, memberOf(imagesAtom, e))
-
-    // Claude Code draws the images; the text is already in the outline above them.
-    return promptRow(look, e.props.text, hasImages ? await next({ ...e, props: { ...e.props, text: '' } }) : undefined)
-  })
-
-  // While charts are drawn, the model learns it can answer a "show me" with a Mermaid
-  // fence. Nothing for a headless run, which draws nothing.
-  on('prompt.compose', async ($, e, next) => {
-    const result = await next(e)
-    const active = await activeSkin($)
-    const isHeadless = e.surfaces.length === 0 || e.traits.includes('bare') || e.traits.includes('print')
-
-    if (active === null || !active.prefs.charts || !active.prefs.hints || isHeadless) {
-      return result
-    }
-
-    return { sections: [...result.sections, { id: 'fabric:charts', text: CHART_HINT, scope: 'session' as const }] }
-  })
+      // Claude Code draws the images; the text is already in the outline above them.
+      return promptRow(look, e.props.text, hasImages ? await stock({ ...e, props: { ...e.props, text: '' } }) : undefined)
+    }))
 
   // A reply keeps Claude Code's own drawing unless it holds a card or markdown the pack draws.
-  on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
-    const active = await activeSkin($)
+  on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) =>
+    inset($, e, next, async stock => {
+      const active = await activeSkin($)
 
-    const text = e.props.text
+      const text = e.props.text
 
-    if (active === null) {
-      return next(e)
-    }
+      if (active === null) {
+        return stock(e)
+      }
 
-    const { prefs } = active
-    const segments = replySegments(text, prefs, e.surface)
+      const { prefs } = active
+      const segments = replySegments(text, prefs, e.surface)
 
-    // A reply skin-code draws is its: Claude Code may run either mod's hook first, and this
-    // keeps the code in the person's VS Code theme whichever it is. skin-code draws the
-    // prose around it through `$.fabric.markdown`.
-    if (segments === null || (await drawnBySkinCode($, text))) {
-      return next(e)
-    }
+      // A reply skin-code draws is its: Claude Code may run either mod's hook first, and this
+      // keeps the code in the person's VS Code theme whichever it is. skin-code draws the
+      // prose around it through `$.fabric.markdown`.
+      if (segments === null || (await drawnBySkinCode($, text))) {
+        return stock(e)
+      }
 
-    // Every surface's table names Svg, but the terminal draws it as nothing. As text, tables
-    // are text grids and code the app's own selectable blocks.
-    const ui = $.ui.resolve(e)
-    const svg = e.surface !== 'terminal' && active.prefs.tables === 'on' && 'Svg' in ui ? ui.Svg : undefined
-    lastColumns = e.viewport?.columns
-    const copy = (copied: string) => {
-      void $.ui.copy({ text: copied, surface: e.surface }).then(result => $.ui.toast(result.isCopied ? 'Copied' : 'Could not copy here'))
-    }
+      // Every surface's table names Svg, but the terminal draws it as nothing. As text, tables
+      // are text grids and code the app's own selectable blocks.
+      const ui = $.ui.resolve(e)
+      const svg = e.surface !== 'terminal' && active.prefs.tables === 'on' && 'Svg' in ui ? ui.Svg : undefined
+      lastColumns = e.viewport?.columns
+      const copy = (copied: string) => {
+        void $.ui.copy({ text: copied, surface: e.surface }).then(result => $.ui.toast(result.isCopied ? 'Copied' : 'Could not copy here'))
+      }
 
-    const base = await sessionLook($, e, lookOf(ui, active, e.surface, copy), replyNeeds(text, segments))
-    const look = base.svg === undefined ? base : { ...base, isFirstDraw: await firstDraws($, e, prefs) }
+      const base = await sessionLook($, e, lookOf(ui, active, e.surface, copy), replyNeeds(text, segments))
+      const look = base.svg === undefined ? base : { ...base, isFirstDraw: await firstDraws($, e, prefs) }
 
-    // A reply of several blocks can be copied whole, as Claude wrote it.
-    return withSettle($, e, replyRows(look, segments, e.viewport?.columns ?? 100, svg, segments.length > 1 ? text : undefined))
-  })
+      // A reply of several blocks can be copied whole, as Claude wrote it.
+      return withSettle($, e, replyRows(look, segments, drawnColumns(e), svg, segments.length > 1 ? text : undefined))
+    }))
 
   // A slash command's output (`/cost`, `/context`, a plugin's) drawn the way a reply is: its
   // tables and code as cards, a run of `key: value` lines as a table. /skin's own rows are
   // already the skin's.
-  on('ui.render', { component: 'CommandOutput' }, async ($, e, next) => {
-    const active = await activeSkin($)
+  on('ui.render', { component: 'CommandOutput' }, async ($, e, next) =>
+    inset($, e, next, async stock => {
+      const active = await activeSkin($)
 
-    if (active === null || !active.prefs.commands || active.prefs.tables === 'off' || e.props.isErrored || e.props.command === 'skin') {
-      return next(e)
-    }
+      if (active === null || !active.prefs.commands || active.prefs.tables === 'off' || e.props.isErrored || e.props.command === 'skin') {
+        return stock(e)
+      }
 
-    const segments = e.props.text.length > MAX_MARKDOWN ? null : commandSegments(e.props.text, e.props.command)
+      const segments = e.props.text.length > MAX_MARKDOWN ? null : commandSegments(e.props.text, e.props.command)
 
-    if (segments === null) {
-      return next(e)
-    }
+      if (segments === null) {
+        return stock(e)
+      }
 
-    const ui = $.ui.resolve(e)
-    const svg = e.surface !== 'terminal' && active.prefs.tables === 'on' && 'Svg' in ui ? ui.Svg : undefined
-    const copy = (copied: string) => {
-      void $.ui.copy({ text: copied, surface: e.surface }).then(result => $.ui.toast(result.isCopied ? 'Copied' : 'Could not copy here'))
-    }
+      const ui = $.ui.resolve(e)
+      const svg = e.surface !== 'terminal' && active.prefs.tables === 'on' && 'Svg' in ui ? ui.Svg : undefined
+      const copy = (copied: string) => {
+        void $.ui.copy({ text: copied, surface: e.surface }).then(result => $.ui.toast(result.isCopied ? 'Copied' : 'Could not copy here'))
+      }
 
-    const base = await sessionLook($, e, lookOf(ui, active, e.surface, copy), replyNeeds(e.props.text, segments))
-    const look = base.svg === undefined ? base : { ...base, isFirstDraw: await firstDraws($, e, active.prefs) }
+      const base = await sessionLook($, e, lookOf(ui, active, e.surface, copy), replyNeeds(e.props.text, segments))
+      const look = base.svg === undefined ? base : { ...base, isFirstDraw: await firstDraws($, e, active.prefs) }
 
-    return withSettle($, e, replyRows(look, segments, e.viewport?.columns ?? 100, svg))
-  })
+      return withSettle($, e, replyRows(look, segments, drawnColumns(e), svg))
+    }))
 
   // The terminal's spinner gets the skin's word with a shimmer; the desktop's keeps its
   // word, which says what the step is doing, beside an animated icon.
-  on('ui.render', { component: 'Spinner' }, async ($, e, next) => {
-    const active = await activeSkin($)
+  on('ui.render', { component: 'Spinner' }, async ($, e, next) =>
+    inset($, e, next, async stock => {
+      const active = await activeSkin($)
 
-    if (active === null) {
-      return next(e)
-    }
+      if (active === null) {
+        return stock(e)
+      }
 
-    if (e.surface !== 'terminal') {
-      const look = lookOf($.ui.resolve(e), active, e.surface)
+      if (e.surface !== 'terminal') {
+        const look = lookOf($.ui.resolve(e), active, e.surface)
 
-      // Calm keeps the app's own, quieter spinner.
-      return look.svg === undefined || active.prefs.calm !== null
-        ? next(e)
-        : desktopSpinnerRow(look, look.svg, e.props.mode, e.props.message ?? e.props.word)
-    }
+        // Calm keeps the app's own, quieter spinner.
+        return look.svg === undefined || active.prefs.calm !== null
+          ? stock(e)
+          : desktopSpinnerRow(look, look.svg, e.props.mode, e.props.message ?? e.props.word)
+      }
 
-    // words claude keeps Claude Code's own word, whatever the skin says.
-    const word = active.prefs.words === 'claude' ? e.props.word : (pick(active.skin.spinner, e.props.word) ?? e.props.word)
+      // words claude keeps Claude Code's own word, whatever the skin says.
+      const word = active.prefs.words === 'claude' ? e.props.word : (pick(active.skin.spinner, e.props.word) ?? e.props.word)
 
-    if (!active.prefs.shimmer || e.props.message !== null) {
-      return next({ ...e, props: { ...e.props, word } })
-    }
+      if (!active.prefs.shimmer || e.props.message !== null) {
+        return stock({ ...e, props: { ...e.props, word } })
+      }
 
-    const frame = await read($, frameAtom)
-    const startedAt = await read($, startedAtom)
-    const elapsed = startedAt === 0 ? 0 : (await $.clock.now()) - startedAt
+      const frame = await read($, frameAtom)
+      const startedAt = await read($, startedAtom)
+      const elapsed = startedAt === 0 ? 0 : (await $.clock.now()) - startedAt
 
-    return spinnerRow(lookOf($.ui.resolve(e), active, e.surface), word, frame, elapsed)
-  })
+      return spinnerRow(lookOf($.ui.resolve(e), active, e.surface), word, frame, elapsed)
+    }))
 
-  on('ui.render', { component: 'TurnDuration' }, async ($, e, next) => {
-    const active = await activeSkin($)
+  on('ui.render', { component: 'TurnDuration' }, async ($, e, next) =>
+    inset($, e, next, async stock => {
+      const active = await activeSkin($)
 
-    if (active === null) {
-      return next(e)
-    }
+      if (active === null) {
+        return stock(e)
+      }
 
-    const turns = await read($, turnsAtom)
-    const word = active.prefs.words === 'claude' ? e.props.word : (pick(active.skin.done, e.props.word) ?? e.props.word)
+      const turns = await read($, turnsAtom)
+      const word = active.prefs.words === 'claude' ? e.props.word : (pick(active.skin.done, e.props.word) ?? e.props.word)
 
-    return footerRow(lookOf($.ui.resolve(e), active, e.surface), word, e.props.durationMs, turns[String(e.props.durationMs)])
-  })
-
-  // The band above the prompt: context and plan limits. Another mod's drawing there,
-  // and a survey, keep their place.
-  on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    const active = await activeSkin($)
-    const usage = await read($, usageAtom)
-    // Drawn from the clock so a countdown switched on shows at once; reading the atom
-    // redraws the band when the minute tick changes one.
-    const countdowns = active?.prefs.countdown === true ? (await read($, countdownsAtom), countdownsOf(usage, await $.clock.now())) : {}
-    const meters = metersOf(usage, countdowns)
-
-    if (active === null || !active.prefs.band || e.props.hasSurvey || meters.length === 0) {
-      return next(e)
-    }
-
-    const plain = lookOf($.ui.resolve(e), active, e.surface)
-    const { Box } = plain.ui
-    const theirs = await next(e)
-    // Compacting mid-turn would cut the turn's own context out from under it.
-    // Runs Claude Code's own /compact, so the person sees its usual progress and result.
-    // Work a press starts is abandoned when the press ends, which cancels a compaction
-    // still running, so a timer starts it in a dispatch of its own, which returns the run
-    // so that dispatch lasts until the compaction ends. The button hides until then, so
-    // repeated presses do not queue one /compact each.
-    const isCompacting = await read($, compactingAtom)
-    const compact = () => {
-      void update($, compactingAtom, () => true)
-      $.clock.after(1, () =>
-        $.command
-          .run({ command: 'compact' })
-          .catch((error: unknown) => $.ui.toast(`Compacting failed: ${error instanceof Error ? error.message : String(error)}`))
-          .finally(() => update($, compactingAtom, () => false)),
-      )
-    }
-    const look = { ...plain, ...(plain.svg === undefined ? {} : { isFirstDraw: await firstDraws($, e, active.prefs) }) }
-
-    return withSettle(
-      $,
-      e,
-      <Box flexDirection="column">
-        {usageBand(look, meters, active.prefs.compact && !e.props.isWorking && !isCompacting, compact)}
-        {theirs}
-      </Box>,
-    )
-  })
+      return footerRow(lookOf($.ui.resolve(e), active, e.surface), word, e.props.durationMs, turns[String(e.props.durationMs)])
+    }))
 
   // Claude Code's own dialog stays whole: the skin only adds a band above it.
   on('ui.render', { component: 'AskUserQuestion' }, async ($, e, next) => {
@@ -1258,7 +1162,7 @@ export const register: Register = on => {
       theirs
     ) : (
       <Box flexDirection="column">
-        {askBand(look, headers)}
+        <Box paddingX={SIDE_PAD}>{askBand(look, headers)}</Box>
         {theirs}
       </Box>
     )

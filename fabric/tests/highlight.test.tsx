@@ -164,7 +164,6 @@ function stub(on: On) {
   on('store.set', () => ({ value: undefined }))
   on('ui.toast', () => ({ value: undefined }))
   on('ui.log', () => ({ value: undefined }))
-  on('session.usage', () => ({ value: { startedAt: 0, context: { window: 200000, percent: 42 }, rateLimits: [] } }))
   on('ui.render', () => STOCK)
 }
 

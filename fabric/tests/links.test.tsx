@@ -25,7 +25,6 @@ function stub(on: On, env: Record<string, string> = {}, copied: string[] = []) {
     copied.push(e.text)
     return { value: { isCopied: true } }
   })
-  on('session.usage', () => ({ value: { startedAt: 0, context: { window: 200000, percent: 42 }, rateLimits: [] } }))
   on('session.start', () => ({ cwd: '/work' }))
   on('command.register', () => ({ value: { command: 'skin' } }))
   on('tool.register', () => ({ value: { tool: 'mcp__fabric__design' } }))

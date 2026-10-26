@@ -27,7 +27,6 @@ function stub(on: On, copied: string[] = [], logs: string[] = []) {
     copied.push(e.text)
     return { value: { isCopied: true } }
   })
-  on('session.usage', () => ({ value: { startedAt: 0, context: { window: 200000, percent: 42 }, rateLimits: [] } }))
   on('ui.render', () => STOCK)
 }
 
