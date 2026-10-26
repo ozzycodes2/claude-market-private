@@ -1,9 +1,7 @@
 # technical-writing
 
 Human-facing developer writing, done well — the prose that surrounds code.
-Provides the `writing-design-docs` skill and the `laconic` output style. (For
-writing *for agents* — CLAUDE.md, AGENTS.md, skills — see the `agent-authoring`
-plugin instead.)
+Provides the `writing-design-docs` skill and the `laconic` output style.
 
 ## Skills
 
