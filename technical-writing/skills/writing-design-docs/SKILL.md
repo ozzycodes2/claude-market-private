@@ -82,6 +82,10 @@ Use the template at `template.md` in this skill directory. Drop it into the proj
 
 When drafting interactively, work one section at a time — don't generate the whole doc in one shot. The shared understanding *is* the value, and it forms only through the conversation.
 
+For diagrams, follow `../../references/diagrams.md`.
+
+Offer `review-doc` when a draft is complete.
+
 ## Anti-patterns when drafting
 
 | Don't | Why |
