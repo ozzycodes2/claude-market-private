@@ -1,11 +1,11 @@
 ---
-description: Run one-shot environment diagnostics for Diagram Design (Mine Final) readiness
+description: Run one-shot environment diagnostics for Diagram Design (Fabric) readiness
 argument-hint: "[--strict] [--json]"
 allowed-tools: Read, Bash, Glob
 disable-model-invocation: true
 ---
 
-Run environment diagnostics for Diagram Design (Mine Final) by following [`skills/create-diagram/references/doctor.md`](../skills/create-diagram/references/doctor.md). Treat that reference as the source of truth and do not reimplement its logic here.
+Run environment diagnostics for Diagram Design (Fabric) by following [`skills/create-diagram/references/doctor.md`](../skills/create-diagram/references/doctor.md). Treat that reference as the source of truth and do not reimplement its logic here.
 
 Full argument string: `$ARGUMENTS`
 

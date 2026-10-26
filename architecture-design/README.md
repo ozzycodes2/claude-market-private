@@ -12,7 +12,7 @@ that ends in a visual report.
 | `domain-modeling` | Build and sharpen a project's domain model — pin down ubiquitous language and record architectural decisions (ADRs). |
 | `improve-codebase-architecture` | Scan a codebase for deepening opportunities, present them as a visual HTML report, then grill through whichever one you pick. |
 | `setup-matt-pocock-skills` | One-time repo setup — configures the issue tracker, triage label vocabulary, and domain doc layout. Run once before first use of the other skills. |
-| `create-diagram` | Draw the architecture as a self-contained HTML/SVG figure — 45 visual types, Mine Final skin, with `.drawio` / Mermaid / Excalidraw import. |
+| `create-diagram` | Draw the architecture as a self-contained HTML/SVG figure — 45 visual types, Fabric skin, with `.drawio` / Mermaid / Excalidraw import. |
 
 ## Usage
 
@@ -48,7 +48,7 @@ automatic spacing and routing.
 ## create-diagram
 
 A fork of Cathryn Lavery's [diagram-design](https://github.com/cathrynlavery/diagram-design)
-(v2.6, MIT), reskinned to Mine Final. The layout grammar is unchanged — same
+(v2.6, MIT), reskinned to Fabric. The layout grammar is unchanged — same
 forty-five visual types, same six connector rules, same nine-node / twelve-arrow
 budget, same 217 worked examples at the same coordinates. Three skin rules
 override what upstream ships:

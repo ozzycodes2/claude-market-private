@@ -1,14 +1,14 @@
 ---
 name: create-diagram
-description: Create Mine Final-skinned architecture, architecture delta, IT current-state, flowchart, sequence, state machine, ER/data model, timeline, swimlane, quadrant, radar/spider, polar chart (polar/radial lollipop), loop/flywheel, nested, tree, org chart, layer stack, exploded axonometric, axonometric plan, Venn, pyramid/funnel, treemap and marimekko, heatmap, bar and dumbbell, waterfall, line (slopegraph, ridgeline, streamgraph, bump), Gantt and scatter charts (bubble, beeswarm), high-level, process, medallion, data flow, DP integration, DP security matrix, Sankey, fishbone, Wardley map, kanban, user journey, service blueprint, deployment, dependency graph, UML class, story map, or database schema diagrams as HTML/SVG/PNG, with .drawio, Mermaid, and .excalidraw import, plus lifecycle phase maps, block decomposition trees, and onboarding guidance. One signal chroma, no serif, accent on objects never type.
+description: Create Fabric-skinned architecture, architecture delta, IT current-state, flowchart, sequence, state machine, ER/data model, timeline, swimlane, quadrant, radar/spider, polar chart (polar/radial lollipop), loop/flywheel, nested, tree, org chart, layer stack, exploded axonometric, axonometric plan, Venn, pyramid/funnel, treemap and marimekko, heatmap, bar and dumbbell, waterfall, line (slopegraph, ridgeline, streamgraph, bump), Gantt and scatter charts (bubble, beeswarm), high-level, process, medallion, data flow, DP integration, DP security matrix, Sankey, fishbone, Wardley map, kanban, user journey, service blueprint, deployment, dependency graph, UML class, story map, or database schema diagrams as HTML/SVG/PNG, with .drawio, Mermaid, and .excalidraw import, plus lifecycle phase maps, block decomposition trees, and onboarding guidance. One signal chroma, no serif, accent on objects never type.
 license: MIT
 metadata:
   version: "2.6"
 ---
 
-# Diagram Design — Mine Final
+# Diagram Design — Fabric
 
-Create diagrams as self-contained HTML files with inline SVG, skinned to Mine Final.
+Create diagrams as self-contained HTML files with inline SVG, skinned to Fabric.
 
 A fork of Cathryn Lavery's [diagram-design](https://github.com/cathrynlavery/diagram-design) (MIT). The layout grammar is unchanged — same forty-five types, same connector rules, same complexity budget. The skin is not, and three of its rules override what the original ships:
 
@@ -340,7 +340,7 @@ Every diagram ships in three variants (see `assets/`):
 
 **Sketchy variant** (optional, applied to any of the above): a hand-drawn stroke filter for essays, not technical docs. See [primitive-sketchy.md](references/primitive-sketchy.md).
 
-**Terminal variant** (optional, replaces any of the above): CLI-window chrome for dev-tool posts. Start from `assets/template-terminal.html` and follow [primitive-terminal.md](references/primitive-terminal.md); examples are named `example-<type>-terminal.html`. It keeps the upstream terminal palette — an opt-in alternate skin, deliberately outside the Mine Final role table — so skip it for onboarded output.
+**Terminal variant** (optional, replaces any of the above): CLI-window chrome for dev-tool posts. Start from `assets/template-terminal.html` and follow [primitive-terminal.md](references/primitive-terminal.md); examples are named `example-<type>-terminal.html`. It keeps the upstream terminal palette — an opt-in alternate skin, deliberately outside the Fabric role table — so skip it for onboarded output.
 
 **Animation** (optional presentation layer) — see [animation.md](references/animation.md). Modes are `none` (default), `reveal`, `step`, and `loop`; motion never changes the static meaning or raises the complexity budget.
 

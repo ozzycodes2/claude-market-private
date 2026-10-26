@@ -84,7 +84,7 @@ CARRY_SPAN_TOLERANCE = 2.0
 HORIZONTAL_TOLERANCE = 1e-9
 MAX_BARS = 8
 MAX_SUBTOTALS = 1
-# Mine Final carries one accent across both polarities, so this is a
+# Fabric carries one accent across both polarities, so this is a
 # one-member set rather than the light/dark pair a reader may expect.
 ACCENT_STROKES = {"#ef6306"}
 SIGN_CHARS = {"+": 1, "-": -1, "\u2212": -1}

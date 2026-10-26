@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rewrite the worked examples from the shipped editorial skin to Mine Final.
+"""Rewrite the worked examples from the shipped editorial skin to Fabric.
 
 The old skin reuses hexes across polarities — `#2d3142` is light `ink` and dark
 `paper`, `#f5f5f5` is light `paper`, dark `ink` and `terminal-ink` — so a global
@@ -120,7 +120,7 @@ RESIDUAL_RGB = {
 def classify(text: str) -> str | None:
     """light, dark, terminal or done, read off the file's own paper declaration.
 
-    `done` means the palette is already Mine Final and only the fonts are stale.
+    `done` means the palette is already Fabric and only the fonts are stale.
     A file with no paper declaration at all is classified from whichever old
     paper hex it carries, and is `done` when it carries none.
     """
@@ -241,7 +241,7 @@ def structural_findings(original: str, polarity: str) -> list[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Rewrite worked examples from the editorial skin to Mine Final.",
+        description="Rewrite worked examples from the editorial skin to Fabric.",
     )
     parser.add_argument("assets", nargs="?", default=str(SKILL_ROOT / "assets"),
                         help="directory of example HTML (default: the skill's assets/)")

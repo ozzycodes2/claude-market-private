@@ -2,8 +2,8 @@
 
 **The single source of truth for colors, typography, and tokens.** Every diagram draws from this — not from hex values inlined in other reference files. If you want to change the visual skin of Diagram Design, change this file.
 
-The skin is **Mine Final** — two polarities of one token vocabulary, carried over
-from `systems/DESIGN-mine-final.md` in this repository's parent. Near-black
+The skin is **Fabric** — two polarities of one token vocabulary, carried over
+from `systems/DESIGN-fabric.md` in this repository's parent. Near-black
 ground or off-white ground, the same eleven diagram roles at two sets of values,
 and one shared signal orange across both. Swap these values (or run
 [`onboarding.md`](onboarding.md)) and every new diagram inherits the new skin
@@ -44,7 +44,7 @@ Every token is referred to by **semantic role**, not by its hex value. Type refe
 | `accent-deep` | Focus rings only | `{colors.primary-focus}` | `#d65905` | `#d65905` |
 
 > **Source system:** every value above except `accent-tint` is a literal from
-> `DESIGN-mine-final.md`, at the role its name implies. The source declares
+> `DESIGN-fabric.md`, at the role its name implies. The source declares
 > seventeen color roles against a component vocabulary; eleven of them map onto
 > diagram roles, and the six that don't (`primary-hover`, `surface-2` through
 > `-4`, `hairline-tertiary`, `inverse-canvas`/`inverse-ink`) describe pressed
@@ -322,7 +322,7 @@ Counting by script is still the trap. `Шкаф ODF-2` is four Cyrillic letters,
 | `grid` | `4` | Every coord, size, and gap is divisible by 4 (hard rule) | — |
 
 **The radius ladder is the source system's, with one value dropped and the rest
-re-pointed.** The shipped skin used 4/6/8; Mine Final declares 0/5/8/11/18/full
+re-pointed.** The shipped skin used 4/6/8; Fabric declares 0/5/8/11/18/full
 and forbids inventing a value between them, so 4 and 6 are not available. Node
 boxes take 5 and containers 8, which preserves the shipped skin's *relation* —
 a node is rounder than nothing and less round than the zone enclosing it — at
