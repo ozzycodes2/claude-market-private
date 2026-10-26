@@ -169,7 +169,7 @@
     },
     {
       "name": "fabric",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "description": "Fabric skins for Claude Code: tool rows that open onto their input and answer, diff, table, code, math, Mermaid and shell cards and a calm mode, in the Fabric palette (one chroma, ink on near-black or paper). Ships the fabric skin plus sixteen upstream themes; /skin swaps them live. A fork of hellosverre/claude-skins; the same tokens draw architecture-design's diagrams.",
       "category": "productivity",
       "repository": "https://github.com/ozzycodes2/claude-market-private",
