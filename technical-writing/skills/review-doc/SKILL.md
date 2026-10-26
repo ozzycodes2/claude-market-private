@@ -25,9 +25,11 @@ References, relative to this skill:
 4. **Check `common-doc-guidelines.md`.** File structure, headings, lists, links, and Markdown formatting problems become Form findings (Organization, Consistency, Formatting).
 5. **Check diagrams** per `diagrams.md`. Where the doc describes architecture, a flow, states, or more than three interacting components in prose and has no figure, add a finding with class `diagram`. Use the dimension the gap hurts most, usually Clarity or Organization.
 6. **Classify each finding** with pprose's apply-vs-flag rule:
-   - `apply`: safe and meaning-preserving. Every Expression and Form finding, including tells from `ai-tells.md`. Use it only when the fix cannot change meaning, claim strength, or scope.
-   - `flag`: substantive and judgment-bearing. Every Purpose, Reasoning, Grounding, and Judgment finding. Needs the author or new facts; never present as decided.
+   - `apply`: safe and meaning-preserving. Expression and Form findings, including tells from `ai-tells.md`, whose fix cannot change meaning, claim strength, or scope. `fix-doc` auto-applies these rows.
+   - `flag`: substantive and judgment-bearing. Every Purpose, Reasoning, Grounding, and Judgment finding. Also any Expression or Form finding whose fix would alter meaning, claim strength, or scope (for example, a Concision cut that removes a caveat). Needs the author or new facts; never present as decided.
    - `diagram`: a figure to add (step 5).
+
+   When a defect fits two classes, file it at the shallowest class that fully fixes it, but a possible meaning change always makes it `flag`. When unsure whether a fix preserves meaning, use `flag`.
 
 ## Rules
 
