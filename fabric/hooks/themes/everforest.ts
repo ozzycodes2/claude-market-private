@@ -21,6 +21,8 @@ const skin: Skin = {
     warn: '#dbbc7f',
     code: '#d699b6',
     codeBg: '#3d484d',
+    command: '#d3c6aa',
+    commandBg: '#3d484d',
   },
   light: {
     read: '#3a94c5',
@@ -40,6 +42,8 @@ const skin: Skin = {
     warn: '#dfa000',
     code: '#df69ba',
     codeBg: '#efebd4',
+    command: '#5c6a72',
+    commandBg: '#efebd4',
   },
   spinner: ['Foraging', 'Rooting', 'Sprouting', 'Hiking', 'Mossing', 'Branching'],
   done: ['Grown', 'Rooted', 'Foraged', 'Camped'],

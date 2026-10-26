@@ -1,13 +1,15 @@
 import { outputLine } from './code-rows'
 import { copyButton, onBorder } from './rows'
 import type { Look } from './rows'
+import { fill, type Palette } from './skin'
 import { foldLines, linesOf, shellStatus } from './shell'
 import type { Folded, ShellLine, ShellResult } from './shell'
 
 // The terminal's shell card, the text counterpart of the desktop's terminal card: a
-// header with the command and how it ended, on the skin's surface band as a table's header
-// row is, so the command stands apart from what it printed (#80); stdout, then stderr in the error colour under
-// a label of its own, each stream folded to its head and tail.
+// header with the command and how it ended, on the skin's command band, so the command
+// stands apart from what it printed (#80); stdout, then stderr in the error colour under
+// a label of its own, each stream folded to its head and tail. What the command printed
+// never takes the band's colour.
 
 // How many lines of each stream stay above and below the fold; null keeps every line.
 export type Fold = { head: number; tail: number } | null
@@ -18,9 +20,18 @@ export const OUTPUT_FOLD = 'fold-output'
 // Lines a stream may have before the drawing folds it, at the terminal card's 8 + 4.
 const FOLDS_PAST = 13
 
+// The palette with every slot that matches the band drawn in body text instead.
+const offBand = (palette: Palette): Palette =>
+  Object.fromEntries(Object.entries(palette).map(([slot, value]) => [slot, slot !== 'commandBg' && value === palette.commandBg ? palette.fg : value])) as Palette
+
 export function shellRows(look: Look, command: string, result: ShellResult, isErrored: boolean, at: { stdout: Fold; stderr: Fold }) {
   const { Box, Button, Text } = look.ui
-  const { palette } = look.skin
+  const band = look.skin.palette
+  const palette = offBand(band)
+  const output: Look = { ...look, skin: { ...look.skin, palette } }
+  // The status keeps its tone on a surface band; on a band in its own colour, it reads as
+  // the command does.
+  const isBanded = band.commandBg !== band.surface && fill(band.commandBg) !== undefined
   const lines = linesOf(result)
   const status = shellStatus(result, isErrored, look.prefs.icons === 'ascii')
   const fold = (stream: ShellLine[], at: Fold): Folded<ShellLine>[] => (at === null ? stream : foldLines(stream, at.head, at.tail))
@@ -34,7 +45,7 @@ export function shellRows(look: Look, command: string, result: ShellResult, isEr
         <Button key={key} label={`${look.prefs.icons === 'ascii' ? 'v' : '▾'} ${line.fold} more`} plain dimColor onPress={() => folds.toggle(OUTPUT_FOLD)} />
       )
     ) : look.prefs.highlight && !line.isErr && line.text !== '' ? (
-      outputLine(look, line.text)
+      outputLine(output, line.text)
     ) : (
       <Text color={line.isErr ? palette.err : palette.fg}>{line.text === '' ? ' ' : line.text}</Text>
     )
@@ -45,17 +56,17 @@ export function shellRows(look: Look, command: string, result: ShellResult, isEr
   return onBorder(
     look,
     <Box flexDirection="column" borderStyle="round" borderColor={palette.muted}>
-      <Box key="command" flexDirection="row" paddingX={1} backgroundColor={palette.surface}>
+      <Box key="command" flexDirection="row" paddingX={1} {...(fill(band.commandBg) === undefined ? {} : { backgroundColor: band.commandBg })}>
         <Box flexGrow={1} flexShrink={1}>
           <Text wrap="truncate-end">
-            <Text color={palette.run}>$ </Text>
-            <Text color={palette.fg} bold>
+            <Text color={isBanded ? band.command : band.run}>$ </Text>
+            <Text color={band.command} bold>
               {command === '' ? 'Output' : command}
             </Text>
           </Text>
         </Box>
         <Box flexShrink={0} paddingLeft={2}>
-          <Text color={palette[status.tone]}>{status.text}</Text>
+          <Text color={isBanded ? band.command : band[status.tone]}>{status.text}</Text>
         </Box>
       </Box>
       <Box flexDirection="column" paddingX={1}>

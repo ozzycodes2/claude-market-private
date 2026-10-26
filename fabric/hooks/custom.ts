@@ -20,6 +20,8 @@ export const SLOTS: readonly SkinSlot[] = [
   'other',
   'code',
   'codeBg',
+  'command',
+  'commandBg',
 ]
 
 // What each slot paints, for the settings pane and the agent's tool.
@@ -41,6 +43,8 @@ export const SLOT_HELP: Readonly<Record<SkinSlot, string>> = {
   other: 'anything else in a group',
   code: 'inline `code` in prose',
   codeBg: 'background behind inline code; "transparent" for none',
+  command: "the shell card's command and its status",
+  commandBg: 'band behind the shell card\'s command; shell output never takes this colour; "transparent" for none',
 }
 
 export type Customs = Readonly<Record<string, CustomSkin>>
@@ -48,7 +52,7 @@ export type Customs = Readonly<Record<string, CustomSkin>>
 const HEX = /^#[0-9a-f]{6}$/i
 
 // Slots that may be left unfilled; the rest must be a colour.
-const CLEARABLE: readonly SkinSlot[] = ['codeBg']
+const CLEARABLE: readonly SkinSlot[] = ['codeBg', 'commandBg']
 
 const isColour = (slot: SkinSlot, value: string): boolean =>
   HEX.test(value) || (value === TRANSPARENT && CLEARABLE.includes(slot))

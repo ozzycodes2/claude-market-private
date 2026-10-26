@@ -20,6 +20,7 @@ export const deepen = (hex: string, amount: number): string =>
 
 export function toLight(palette: Palette): Palette {
   const deep = (hex: string) => deepen(hex, 0.45)
+  const isBanded = palette.commandBg !== palette.surface && palette.commandBg !== TRANSPARENT
 
   return {
     read: deep(palette.read),
@@ -39,6 +40,9 @@ export function toLight(palette: Palette): Palette {
     warn: deepen(palette.warn, 0.5),
     code: deep(palette.code),
     codeBg: palette.codeBg === TRANSPARENT ? TRANSPARENT : '#ffffff',
+    // A command band on the skin's surface turns white with it; one in its own colour keeps
+    // that colour, and the text that reads on it.
+    ...(isBanded ? { command: palette.command, commandBg: palette.commandBg } : { command: '#1f1f1f', commandBg: palette.commandBg === TRANSPARENT ? TRANSPARENT : '#ffffff' }),
   }
 }
 

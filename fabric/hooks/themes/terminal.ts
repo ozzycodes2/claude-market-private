@@ -23,6 +23,8 @@ const skin: Skin = {
     warn: 'ansi256(3)',
     code: 'ansi256(4)',
     codeBg: 'userMessageBackground',
+    command: 'text',
+    commandBg: 'userMessageBackground',
   },
   spinner: noir.spinner,
   done: noir.done,

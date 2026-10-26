@@ -248,6 +248,17 @@ test('a folded group is one node, an expanded one keeps its rows', async ($, on)
   expect(await expanded.find({ type: 'Text', text: 'stock row' })).toBeDefined()
 })
 
+test('a folded group counts a shell command that only looks apart from one that runs', async ($, on) => {
+  stubEngine(on)
+
+  const calls = [call('Bash', { command: 'gh api repos/o/r' }), call('Bash', { command: 'grep -n x f.ts' }), call('Read', {})]
+  const ui = await $.ui.mount({ ...SITE, surface: 'terminal', component: 'ToolGroup', requestId: 'g-look', props: { calls, isActive: false, isExpanded: false } })
+  const row = (await ui.find({ type: 'Text', text: /Run 1 · Look 1 · Read 1/ })) as Found
+
+  expect(row).toBeDefined()
+  expect(spanColor(row, 'Look')).toBe(fabric.palette.read)
+})
+
 test('a folded group ends in a ▸ that says a click opens it, > with ascii icons', async ($, on) => {
   stubEngine(on)
 
@@ -601,6 +612,32 @@ test('the turn footer names the time in the skin’s words', async ($, on) => {
   })
 
   expect(await ui.find({ type: 'Text', text: /^◆ .+ in 1m 4s$/ })).toBeDefined()
+})
+
+test('the spinner, the footer, a folded group and the question band each stand a line below the reply', async ($, on) => {
+  stubEngine(on)
+
+  const elements = [
+    { component: 'Spinner', props: { word: 'Sauteing', message: null, suffix: '…', mode: 'responding' } },
+    { component: 'TurnDuration', props: { word: 'Baked', durationMs: 64000 } },
+    { component: 'ToolGroup', props: { calls: [call('Read', {})], isActive: false, isExpanded: false } },
+  ] as const
+
+  for (const [i, element] of elements.entries()) {
+    const ui = await $.ui.mount({ ...SITE, surface: 'terminal', requestId: `apart-${i}`, ...element })
+    expect(((await drawing(ui)) as Found)?.props.marginTop, element.component).toBe(1)
+    await ui.unmount()
+  }
+
+  const ask = await $.ui.mount({
+    ...SITE,
+    surface: 'terminal',
+    component: 'AskUserQuestion',
+    requestId: 'apart-q',
+    props: { tool: 'AskUserQuestion', questions: [{ header: 'Approach' }] },
+  })
+  const boxes = (await ask.findAll({ type: 'Box' })) as { props: { marginTop?: unknown } }[]
+  expect(boxes.some(box => box.props.marginTop === 1)).toBe(true)
 })
 
 test('/skin words claude hands Claude Code’s own spinner and footer words through, /skin words skin takes the skin’s back', async ($, on) => {
@@ -1799,6 +1836,30 @@ test('the terminal draws shell output as a card: the command and a tick, nothing
   expect(await ui.find({ type: 'Text', text: 'Tests  148 passed (148)' })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: 'stock row' })).toBeUndefined()
   expect(await ui.find({ type: 'Svg' })).toBeUndefined()
+})
+
+test('the shell card draws its command on the command band, and its output never in the band colour', async ($, on) => {
+  stubEngine(on)
+  const [id = '', other = ''] = await ranShells($, on, ['pnpm test', 'pnpm build'])
+  await $.tool.call({ tool: 'mcp__fabric__design', action: 'save', name: 'signal', base: 'fabric', palette: { search: '#ef6306' } })
+  const bandOf = async (ui: { findAll: (q: { type: string }) => Promise<unknown> }) =>
+    ((await ui.findAll({ type: 'Box' })) as { props: { backgroundColor?: unknown } }[]).map(box => box.props.backgroundColor).find(color => color !== undefined)
+
+  const ui = await $.ui.mount(shellResult(id, { stdout: 'Tests 148 passed', stderr: '', interrupted: false }))
+  const command = (await ui.find({ type: 'Text', text: '$ pnpm test' })) as Found
+  expect(await bandOf(ui)).toBe('#ef6306')
+  expect(spanColor(command, '$ ')).toBe(fabric.palette.command)
+  expect(spanColor(command, 'pnpm test')).toBe(fabric.palette.command)
+  expect(((await ui.find({ type: 'Text', text: '✓' })) as Found)?.props.color).toBe(fabric.palette.command)
+  // The number would take `search`, which this skin makes the band colour.
+  expect(spanColor((await ui.find({ type: 'Text', text: 'Tests 148 passed' })) as Found, '148')).toBe(fabric.palette.fg)
+  await ui.unmount()
+
+  // A band on the surface keeps the prompt in the run colour and the status in its tone.
+  await runSkin($, 'nord')
+  const nord = await $.ui.mount(shellResult(other, { stdout: 'ok', stderr: '', interrupted: false }))
+  expect(await bandOf(nord)).toBe('#3b4252')
+  expect(spanColor((await nord.find({ type: 'Text', text: '$ pnpm build' })) as Found, '$ ')).not.toBe('#e5e9f0')
 })
 
 test('a failed shell call shows its exit code, and stderr under its own label in the error colour', async ($, on) => {

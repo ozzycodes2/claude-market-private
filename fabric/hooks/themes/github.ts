@@ -21,6 +21,8 @@ const skin: Skin = {
     warn: '#d29922',
     code: '#d2a8ff',
     codeBg: '#161b22',
+    command: '#e6edf3',
+    commandBg: '#161b22',
   },
   light: {
     read: '#0969da',
@@ -40,6 +42,8 @@ const skin: Skin = {
     warn: '#9a6700',
     code: '#8250df',
     codeBg: '#f6f8fa',
+    command: '#1f2328',
+    commandBg: '#f6f8fa',
   },
   spinner: ['Committing', 'Rebasing', 'Forking', 'Pushing', 'Cherry-picking', 'Stashing'],
   done: ['Merged', 'Pushed', 'Committed', 'Tagged'],

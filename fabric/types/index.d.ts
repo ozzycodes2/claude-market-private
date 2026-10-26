@@ -1,6 +1,7 @@
 // Every colour a skin names. `fg` is body text, `muted` secondary text, `surface` the
 // band behind a table header, `zebra` every other table row, `code` and `codeBg` inline
-// code in prose. `codeBg` may be 'transparent'; every other slot is a colour.
+// code in prose, `command` and `commandBg` the shell card's command band. `codeBg` and
+// `commandBg` may be 'transparent'; every other slot is a colour.
 export type SkinSlot =
   | 'read'
   | 'write'
@@ -19,6 +20,8 @@ export type SkinSlot =
   | 'warn'
   | 'code'
   | 'codeBg'
+  | 'command'
+  | 'commandBg'
 
 // What /skin and the settings pane change. `skin` is a skin's name, or 'off'.
 export type Prefs = {

@@ -40,6 +40,9 @@ every change shows on screen the moment the call returns.
   off a dark background, never bright, or tables turn into stripes.
 - **Inline code.** `code` colours `inline code` in prose and `codeBg` is the band behind it.
   `codeBg` also takes `"transparent"`, which drops the band so only the colour marks code.
+- **Shell command band.** `commandBg` is the band behind the shell card's command and `command`
+  the text on it; pick a `command` that reads on the band. Shell output never takes the
+  `commandBg` colour. `commandBg` also takes `"transparent"`.
 - **Kinds told apart.** `read`, `write`, `run`, `search`, `web` and `mcp` colour tool names. Give the
   common ones (`run`, `write`, `read`) clearly different hues.
 - **Status stays conventional.** Keep `ok` green-ish and `err` red-ish whatever the theme.

@@ -22,6 +22,8 @@ const skin: Skin = {
     warn: '#a3a3a3',
     code: '#ededed',
     codeBg: '#151515',
+    command: '#ededed',
+    commandBg: '#151515',
   },
   light: {
     read: '#111111',
@@ -41,6 +43,8 @@ const skin: Skin = {
     warn: '#6b6b6b',
     code: '#111111',
     codeBg: '#ffffff',
+    command: '#151515',
+    commandBg: '#ffffff',
   },
   spinner: ['Thinking', 'Working', 'Composing', 'Considering', 'Weighing'],
   done: ['Done', 'Finished', 'Settled'],

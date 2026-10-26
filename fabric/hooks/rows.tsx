@@ -29,6 +29,7 @@ import type { ShellOutput } from './svg-terminal'
 import { codeRows } from './code-rows'
 import { languageOf } from './highlight'
 import { kindOf, toolLabel } from './tools'
+import { isQuiet } from './quiet'
 import { inlineMath, mathArt, parseTex } from './math'
 import { mathSvg } from './svg-math'
 
@@ -237,39 +238,57 @@ export function quietResult(look: Look, failure: string | null) {
   )
 }
 
-// A run of reads and searches on one node: `●─ Read 3 · Search 2 ▸`. The `▸` is plain text,
-// not a button: a click anywhere on the line is Claude Code's, and opens the group.
+// A shell command that only looks counts as `Look`, apart from one that runs.
+function groupOf(call: Call): { kind: Kind; label: string } {
+  const kind = kindOf(call.tool) ?? 'other'
+
+  return kind === 'run' && isQuiet(call.tool, call.input) ? { kind: 'read', label: 'Look' } : { kind, label: KIND_LABEL[kind] }
+}
+
+// A run of reads and searches on one node: `●─ Read 3 · Search 2 · Look 1 ▸`. The `▸` is
+// plain text, not a button: a click anywhere on the line is Claude Code's, and opens the group.
 export function groupRow(look: Look, calls: readonly Call[]) {
   const { Text } = look.ui
   const { palette } = look.skin
-  const counts = new Map<Kind, number>()
+  const counts = new Map<string, { kind: Kind; count: number }>()
 
   for (const call of calls) {
-    const kind = kindOf(call.tool) ?? 'other'
-    counts.set(kind, (counts.get(kind) ?? 0) + 1)
+    const { kind, label } = groupOf(call)
+    counts.set(label, { kind, count: (counts.get(label)?.count ?? 0) + 1 })
   }
 
-  const parts = [...counts].flatMap(([kind, count], i) => [
+  const parts = [...counts].flatMap(([label, { kind, count }], i) => [
     ...(i === 0 ? [] : [<Text color={palette.muted}>{' · '}</Text>]),
-    <Text color={palette[kind]}>{KIND_LABEL[kind]}</Text>,
+    <Text color={palette[kind]}>{label}</Text>,
     <Text color={palette.muted}>{` ${count}`}</Text>,
   ])
 
   parts.push(<Text color={palette.muted} dimColor>{look.prefs.icons === 'ascii' ? '  >' : '  ▸'}</Text>)
 
   if (look.svg !== undefined) {
-    const lead = [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'other'
+    const lead = [...counts.values()].sort((a, b) => b.count - a.count)[0]?.kind ?? 'other'
 
     return iconRow(look, look.svg, lead, calls, <Text wrap="truncate-end">{parts}</Text>)
   }
 
-  return stack(
+  return apart(
     look,
-    <Text wrap="truncate-end">
-      {node(look, calls)}
-      {parts}
-    </Text>,
+    stack(
+      look,
+      <Text wrap="truncate-end">
+        {node(look, calls)}
+        {parts}
+      </Text>,
+    ),
   )
+}
+
+// A blank line above a row of the turn's own (the spinner, the footer, a folded group, the
+// question band), so it stands off the reply above it.
+export function apart(look: Look, row: ReturnType<Ui['Text']>) {
+  const { Box } = look.ui
+
+  return <Box marginTop={1}>{row}</Box>
 }
 
 // The desktop's spinner row: an animated icon for what the turn is doing, beside the
@@ -797,14 +816,15 @@ export function spinnerRow(look: Look, word: string, frame: number, elapsedMs: n
     }
   }
 
-  return (
+  return apart(
+    look,
     <Text>
       <Text color={palette.user}>{`${look.icons.frames[frame % look.icons.frames.length] ?? ''} `}</Text>
       {runs.map(run => (
         <Text color={run.color}>{run.text}</Text>
       ))}
       <Text color={palette.muted}>{`…  ${formatDuration(elapsedMs)}`}</Text>
-    </Text>
+    </Text>,
   )
 }
 
@@ -816,7 +836,8 @@ export function footerRow(look: Look, word: string, durationMs: number, stats: T
   ]
   const hasDiff = stats !== undefined && stats.added + stats.removed > 0
 
-  return (
+  return apart(
+    look,
     <Text color={palette.muted}>
       <Text color={palette.user}>{`${look.icons.done} `}</Text>
       {`${word} in ${formatDuration(durationMs)}`}
@@ -824,7 +845,7 @@ export function footerRow(look: Look, word: string, durationMs: number, stats: T
       {hasDiff ? '  ·  ' : ''}
       {hasDiff ? <Text color={palette.ok}>{`+${stats.added}`}</Text> : ''}
       {hasDiff ? <Text color={palette.err}>{` −${stats.removed}`}</Text> : ''}
-    </Text>
+    </Text>,
   )
 }
 

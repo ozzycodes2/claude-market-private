@@ -149,7 +149,12 @@ test('a made skin lays its slots over its base, and bad drafts are refused with 
   expect(buildCustom({ name: 'x', base: 'nope' }, undefined)).toContain('base must be')
 })
 
-test('only codeBg takes transparent, from a draft or the pane', async () => {
+test('commandBg takes transparent too; command does not', async () => {
+  expect(typeof withSlot('nord', {}, 'commandBg', 'transparent')).toBe('object')
+  expect(withSlot('nord', {}, 'command', 'transparent')).toBe('use a colour like #7aa2f7')
+})
+
+test('only the band slots take transparent, from a draft or the pane', async () => {
   const clear = buildCustom({ name: 'clear', palette: { codeBg: 'Transparent', code: '#EF6306' } }, undefined)
 
   expect(typeof clear === 'string' ? clear : clear.palette).toEqual({ codeBg: 'transparent', code: '#ef6306' })
@@ -477,6 +482,14 @@ test('inline code takes its own slots, and a transparent band stays transparent 
   expect(fabric.light?.codeBg).toBe('transparent')
 })
 
+test('a command band on the surface turns white on light; one in its own colour keeps it and its text', async () => {
+  expect(toLight(tokyoNight.palette)).toMatchObject({ command: '#1f1f1f', commandBg: '#ffffff' })
+  expect(toLight({ ...tokyoNight.palette, commandBg: 'transparent' })).toMatchObject({ command: '#1f1f1f', commandBg: 'transparent' })
+  expect(toLight({ ...tokyoNight.palette, command: '#ffffff', commandBg: '#ef6306' })).toMatchObject({ command: '#ffffff', commandBg: '#ef6306' })
+  expect(fabric.palette).toMatchObject({ command: '#f7f8f8', commandBg: '#ef6306', zebra: '#220f03' })
+  expect(fabric.light).toMatchObject({ command: '#ffffff', commandBg: '#ef6306', zebra: '#f7e9e0' })
+})
+
 test('SKINS_THEME wins, then the theme, then the terminal and the system for auto', async () => {
   expect(resolveLight({ override: 'dark', theme: 'light' })).toBe(false)
   expect(resolveLight({ override: 'Light', theme: 'dark' })).toBe(true)
@@ -509,7 +522,7 @@ test('every built-in skin names itself once and fills every slot with a colour, 
   for (const skin of SKINS) {
     for (const palette of [skin.palette, ...(skin.light === undefined ? [] : [skin.light])]) {
       expect(Object.keys(palette).sort()).toEqual([...slots].sort())
-      expect(Object.entries(palette).every(([slot, value]) => hex.test(value) || (slot === 'codeBg' && value === 'transparent'))).toBe(true)
+      expect(Object.entries(palette).every(([slot, value]) => hex.test(value) || ((slot === 'codeBg' || slot === 'commandBg') && value === 'transparent'))).toBe(true)
     }
 
     expect(skin.spinner.length).toBeGreaterThan(0)

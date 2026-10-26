@@ -11,7 +11,7 @@ export const DESIGN_TOOL = {
     'tool rows on a timeline rail, tables, the spinner, the turn footer. Changes show at once.',
     'Call {"action":"show"} first: it returns the current skin, every slot with what it paints, and the names in use.',
     '"save" makes or updates a skin: name (lowercase, hyphens), base (a built-in skin it starts from),',
-    'palette ({slot: "#rrggbb"}, only the slots to change; codeBg also takes "transparent"), spinner (gerunds, like "Brewing"),',
+    'palette ({slot: "#rrggbb"}, only the slots to change; codeBg and commandBg also take "transparent"), spinner (gerunds, like "Brewing"),',
     'done (past tense, like "Brewed"), apply (default true).',
     '"apply" switches to a skin by name, "delete" removes a made one,',
     '"settings" switches rail, shimmer, clip, markdown, quiet, charts (booleans), tables ("on", "text" or "off") and icons ("unicode" or "ascii").',

@@ -13,7 +13,7 @@ import { bodyOf, inputFields, isOpen } from './detail'
 import { disclosedRow, openedRows } from './detail-rows'
 import { copyOf } from './markdown'
 import { commandSegments } from './command-output'
-import { askBand, desktopSpinnerRow, diffCard, footerRow, terminalCard, groupRow, promptRow, quietResult, replyRows, spinnerRow, toolRow } from './rows'
+import { apart, askBand, desktopSpinnerRow, diffCard, footerRow, terminalCard, groupRow, promptRow, quietResult, replyRows, spinnerRow, toolRow } from './rows'
 import type { Look, SvgElement, Ui } from './rows'
 import { galleryPane } from './gallery'
 import { keepsOwnRow, SHELLS, shellResultOf } from './shell'
@@ -1162,7 +1162,7 @@ export const register: Register = on => {
       theirs
     ) : (
       <Box flexDirection="column">
-        <Box paddingX={SIDE_PAD}>{askBand(look, headers)}</Box>
+        <Box paddingX={SIDE_PAD}>{apart(look, askBand(look, headers))}</Box>
         {theirs}
       </Box>
     )

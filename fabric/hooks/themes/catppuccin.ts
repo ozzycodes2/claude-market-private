@@ -21,6 +21,8 @@ const skin: Skin = {
     warn: '#f9e2af',
     code: '#cba6f7',
     codeBg: '#252536',
+    command: '#cdd6f4',
+    commandBg: '#252536',
   },
   light: {
     read: '#04a5e5',
@@ -40,6 +42,8 @@ const skin: Skin = {
     warn: '#df8e1d',
     code: '#8839ef',
     codeBg: '#e6e9ef',
+    command: '#4c4f69',
+    commandBg: '#e6e9ef',
   },
   spinner: ['Purring', 'Napping', 'Pouncing', 'Kneading', 'Stretching', 'Nuzzling'],
   done: ['Pounced', 'Purred', 'Napped', 'Curled up'],
