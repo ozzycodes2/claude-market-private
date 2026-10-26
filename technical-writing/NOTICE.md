@@ -15,13 +15,14 @@ Derived files:
 | `references/pprose-guidelines.md` | `docs/practical-prose-guidelines.md` |
 | `references/pprose-rubric.md` | `docs/practical-prose-rubric.md` |
 | `references/common-doc-guidelines.md` | `docs/common-doc-guidelines.md` |
-| `references/ai-tells.md` (patterns 27 to 45 and the fix wording of patterns 8, 17, 18, 19, and 20) | `docs/ai-prose-corrections.md` |
+| `references/ai-tells.md` (patterns 27 to 45, plus Practical Prose wording in patterns 8, 9, 12, 13, 15, 17, 18, 19, and 20) | `docs/ai-prose-corrections.md` |
 
 Local edits:
 
 - Removed the trailing Practical Prose footer comment (the HTML comment block at the end of each file) from every derived file.
 - In `common-doc-guidelines.md`, deleted section 6 "Guideline Footer". It was the last section, so no section needed renumbering.
 - Merged the `ai-prose-corrections.md` catalog into `ai-tells.md` as a checklist of patterns, each with how to spot it and how to fix it. Patterns the humanizer catalog already covers were not repeated, and where the two gave conflicting fixes the Practical Prose fix was kept.
+- Adapted Practical Prose wording into humanizer patterns in `ai-tells.md`: pattern 8 (dash convention), 9 (one hedge per claim, sized to the uncertainty), 12 (pointer to pattern 32), 13 (added "cannot be overstated", "watershed moment", and "deeply rooted"; fix names the date, change, and actor), 15 (promote a supported rider to a claim with an actor and evidence), 17 (added "studies show" and "it is widely regarded as"; fix names a checkable source or restates as the writer's own judgment), 18 (added "acts as" and "showcases"; literal-sense carve-outs), 19 (bold inline headings and defined terms are legitimate), and 20 (follow the document's own heading-case convention; Title Case for H1 and H2 when it has none).
 - Otherwise the guidelines and rubric are verbatim copies.
 
 The upstream repository is dual-licensed: code under the MIT License and prose content under Creative Commons Attribution 4.0 International (CC BY 4.0). The files derived here are prose content, so CC BY 4.0 applies to them. The complete upstream `LICENSE` file follows, including both license texts.
@@ -498,7 +499,10 @@ Local edits:
 - Dropped the skill frontmatter and the skill-invocation prose (the work process and the output modes), keeping the pattern catalog, the ground rules, and the "when not to act" guidance.
 - Reworded each pattern into a "Spot" and "Fix" form and kept the upstream before and after examples.
 - Merged in the Practical Prose catalog as patterns 27 to 45.
-- Changed the dash rule (pattern 8), the borrowed-authority fix (pattern 17), the copula carve-out (pattern 18), the bold-label rule (pattern 19), and the heading-case rule (pattern 20) to match Practical Prose.
+- Changed patterns 8, 9, 13, 15, 17, 18, 19, and 20 to match Practical Prose, and added Practical Prose terms to the watch lists of patterns 13, 17, and 18 (see the Practical Prose section for each change).
+- Added cross-references from pattern 12 to pattern 32 and from pattern 16 to pattern 31, and a short fix line for pattern 12 ("use the plain word or state the specific fact"). These are local edits, not derived from either upstream.
+- Reworded the fix for pattern 21 (curly quotation marks) from "use straight quotes" to "match the quote style the rest of the document uses", so a document written with curly quotes is not flattened. This is a local edit with no upstream basis.
+- Condensed the humanizer "How to work" and "Voice" sections into the "Ground rules" section, and added a sentence on patterns marked as flags. These are local edits.
 
 The upstream MIT license text follows.
 
