@@ -1,5 +1,5 @@
 import type { ProcessRunResult } from 'claude-code'
-import type { Palette, Skin } from './skin'
+import { TRANSPARENT, type Palette, type Skin } from './skin'
 
 // Every skin works on a light background too. A skin may carry its own light palette;
 // the rest are derived: body text goes near-black, bands go near-white, and each colour
@@ -37,6 +37,8 @@ export function toLight(palette: Palette): Palette {
     ok: deepen(palette.ok, 0.5),
     err: deepen(palette.err, 0.25),
     warn: deepen(palette.warn, 0.5),
+    code: deep(palette.code),
+    codeBg: palette.codeBg === TRANSPARENT ? TRANSPARENT : '#ffffff',
   }
 }
 

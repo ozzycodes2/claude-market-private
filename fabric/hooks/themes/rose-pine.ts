@@ -19,6 +19,8 @@ const skin: Skin = {
     ok: '#9ccfd8',
     err: '#eb6f92',
     warn: '#f6c177',
+    code: '#c4a7e7',
+    codeBg: '#26233a',
   },
   light: {
     read: '#56949f',
@@ -36,6 +38,8 @@ const skin: Skin = {
     ok: '#56949f',
     err: '#b4637a',
     warn: '#ea9d34',
+    code: '#907aa9',
+    codeBg: '#f2e9e1',
   },
   spinner: ['Blooming', 'Pruning', 'Steeping', 'Petaling', 'Wilting', 'Climbing'],
   done: ['Bloomed', 'Pruned', 'Steeped', 'Planted'],

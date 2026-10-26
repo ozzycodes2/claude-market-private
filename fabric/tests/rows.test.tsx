@@ -473,6 +473,43 @@ test('the markdown pack draws alerts and task lists everywhere, headings and par
   expect(await off.find({ type: 'Text', text: 'stock row' })).toBeDefined()
 })
 
+test('inline code takes the skin’s code colour, on its band or on none when transparent', async ($, on) => {
+  stubEngine(on)
+
+  type Span = { props?: { color?: unknown; backgroundColor?: unknown }; children?: readonly unknown[] }
+  const spanOf = (node: unknown, text: string): Span | undefined => {
+    const span = node as Span | undefined
+
+    if (span?.children?.[0] === text) {
+      return span
+    }
+
+    return span?.children?.map(child => spanOf(child, text)).find(found => found !== undefined)
+  }
+  const codeSpan = async (requestId: string) => {
+    const ui = await $.ui.mount({
+      ...SITE,
+      surface: 'terminal',
+      component: 'AssistantMessage',
+      requestId,
+      props: { text: '## Use\n\nRun `/fabric:skin-designer` here.', isFirstOfReply: true },
+    })
+    const span = spanOf(await ui.find({ type: 'Text', text: /Run/ }), '/fabric:skin-designer')
+
+    await ui.unmount()
+    return span
+  }
+
+  const clear = await codeSpan('code-fabric')
+  expect(clear?.props?.color).toBe('#ef6306')
+  expect(clear?.props && 'backgroundColor' in clear.props).toBe(false)
+
+  await runSkin($, 'nord')
+  const banded = await codeSpan('code-nord')
+  expect(banded?.props?.color).toBe('#b48ead')
+  expect(banded?.props?.backgroundColor).toBe('#3b4252')
+})
+
 test('a terminal table sizes Korean, Chinese, Japanese and emoji cells to their full width', async ($, on) => {
   stubEngine(on)
 

@@ -19,6 +19,8 @@ const skin: Skin = {
     ok: '#a7c080',
     err: '#e67e80',
     warn: '#dbbc7f',
+    code: '#d699b6',
+    codeBg: '#3d484d',
   },
   light: {
     read: '#3a94c5',
@@ -36,6 +38,8 @@ const skin: Skin = {
     ok: '#8da101',
     err: '#f85552',
     warn: '#dfa000',
+    code: '#df69ba',
+    codeBg: '#efebd4',
   },
   spinner: ['Foraging', 'Rooting', 'Sprouting', 'Hiking', 'Mossing', 'Branching'],
   done: ['Grown', 'Rooted', 'Foraged', 'Camped'],

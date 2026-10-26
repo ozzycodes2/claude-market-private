@@ -19,6 +19,8 @@ const skin: Skin = {
     ok: '#a6e3a1',
     err: '#f38ba8',
     warn: '#f9e2af',
+    code: '#cba6f7',
+    codeBg: '#252536',
   },
   light: {
     read: '#04a5e5',
@@ -36,6 +38,8 @@ const skin: Skin = {
     ok: '#40a02b',
     err: '#d20f39',
     warn: '#df8e1d',
+    code: '#8839ef',
+    codeBg: '#e6e9ef',
   },
   spinner: ['Purring', 'Napping', 'Pouncing', 'Kneading', 'Stretching', 'Nuzzling'],
   done: ['Pounced', 'Purred', 'Napped', 'Curled up'],

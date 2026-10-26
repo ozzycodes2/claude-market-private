@@ -19,6 +19,8 @@ const skin: Skin = {
     ok: '#aad94c',
     err: '#f07178',
     warn: '#ffb454',
+    code: '#d2a6ff',
+    codeBg: '#131721',
   },
   light: {
     read: '#4cbf99',
@@ -36,6 +38,8 @@ const skin: Skin = {
     ok: '#86b300',
     err: '#e65050',
     warn: '#f2ae49',
+    code: '#a37acc',
+    codeBg: '#f3f4f5',
   },
   spinner: ['Dawning', 'Glinting', 'Warming', 'Kindling', 'Shining', 'Ripening'],
   done: ['Dawned', 'Shone', 'Warmed', 'Lit'],

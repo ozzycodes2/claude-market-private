@@ -13,8 +13,8 @@ THEME = ROOT / "fabric/hooks/themes/fabric.ts"
 
 ROW = re.compile(r"^\| `([a-z0-9-]+)` \|.*\| `(#[0-9a-f]{6})` \| `(#[0-9a-f]{6})` \|$")
 INK_SLOTS = ("read", "write", "run", "search", "web", "mcp", "other", "user", "fg", "ok")
-# Slot -> guide role. Every slot not listed is ink; `zebra` and `err` have no guide role.
-ROLE = {"muted": "soft", "surface": "paper-2", "warn": "muted", **{s: "ink" for s in INK_SLOTS}}
+# Slot -> guide role. `zebra` and `err` have no guide role; `codeBg` is transparent.
+ROLE = {"muted": "soft", "surface": "paper-2", "warn": "muted", "code": "accent", **{s: "ink" for s in INK_SLOTS}}
 
 
 def guide_tokens():
@@ -49,7 +49,7 @@ class FabricTokens(unittest.TestCase):
     def test_both_polarities_fill_the_same_slots(self):
         palettes = theme_palettes()
         self.assertEqual(palettes["dark"].keys(), palettes["light"].keys())
-        self.assertEqual(len(palettes["dark"]), 15)
+        self.assertEqual(len(palettes["dark"]), 16)
 
 
 if __name__ == "__main__":

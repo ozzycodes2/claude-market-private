@@ -20,6 +20,8 @@ const skin: Skin = {
     ok: '#e0e0e0',
     err: '#ffffff',
     warn: '#bdbdbd',
+    code: '#9e9e9e',
+    codeBg: '#262626',
   },
   spinner: ['Working', 'Thinking', 'Reading', 'Writing', 'Checking'],
   done: ['Done', 'Finished', 'Completed'],

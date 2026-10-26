@@ -1,7 +1,7 @@
 import type { AlertType, Block, Line, Run, RunStyle, Task } from './blocks'
 import { safeHref, touchOf } from './links'
 import type { Look } from './rows'
-import type { Palette } from './skin'
+import { fill, type Palette } from './skin'
 
 type Glyphs = { mark: string; done: string; open: string }
 
@@ -18,7 +18,7 @@ const glyphs = (look: Look): Glyphs =>
 
 // The slot each highlighted kind of text takes from the skin.
 const SLOTS: Partial<Record<RunStyle, keyof Palette>> = {
-  code: 'search',
+  code: 'code',
   number: 'user',
   duration: 'user',
   version: 'mcp',
@@ -38,6 +38,7 @@ function runText(look: Look, run: Run) {
   const { palette } = look.skin
   const slot = run.style === 'path' ? pathSlot(look, run.text) : SLOTS[run.style]
   const href = run.style === 'url' && look.links === true ? safeHref(run.text) : null
+  const band = run.style === 'code' ? fill(palette.codeBg) : undefined
 
   // A URL the engine's Link takes is one where the surface draws links; any other is text.
   if (href !== null) {
@@ -54,7 +55,7 @@ function runText(look: Look, run: Run) {
       bold={run.style === 'bold'}
       italic={run.style === 'italic'}
       strikethrough={run.style === 'strike'}
-      {...(run.style === 'code' ? { backgroundColor: palette.surface } : {})}
+      {...(band === undefined ? {} : { backgroundColor: band })}
     >
       {run.text}
     </Text>

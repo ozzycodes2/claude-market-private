@@ -19,6 +19,8 @@ const skin: Skin = {
     ok: '#98c379',
     err: '#e06c75',
     warn: '#e5c07b',
+    code: '#c678dd',
+    codeBg: '#2c313a',
   },
   light: {
     read: '#0184bc',
@@ -36,6 +38,8 @@ const skin: Skin = {
     ok: '#50a14f',
     err: '#e45649',
     warn: '#c18401',
+    code: '#a626a4',
+    codeBg: '#f0f0f1',
   },
   spinner: ['Compiling', 'Linting', 'Atomizing', 'Bundling', 'Indexing', 'Parsing'],
   done: ['Built', 'Linted', 'Bundled', 'Indexed'],

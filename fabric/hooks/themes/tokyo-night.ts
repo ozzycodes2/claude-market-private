@@ -19,6 +19,8 @@ const skin: Skin = {
     ok: '#9ece6a',
     err: '#f7768e',
     warn: '#e0af68',
+    code: '#bb9af7',
+    codeBg: '#1f2335',
   },
   light: {
     read: '#007197',
@@ -36,6 +38,8 @@ const skin: Skin = {
     ok: '#587539',
     err: '#f52a65',
     warn: '#8c6c3e',
+    code: '#7847bd',
+    codeBg: '#d0d5e3',
   },
   spinner: ['Neon-ing', 'Drizzling', 'Glowing', 'Wiring', 'Night-driving', 'Rain-checking'],
   done: ['Lit up', 'Wired', 'Shipped', 'Landed'],

@@ -44,9 +44,11 @@ Ask Claude to design a skin and the `skin-designer` skill drives the `mcp__fabri
 | `muted` | `soft` |
 | `surface` | `paper-2` |
 | `warn` | `muted` |
+| `code` | `accent` |
 
 `zebra` is one step off `surface`. `err` is the only hue, because a failed call has to
-read as a failure.
+read as a failure. `codeBg` is `transparent`, so inline code is accent text with no
+band. Every other skin sets `codeBg` to its `surface`.
 
 `tests/test_fabric_tokens.py` fails when the skin and the style guide drift apart.
 

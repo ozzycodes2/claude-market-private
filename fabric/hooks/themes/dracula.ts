@@ -19,6 +19,8 @@ const skin: Skin = {
     ok: '#50fa7b',
     err: '#ff5555',
     warn: '#f1fa8c',
+    code: '#bd93f9',
+    codeBg: '#2b2d3a',
   },
   spinner: ['Brooding', 'Haunting', 'Conjuring', 'Lurking', 'Scheming', 'Unliving'],
   done: ['Risen', 'Conjured', 'Bitten', 'Vanquished'],

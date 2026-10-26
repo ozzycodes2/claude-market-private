@@ -6,6 +6,7 @@ import { SLOTS } from './custom'
 import type { Table } from './markdown'
 import { footerRow, groupRow, promptRow, tableRows, toolRow } from './rows'
 import type { Look } from './rows'
+import { fill } from './skin'
 
 export type PaneUi = Pick<ElementTable<'terminal' | 'desktop'>, 'Box' | 'Text' | 'Markdown' | 'Button' | 'Input' | 'Select'>
 
@@ -134,7 +135,11 @@ export function settingsPane(look: Look, ui: PaneUi, model: SettingsModel, actio
         <Box flexDirection="row" flexWrap="wrap" columnGap={2}>
           {SLOTS.map(slot => (
             <Text>
-              <Text backgroundColor={palette[slot]}>{'  '}</Text>
+              {fill(palette[slot]) === undefined ? (
+                <Text color={palette.muted}>{'··'}</Text>
+              ) : (
+                <Text backgroundColor={fill(palette[slot])}>{'  '}</Text>
+              )}
               <Text color={slot === model.editing ? palette.fg : palette.muted} bold={slot === model.editing}>
                 {` ${slot}`}
               </Text>

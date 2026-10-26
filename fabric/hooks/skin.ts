@@ -12,6 +12,12 @@ export type Slot = SkinSlot
 
 export type Palette = Readonly<Record<Slot, string>>
 
+// What a background slot holds for no fill, so the terminal's own background shows.
+export const TRANSPARENT = 'transparent'
+
+// A slot's value as a background colour: undefined when it is transparent.
+export const fill = (value: string): string | undefined => (value === TRANSPARENT ? undefined : value)
+
 export type Skin = {
   readonly name: string
   readonly label: string

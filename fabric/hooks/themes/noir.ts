@@ -20,6 +20,8 @@ const skin: Skin = {
     ok: '#ededed',
     err: '#f87171',
     warn: '#a3a3a3',
+    code: '#ededed',
+    codeBg: '#151515',
   },
   light: {
     read: '#111111',
@@ -37,6 +39,8 @@ const skin: Skin = {
     ok: '#151515',
     err: '#c42b2b',
     warn: '#6b6b6b',
+    code: '#111111',
+    codeBg: '#ffffff',
   },
   spinner: ['Thinking', 'Working', 'Composing', 'Considering', 'Weighing'],
   done: ['Done', 'Finished', 'Settled'],

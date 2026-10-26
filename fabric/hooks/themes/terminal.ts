@@ -21,6 +21,8 @@ const skin: Skin = {
     ok: 'ansi256(2)',
     err: 'ansi256(1)',
     warn: 'ansi256(3)',
+    code: 'ansi256(4)',
+    codeBg: 'userMessageBackground',
   },
   spinner: noir.spinner,
   done: noir.done,

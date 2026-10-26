@@ -19,6 +19,8 @@ const skin: Skin = {
     ok: '#b8bb26',
     err: '#fb4934',
     warn: '#fe8019',
+    code: '#d3869b',
+    codeBg: '#32302f',
   },
   spinner: ['Brewing', 'Roasting', 'Simmering', 'Toasting', 'Percolating', 'Kindling'],
   done: ['Brewed', 'Roasted', 'Toasted', 'Served'],

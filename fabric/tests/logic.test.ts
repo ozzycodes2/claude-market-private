@@ -149,6 +149,16 @@ test('a made skin lays its slots over its base, and bad drafts are refused with 
   expect(buildCustom({ name: 'x', base: 'nope' }, undefined)).toContain('base must be')
 })
 
+test('only codeBg takes transparent, from a draft or the pane', async () => {
+  const clear = buildCustom({ name: 'clear', palette: { codeBg: 'Transparent', code: '#EF6306' } }, undefined)
+
+  expect(typeof clear === 'string' ? clear : clear.palette).toEqual({ codeBg: 'transparent', code: '#ef6306' })
+  expect(buildCustom({ name: 'x', palette: { fg: 'transparent' } }, undefined)).toContain('"transparent" for codeBg')
+  expect(typeof withSlot('nord', {}, 'codeBg', 'transparent')).toBe('object')
+  expect(withSlot('nord', {}, 'code', 'transparent')).toBe('use a colour like #7aa2f7')
+  expect(withSlot('nord', {}, 'codeBg', 'none')).toBe('use a colour like #7aa2f7, or transparent')
+})
+
 test('the terminal skin paints the terminal in its own ANSI colours and keeps hex for the desktop', async () => {
   const skin = resolveSkin('terminal', {})
   const ansi = Object.values(skin?.ansi ?? {})
@@ -458,6 +468,15 @@ test('a light palette is derived with dark text, light bands and deepened colour
   expect(isLightTheme('dark')).toBe(false)
 })
 
+test('inline code takes its own slots, and a transparent band stays transparent on light', async () => {
+  expect(toLight(tokyoNight.palette).code).toBe(deepen(tokyoNight.palette.code, 0.45))
+  expect(toLight(tokyoNight.palette).codeBg).toBe('#ffffff')
+  expect(toLight({ ...tokyoNight.palette, codeBg: 'transparent' }).codeBg).toBe('transparent')
+  expect(fabric.palette.code).toBe('#ef6306')
+  expect(fabric.palette.codeBg).toBe('transparent')
+  expect(fabric.light?.codeBg).toBe('transparent')
+})
+
 test('SKINS_THEME wins, then the theme, then the terminal and the system for auto', async () => {
   expect(resolveLight({ override: 'dark', theme: 'light' })).toBe(false)
   expect(resolveLight({ override: 'Light', theme: 'dark' })).toBe(true)
@@ -490,7 +509,7 @@ test('every built-in skin names itself once and fills every slot with a colour, 
   for (const skin of SKINS) {
     for (const palette of [skin.palette, ...(skin.light === undefined ? [] : [skin.light])]) {
       expect(Object.keys(palette).sort()).toEqual([...slots].sort())
-      expect(Object.values(palette).every(value => hex.test(value))).toBe(true)
+      expect(Object.entries(palette).every(([slot, value]) => hex.test(value) || (slot === 'codeBg' && value === 'transparent'))).toBe(true)
     }
 
     expect(skin.spinner.length).toBeGreaterThan(0)

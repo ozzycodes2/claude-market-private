@@ -38,6 +38,8 @@ every change shows on screen the moment the call returns.
   dark. Keep `muted` clearly readable: it carries commands, paths and timings.
 - **Quiet bands.** `surface` and `zebra` are backgrounds behind table rows. Keep them one small step
   off a dark background, never bright, or tables turn into stripes.
+- **Inline code.** `code` colours `inline code` in prose and `codeBg` is the band behind it.
+  `codeBg` also takes `"transparent"`, which drops the band so only the colour marks code.
 - **Kinds told apart.** `read`, `write`, `run`, `search`, `web` and `mcp` colour tool names. Give the
   common ones (`run`, `write`, `read`) clearly different hues.
 - **Status stays conventional.** Keep `ok` green-ish and `err` red-ish whatever the theme.

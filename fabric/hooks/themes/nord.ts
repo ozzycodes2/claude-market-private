@@ -19,6 +19,8 @@ const skin: Skin = {
     ok: '#a3be8c',
     err: '#bf616a',
     warn: '#ebcb8b',
+    code: '#b48ead',
+    codeBg: '#3b4252',
   },
   spinner: ['Drifting', 'Frosting', 'Chilling', 'Thawing', 'Skiing', 'Gliding'],
   done: ['Frozen', 'Thawed', 'Charted', 'Crossed'],

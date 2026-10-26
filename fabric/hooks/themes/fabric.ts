@@ -3,6 +3,7 @@ import type { Skin } from '../skin'
 // One chroma, no hue to tell kinds apart: every tool kind is ink, and the glyph says which.
 // Tokens are the Fabric roles in architecture-design's style-guide.md; `zebra` is the one
 // derived value, a step off `surface`. `err` is the one hue, since a failed call must read as one.
+// `code` is the guide's `accent`, the one place the skin lets it set type.
 const skin: Skin = {
   name: 'fabric',
   label: 'Fabric',
@@ -22,6 +23,8 @@ const skin: Skin = {
     ok: '#f7f8f8',
     err: '#f87171',
     warn: '#d0d6e0',
+    code: '#ef6306',
+    codeBg: 'transparent',
   },
   light: {
     read: '#171717',
@@ -39,6 +42,8 @@ const skin: Skin = {
     ok: '#171717',
     err: '#c42b2b',
     warn: '#4d4d4d',
+    code: '#ef6306',
+    codeBg: 'transparent',
   },
   spinner: ['Thinking', 'Working', 'Considering'],
   done: ['Done', 'Finished'],

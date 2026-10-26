@@ -1,5 +1,5 @@
 import type { CustomSkin, SkinSlot } from '../types'
-import type { Skin } from './skin'
+import { TRANSPARENT, type Skin } from './skin'
 import { SKINS } from './themes'
 
 export const SLOTS: readonly SkinSlot[] = [
@@ -18,6 +18,8 @@ export const SLOTS: readonly SkinSlot[] = [
   'web',
   'mcp',
   'other',
+  'code',
+  'codeBg',
 ]
 
 // What each slot paints, for the settings pane and the agent's tool.
@@ -37,11 +39,19 @@ export const SLOT_HELP: Readonly<Record<SkinSlot, string>> = {
   web: 'WebFetch and WebSearch',
   mcp: 'MCP tools',
   other: 'anything else in a group',
+  code: 'inline `code` in prose',
+  codeBg: 'background behind inline code; "transparent" for none',
 }
 
 export type Customs = Readonly<Record<string, CustomSkin>>
 
 const HEX = /^#[0-9a-f]{6}$/i
+
+// Slots that may be left unfilled; the rest must be a colour.
+const CLEARABLE: readonly SkinSlot[] = ['codeBg']
+
+const isColour = (slot: SkinSlot, value: string): boolean =>
+  HEX.test(value) || (value === TRANSPARENT && CLEARABLE.includes(slot))
 const NAME = /^[a-z0-9][a-z0-9-]{0,31}$/
 const MAX_WORDS = 12
 const MAX_WORD = 24
@@ -113,11 +123,11 @@ function palette(value: unknown, fallback: CustomSkin['palette']): CustomSkin['p
 
   const entries = Object.entries(value as Record<string, unknown>)
   const bad = entries.filter(
-    ([slot, hex]) => !SLOTS.includes(slot as SkinSlot) || typeof hex !== 'string' || !HEX.test(hex),
+    ([slot, hex]) => !SLOTS.includes(slot as SkinSlot) || typeof hex !== 'string' || !isColour(slot as SkinSlot, hex.toLowerCase()),
   )
 
   if (bad.length > 0) {
-    return `bad palette entries: ${bad.map(([slot]) => slot).join(', ')}. Slots: ${SLOTS.join(', ')}; values #rrggbb`
+    return `bad palette entries: ${bad.map(([slot]) => slot).join(', ')}. Slots: ${SLOTS.join(', ')}; values #rrggbb, or "transparent" for ${CLEARABLE.join(', ')}`
   }
 
   return { ...fallback, ...Object.fromEntries(entries.map(([slot, hex]) => [slot, (hex as string).toLowerCase()])) }
@@ -169,8 +179,8 @@ export function withSlot(
   slot: SkinSlot,
   hex: string,
 ): { name: string; skin: CustomSkin } | string {
-  if (!HEX.test(hex)) {
-    return 'use a colour like #7aa2f7'
+  if (!isColour(slot, hex.toLowerCase())) {
+    return CLEARABLE.includes(slot) ? 'use a colour like #7aa2f7, or transparent' : 'use a colour like #7aa2f7'
   }
 
   const made = custom[current]

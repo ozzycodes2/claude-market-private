@@ -19,6 +19,8 @@ const skin: Skin = {
     ok: '#98bb6c',
     err: '#e46876',
     warn: '#e6c384',
+    code: '#957fb8',
+    codeBg: '#2a2a37',
   },
   light: {
     read: '#4e8ca2',
@@ -36,6 +38,8 @@ const skin: Skin = {
     ok: '#6f894e',
     err: '#c84053',
     warn: '#836f4a',
+    code: '#624c83',
+    codeBg: '#e7dba0',
   },
   spinner: ['Cresting', 'Inking', 'Brushing', 'Swelling', 'Breaking', 'Ebbing'],
   done: ['Crested', 'Inked', 'Brushed', 'Broken'],
