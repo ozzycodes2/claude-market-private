@@ -190,6 +190,28 @@
         "development"
       ],
       "source": "./technical-writing"
+    },
+    {
+      "name": "fabric",
+      "version": "0.1.0",
+      "description": "Fabric skins for Claude Code: tool rows that open onto their input and answer, diff, table, code, math, Mermaid and shell cards, a usage band and a calm mode, in the Fabric palette (one chroma, ink on near-black or paper). Ships the fabric skin plus sixteen upstream themes; /skin swaps them live. A fork of hellosverre/claude-skins; the same tokens draw architecture-design's diagrams.",
+      "category": "productivity",
+      "repository": "https://github.com/ozzycodes2/claude-market-private",
+      "license": "MIT",
+      "author": {
+        "name": "Osniel Quintana-Salgado",
+        "email": "osniel.quintana-salgado@machinify.com"
+      },
+      "keywords": [
+        "theme",
+        "skin",
+        "fabric",
+        "claude-code-mods",
+        "transcript",
+        "design-system",
+        "productivity"
+      ],
+      "source": "./fabric"
     }
   ]
 }

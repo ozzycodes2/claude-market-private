@@ -1,0 +1,13 @@
+{
+  "name": "fabric",
+  "version": "0.1.0",
+  "description": "Fabric skins for Claude Code: tool rows that open onto their input and answer, highlighted code, diff, table, math, Mermaid and shell cards, links, folding, a usage band and a calm mode. Ships the Fabric skin (one chroma, ink on near-black or paper) plus sixteen upstream themes. /skin swaps them live. A fork of hellosverre/claude-skins.",
+  "repository": "https://github.com/ozzycodes2/claude-market-private",
+  "license": "MIT",
+  "author": {
+    "name": "Osniel Quintana-Salgado",
+    "email": "osniel.quintana-salgado@machinify.com"
+  },
+  "keywords": ["claude-code-mods", "claude-mods", "function-hooks", "theme", "skin", "fabric"],
+  "types": "./types/index.d.ts"
+}
