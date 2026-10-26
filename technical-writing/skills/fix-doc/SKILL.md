@@ -24,13 +24,13 @@ References, relative to this skill:
 
 1. **Guard the target.** Apply the Guardrails below before editing. Read the doc in full.
 2. **Get findings.** Per the mode above. Consume the columns `ID`, `Dimension`, `Location`, `Class`, `Issue`, `Fix` exactly as `review-doc` emits them. Class is `apply`, `flag`, or `diagram`.
-3. **Apply the `apply` rows.** Make each row's Fix at its Location, in document order. Before each edit confirm it cannot change meaning, claim strength, or scope. If it could, do not edit; move the row to the flagged list.
-4. **Generate the `diagram` rows** per `../../references/diagrams.md`: invoke `architecture-design:create-diagram` if available, else a fenced `mermaid` block. Follow its placement rules, and keep the prose complete without the figure.
-5. **List the `flag` rows** for the author, verbatim, never rewriting them. Do not edit the doc to resolve them, even partially.
-6. **Run the AI-tell pass last** with `../../references/ai-tells.md`, over the whole doc (or only the passages edited in steps 3 and 4 in `findings-only` mode). Fix each tell the checklist supports on its own terms. If a tell's fix would change meaning, claim strength, or scope, leave the text and add the tell to the flagged list in the same table shape. Re-check that no fact, number, name, or citation was added or dropped.
+3. **Apply the `apply` rows.** Make each row's Fix at its Location, in document order. Before each edit confirm it cannot change meaning, claim strength, or scope. If it could, do not edit; move the row to the flagged list with `Class` changed to `flag` and its original ID kept.
+4. **Generate the `diagram` rows** per `../../references/diagrams.md`: for a file target, invoke `architecture-design:create-diagram` if available, else a fenced `mermaid` block, and follow its placement rules. For inline text, use the fenced `mermaid` block only: no tool call, no files. Keep the prose complete without the figure.
+5. **List the `flag` rows** for the author, never rewriting them. Rows that arrived as `flag` are reproduced verbatim. Do not edit the doc to resolve them, even partially.
+6. **Run the AI-tell pass last** with `../../references/ai-tells.md`, over the whole doc (or only the passages edited in steps 3 and 4 in `findings-only` mode). Fix each tell the checklist supports on its own terms. If a tell's fix would change meaning, claim strength, or scope, leave the text and add it to the flagged list as a new row with `Class: flag`, an ID continuing the F-sequence after the highest ID in the table, the Expression or Form dimension the tell maps to, and a Location, Issue, and Fix in the `review-doc` style. Re-check that no fact, number, name, or citation was added or dropped.
 7. **Report in the conversation.** Do not re-score.
    - Counts: applied, generated, flagged. Applied includes humanizer edits; flagged includes tells you left alone.
-   - The flagged rows, verbatim, in the `review-doc` Findings table shape.
+   - The flagged rows in the `review-doc` Findings table shape: arrived-as-`flag` rows verbatim, moved rows with `Class: flag` and their original ID, tell-derived rows as new IDs.
    - For inline text, the edited text (see Guardrails).
 
 ## Guardrails
@@ -40,4 +40,4 @@ References, relative to this skill:
 - Inline text with no path: return the edited text in the reply and write no file.
 - Write to Notion only on explicit request, after confirming.
 - Never invent a fact to fill a gap. If a fix needs information you lack, flag it.
-- Diagram export files (`.png`, `.svg`, `.html`) are created only for `diagram` rows, as `diagrams.md` places them.
+- Diagram export files (`.png`, `.svg`, `.html`) are created only for `diagram` rows when the target is a file, as `diagrams.md` places them. Inline text never gets export files.
