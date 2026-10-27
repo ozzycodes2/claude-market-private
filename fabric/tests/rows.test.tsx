@@ -750,11 +750,15 @@ test('the question dialog keeps Claude Code’s drawing under a band naming its 
 
 test('a finished /review:review and /review:fix each put a pill above the prompt', async ($, on) => {
   stubEngine(on)
-  on('skill.prompt', ($, e) => ({ text: e.text }))
+  on('tool.call', { tool: 'Skill' }, ($, e) => (e.args === 'deny' ? { deny: 'no' } : { result: 'ok' }))
+  on('prompt.submit', ($, e) => (e.command?.args === 'drop' ? { drop: 'no' } : e))
   on('turn.complete', ($, e) => ({ text: e.answer }))
 
-  const skill = (name: string, pluginName?: string) =>
-    $.skill.prompt({ skill: name, text: 'go', frontmatter: {}, source: 'plugin', ...(pluginName === undefined ? {} : { pluginName }) })
+  // Called by the model, or typed as a slash command.
+  const skill = (name: string, { agentId, args }: { agentId?: string; args?: string } = {}) =>
+    $.tool.call({ tool: 'Skill', skill: name, ...(args === undefined ? {} : { args }), ...(agentId === undefined ? {} : { agentId }) })
+  const typed = (name: string, args = '') =>
+    $.prompt.submit({ text: `/${name} ${args}`.trim(), command: { name, args }, wait: false, origin: { kind: 'composer' } })
   const turn = (reason: 'answer' | 'aborted', agentId?: string) =>
     $.turn.complete({ durationMs: 1000, isAborted: reason === 'aborted', reason, turnId: 't', answer: 'ok', ...(agentId === undefined ? {} : { agentId }) })
   const band = (hasSurvey = false) =>
@@ -782,7 +786,13 @@ test('a finished /review:review and /review:fix each put a pill above the prompt
   await turn('aborted')
   expect(await pills(), 'an interrupted fix earns nothing').toEqual([])
 
-  await skill('review', 'review')
+  await skill('review:review', { agentId: 'a1' })
+  await skill('review:review', { args: 'deny' })
+  await typed('review:review', 'drop')
+  await turn('answer')
+  expect(await pills(), 'a subagent’s, a denied or a dropped run earns nothing').toEqual([])
+
+  await typed('review:review', '42')
   await turn('answer', 'a1')
   expect(await pills(), 'a subagent’s end is not the turn’s').toEqual([])
   await turn('answer')
@@ -790,6 +800,7 @@ test('a finished /review:review and /review:fix each put a pill above the prompt
 
   await skill('review:fix')
   await skill('other:fix')
+  await typed('constructor')
   await turn('answer')
   expect(await pills(), 'reviewed, then fixed, each once').toEqual(['#15803d', '#ef6306'])
   expect(await pills(true), 'a survey keeps the band').toEqual([])

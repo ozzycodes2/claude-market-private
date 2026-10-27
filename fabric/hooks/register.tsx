@@ -84,13 +84,11 @@ const lastReplyAtom = atom({ plugin: 'fabric', key: 'lastReply' } as const, '')
 const badgesAtom = atom({ plugin: 'fabric', key: 'badges' } as const, [] as Badge[])
 
 // The skills that earn a pill, by `plugin:skill`.
-const BADGE_SKILLS: Readonly<Record<string, Badge>> = { 'review:review': 'reviewed', 'review:fix': 'fixed' }
+const BADGE_SKILLS: ReadonlyMap<string, Badge> = new Map([
+  ['review:review', 'reviewed'],
+  ['review:fix', 'fixed'],
+])
 const BADGE_ORDER: readonly Badge[] = ['reviewed', 'fixed']
-// `e.skill` arrives qualified (`review:fix`) or bare (`fix`, with `pluginName`).
-const BADGE_SKILL_NAMES = Object.keys(BADGE_SKILLS).flatMap(name => [name, name.slice(name.indexOf(':') + 1)])
-
-const badgeOf = (skill: string, pluginName: string | undefined): Badge | undefined =>
-  BADGE_SKILLS[skill.includes(':') || pluginName === undefined ? skill : `${pluginName}:${skill}`]
 
 const EDITS = new Set(['Edit', 'MultiEdit', 'Write'])
 const WRITES = new Set([...EDITS, 'NotebookEdit'])
@@ -698,15 +696,17 @@ export const register: Register = on => {
     return next(e)
   })
 
-  // Narrowed to the badge skills so plugins that answer other skills' prompts never skip it.
-  on('skill.prompt', { skill: BADGE_SKILL_NAMES }, async ($, e, next) => {
-    const badge = badgeOf(e.skill, e.pluginName)
+  // A skill is seen starting at its Skill call or its typed command, not at `skill.prompt`: a
+  // managed plugin there continues the chain past the whole user tier, so fabric never sees it.
+  on('tool.call', { tool: 'Skill' }, async ($, e, next) => {
+    const ran = await next(e)
+    const badge = BADGE_SKILLS.get(e.skill)
 
-    if (badge !== undefined) {
+    if (e.agentId === undefined && ran.deny === undefined && badge !== undefined) {
       pendingBadges.add(badge)
     }
 
-    return next(e)
+    return ran
   })
 
   // Times every call and counts the main loop's calls and changed lines.
@@ -1051,7 +1051,14 @@ export const register: Register = on => {
       imagePrompts.add(e.text.trim())
     }
 
-    return next(e)
+    const result = await next(e)
+    const badge = e.command === undefined ? undefined : BADGE_SKILLS.get(e.command.name)
+
+    if (result.drop === undefined && badge !== undefined) {
+      pendingBadges.add(badge)
+    }
+
+    return result
   })
 
   on('ui.render', { component: 'UserMessage' }, async ($, e, next) =>
