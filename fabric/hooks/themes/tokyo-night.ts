@@ -23,6 +23,7 @@ const skin: Skin = {
     codeBg: '#1f2335',
     command: '#c0caf5',
     commandBg: '#1f2335',
+    shimmer: '#7aa2f7',
   },
   light: {
     read: '#007197',
@@ -44,6 +45,7 @@ const skin: Skin = {
     codeBg: '#d0d5e3',
     command: '#3760bf',
     commandBg: '#d0d5e3',
+    shimmer: '#2e7de9',
   },
   spinner: ['Neon-ing', 'Drizzling', 'Glowing', 'Wiring', 'Night-driving', 'Rain-checking'],
   done: ['Lit up', 'Wired', 'Shipped', 'Landed'],

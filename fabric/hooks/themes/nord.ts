@@ -23,6 +23,7 @@ const skin: Skin = {
     codeBg: '#3b4252',
     command: '#e5e9f0',
     commandBg: '#3b4252',
+    shimmer: '#88c0d0',
   },
   spinner: ['Drifting', 'Frosting', 'Chilling', 'Thawing', 'Skiing', 'Gliding'],
   done: ['Frozen', 'Thawed', 'Charted', 'Crossed'],

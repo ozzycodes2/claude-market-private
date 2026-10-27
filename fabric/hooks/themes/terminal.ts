@@ -25,6 +25,7 @@ const skin: Skin = {
     codeBg: 'userMessageBackground',
     command: 'text',
     commandBg: 'userMessageBackground',
+    shimmer: 'ansi256(12)',
   },
   spinner: noir.spinner,
   done: noir.done,

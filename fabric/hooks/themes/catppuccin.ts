@@ -23,6 +23,7 @@ const skin: Skin = {
     codeBg: '#252536',
     command: '#cdd6f4',
     commandBg: '#252536',
+    shimmer: '#cba6f7',
   },
   light: {
     read: '#04a5e5',
@@ -44,6 +45,7 @@ const skin: Skin = {
     codeBg: '#e6e9ef',
     command: '#4c4f69',
     commandBg: '#e6e9ef',
+    shimmer: '#8839ef',
   },
   spinner: ['Purring', 'Napping', 'Pouncing', 'Kneading', 'Stretching', 'Nuzzling'],
   done: ['Pounced', 'Purred', 'Napped', 'Curled up'],

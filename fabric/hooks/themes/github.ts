@@ -23,6 +23,7 @@ const skin: Skin = {
     codeBg: '#161b22',
     command: '#e6edf3',
     commandBg: '#161b22',
+    shimmer: '#58a6ff',
   },
   light: {
     read: '#0969da',
@@ -44,6 +45,7 @@ const skin: Skin = {
     codeBg: '#f6f8fa',
     command: '#1f2328',
     commandBg: '#f6f8fa',
+    shimmer: '#0969da',
   },
   spinner: ['Committing', 'Rebasing', 'Forking', 'Pushing', 'Cherry-picking', 'Stashing'],
   done: ['Merged', 'Pushed', 'Committed', 'Tagged'],

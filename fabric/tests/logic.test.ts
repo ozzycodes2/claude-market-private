@@ -11,7 +11,7 @@ import { CONTROL_SLOT, fitText, measure as measureAt, settled } from '../hooks/s
 import { diffLines, diffSvg, hunksOf } from '../hooks/svg-diff'
 import { fitColumns, kindOfCell, measure, tableSvg, wrapCell } from '../hooks/svg-table'
 import { outputLines, shellOutputOf, terminalSvg } from '../hooks/svg-terminal'
-import { deepen, forTheme, gnomeDark, isLightTheme, macDark, resolveLight, toLight, windowsDark } from '../hooks/light'
+import { deepen, forTheme, gnomeDark, isLightTheme, macDark, mix, resolveLight, toLight, windowsDark } from '../hooks/light'
 import { parseFolders, prefsFor, withFolder, withoutFolder } from '../hooks/folders'
 import { kindOf, summarize, toolLabel } from '../hooks/tools'
 import { SKINS } from '../hooks/themes'
@@ -480,6 +480,13 @@ test('inline code takes its own slots, and a transparent band stays transparent 
   expect(fabric.palette.code).toBe('#ef6306')
   expect(fabric.palette.codeBg).toBe('transparent')
   expect(fabric.light?.codeBg).toBe('transparent')
+})
+
+test('mix moves a colour the given share of the way to another', async () => {
+  expect(mix('#ef6306', '#f7f8f8', 0)).toBe('#ef6306')
+  expect(mix('#ef6306', '#f7f8f8', 1)).toBe('#f7f8f8')
+  expect(mix('#000000', '#ffffff', 0.5)).toBe('#808080')
+  expect(toLight(tokyoNight.palette).shimmer).toBe(deepen(tokyoNight.palette.shimmer, 0.45))
 })
 
 test('a command band on the surface turns white on light; one in its own colour keeps it and its text', async () => {

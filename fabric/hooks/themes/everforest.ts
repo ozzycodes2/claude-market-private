@@ -23,6 +23,7 @@ const skin: Skin = {
     codeBg: '#3d484d',
     command: '#d3c6aa',
     commandBg: '#3d484d',
+    shimmer: '#a7c080',
   },
   light: {
     read: '#3a94c5',
@@ -44,6 +45,7 @@ const skin: Skin = {
     codeBg: '#efebd4',
     command: '#5c6a72',
     commandBg: '#efebd4',
+    shimmer: '#8da101',
   },
   spinner: ['Foraging', 'Rooting', 'Sprouting', 'Hiking', 'Mossing', 'Branching'],
   done: ['Grown', 'Rooted', 'Foraged', 'Camped'],

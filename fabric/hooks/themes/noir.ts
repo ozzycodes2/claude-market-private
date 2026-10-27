@@ -24,6 +24,7 @@ const skin: Skin = {
     codeBg: '#151515',
     command: '#ededed',
     commandBg: '#151515',
+    shimmer: '#f5f5f5',
   },
   light: {
     read: '#111111',
@@ -45,6 +46,7 @@ const skin: Skin = {
     codeBg: '#ffffff',
     command: '#151515',
     commandBg: '#ffffff',
+    shimmer: '#111111',
   },
   spinner: ['Thinking', 'Working', 'Composing', 'Considering', 'Weighing'],
   done: ['Done', 'Finished', 'Settled'],

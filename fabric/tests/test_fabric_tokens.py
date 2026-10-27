@@ -21,6 +21,7 @@ ROLE = {
     "warn": "muted",
     "code": "accent",
     "commandBg": "accent",
+    "shimmer": "accent",
     **{s: "ink" for s in INK_SLOTS},
 }
 
@@ -57,7 +58,7 @@ class FabricTokens(unittest.TestCase):
     def test_both_polarities_fill_the_same_slots(self):
         palettes = theme_palettes()
         self.assertEqual(palettes["dark"].keys(), palettes["light"].keys())
-        self.assertEqual(len(palettes["dark"]), 18)
+        self.assertEqual(len(palettes["dark"]), 19)
 
 
 if __name__ == "__main__":

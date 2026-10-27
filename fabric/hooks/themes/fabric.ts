@@ -4,7 +4,7 @@ import type { Skin } from '../skin'
 // Tokens are the Fabric roles in architecture-design's style-guide.md; `zebra` is the one
 // derived value, the guide's `accent-tint` laid on its paper. `err` is the one hue, since a
 // failed call must read as one. `code` is the guide's `accent`, the one place the skin lets it
-// set type; `commandBg` puts it behind the shell card's command.
+// set type; `commandBg` puts it behind the shell card's command, and `shimmer` sweeps over it.
 const skin: Skin = {
   name: 'fabric',
   label: 'Fabric',
@@ -28,6 +28,7 @@ const skin: Skin = {
     codeBg: 'transparent',
     command: '#f7f8f8',
     commandBg: '#ef6306',
+    shimmer: '#ef6306',
   },
   light: {
     read: '#171717',
@@ -49,6 +50,7 @@ const skin: Skin = {
     codeBg: 'transparent',
     command: '#ffffff',
     commandBg: '#ef6306',
+    shimmer: '#ef6306',
   },
   spinner: ['Thinking', 'Working', 'Considering'],
   done: ['Done', 'Finished'],

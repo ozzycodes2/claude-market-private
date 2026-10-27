@@ -29,6 +29,7 @@ import type { ShellOutput } from './svg-terminal'
 import { codeRows } from './code-rows'
 import { languageOf } from './highlight'
 import { kindOf, toolLabel } from './tools'
+import { mix } from './light'
 import { isQuiet } from './quiet'
 import { inlineMath, mathArt, parseTex } from './math'
 import { mathSvg } from './svg-math'
@@ -81,6 +82,8 @@ const KIND_LABEL: Readonly<Record<Kind, string>> = {
 }
 
 const CELL_PAD = 1
+
+const HEX = /^#[0-9a-f]{6}$/i
 
 // The worst thing that happened to any of the calls, else how far along they are.
 function status({ skin, icons }: Look, calls: readonly Call[]) {
@@ -798,10 +801,14 @@ export function spinnerRow(look: Look, word: string, frame: number, elapsedMs: n
   const { palette } = look.skin
   const letters = [...word]
   const head = (frame % (letters.length + 8)) - 4
+  // The sweep lifts the accent toward body text, brightest at its head; an ANSI or theme
+  // colour cannot be mixed, so it steps to body text instead.
+  const base = palette.shimmer
+  const lift = (amount: number) => (HEX.test(base) && HEX.test(palette.fg) ? mix(base, palette.fg, amount) : amount > 0.5 ? palette.fg : base)
   const shade = (i: number): string => {
     const distance = Math.abs(i - head)
 
-    return distance === 0 ? palette.fg : distance === 1 ? palette.user : palette.muted
+    return distance === 0 ? lift(0.7) : distance === 1 ? lift(0.35) : base
   }
   const runs: { color: string; text: string }[] = []
 

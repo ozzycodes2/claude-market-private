@@ -36,6 +36,8 @@ every change shows on screen the moment the call returns.
   skin is about; leave everything else quieter.
 - **Readable text.** `fg` and `muted` sit on the person's terminal background, which is almost always
   dark. Keep `muted` clearly readable: it carries commands, paths and timings.
+- **Spinner.** `shimmer` colours the spinner word; the sweep lifts it toward `fg`, so pick
+  the accent and the sweep stays in its hue.
 - **Quiet bands.** `surface` and `zebra` are backgrounds behind table rows. Keep them one small step
   off a dark background, never bright, or tables turn into stripes.
 - **Inline code.** `code` colours `inline code` in prose and `codeBg` is the band behind it.

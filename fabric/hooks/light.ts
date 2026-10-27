@@ -18,6 +18,13 @@ const toHex = (rgb: readonly number[]): string =>
 export const deepen = (hex: string, amount: number): string =>
   toHex(channels(hex).map(value => value * (1 - amount)))
 
+// `amount` of the way from `hex` to `toward`.
+export const mix = (hex: string, toward: string, amount: number): string => {
+  const to = channels(toward)
+
+  return toHex(channels(hex).map((value, i) => value + ((to[i] ?? value) - value) * amount))
+}
+
 export function toLight(palette: Palette): Palette {
   const deep = (hex: string) => deepen(hex, 0.45)
   const isBanded = palette.commandBg !== palette.surface && palette.commandBg !== TRANSPARENT
@@ -39,6 +46,7 @@ export function toLight(palette: Palette): Palette {
     err: deepen(palette.err, 0.25),
     warn: deepen(palette.warn, 0.5),
     code: deep(palette.code),
+    shimmer: deep(palette.shimmer),
     codeBg: palette.codeBg === TRANSPARENT ? TRANSPARENT : '#ffffff',
     // A command band on the skin's surface turns white with it; one in its own colour keeps
     // that colour, and the text that reads on it.

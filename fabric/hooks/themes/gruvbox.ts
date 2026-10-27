@@ -23,6 +23,7 @@ const skin: Skin = {
     codeBg: '#32302f',
     command: '#ebdbb2',
     commandBg: '#32302f',
+    shimmer: '#fabd2f',
   },
   spinner: ['Brewing', 'Roasting', 'Simmering', 'Toasting', 'Percolating', 'Kindling'],
   done: ['Brewed', 'Roasted', 'Toasted', 'Served'],

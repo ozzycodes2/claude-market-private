@@ -44,13 +44,14 @@ Ask Claude to design a skin and the `skin-designer` skill drives the `mcp__fabri
 | `muted` | `soft` |
 | `surface` | `paper-2` |
 | `warn` | `muted` |
-| `code`, `commandBg` | `accent` |
+| `code`, `commandBg`, `shimmer` | `accent` |
 | `zebra` | `accent-tint` on paper |
 
 `err` is the only hue, because a failed call has to read as a failure. `codeBg` is
 `transparent`, so inline code is accent text with no band. The shell card's command
 sits on the accent in white, and its output never takes the accent. Every other skin
-sets `codeBg` and `commandBg` to its `surface` and `command` to its `fg`.
+sets `codeBg` and `commandBg` to its `surface`, `command` to its `fg`, and `shimmer`
+to its `user`. The spinner word is `shimmer`, and its sweep lifts that colour toward `fg`.
 
 `tests/test_fabric_tokens.py` fails when the skin and the style guide drift apart.
 

@@ -592,6 +592,12 @@ test('the terminal spinner shimmers, the desktop one is an animated icon beside 
 
   const terminal = await $.ui.mount(spinner('terminal'))
   expect(await terminal.find({ type: 'Text', text: /^⠋ .+…/ })).toBeDefined()
+  // The word sits in the accent, and the sweep lifts it toward body text, brightest at its head.
+  const colors = ((await terminal.findAll({ type: 'Text' })) as { props: { color?: unknown }; children?: readonly unknown[] }[])
+    .filter(span => typeof span.children?.[0] === 'string' && /^[A-Za-z]+$/.test(span.children[0] as string))
+    .map(span => span.props.color)
+  expect(colors).toContain(fabric.palette.shimmer)
+  expect(colors.every(color => typeof color === 'string' && color !== fabric.palette.muted)).toBe(true)
   await terminal.unmount()
 
   const desktop = await $.ui.mount(spinner('desktop'))

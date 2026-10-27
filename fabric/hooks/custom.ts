@@ -22,6 +22,7 @@ export const SLOTS: readonly SkinSlot[] = [
   'codeBg',
   'command',
   'commandBg',
+  'shimmer',
 ]
 
 // What each slot paints, for the settings pane and the agent's tool.
@@ -44,6 +45,7 @@ export const SLOT_HELP: Readonly<Record<SkinSlot, string>> = {
   code: 'inline `code` in prose',
   codeBg: 'background behind inline code; "transparent" for none',
   command: "the shell card's command and its status",
+  shimmer: 'the spinner word, which the sweep brightens',
   commandBg: 'band behind the shell card\'s command; shell output never takes this colour; "transparent" for none',
 }
 
