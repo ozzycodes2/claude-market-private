@@ -86,6 +86,8 @@ const badgesAtom = atom({ plugin: 'fabric', key: 'badges' } as const, [] as Badg
 // The skills that earn a pill, by `plugin:skill`.
 const BADGE_SKILLS: Readonly<Record<string, Badge>> = { 'review:review': 'reviewed', 'review:fix': 'fixed' }
 const BADGE_ORDER: readonly Badge[] = ['reviewed', 'fixed']
+// `e.skill` arrives qualified (`review:fix`) or bare (`fix`, with `pluginName`).
+const BADGE_SKILL_NAMES = Object.keys(BADGE_SKILLS).flatMap(name => [name, name.slice(name.indexOf(':') + 1)])
 
 const badgeOf = (skill: string, pluginName: string | undefined): Badge | undefined =>
   BADGE_SKILLS[skill.includes(':') || pluginName === undefined ? skill : `${pluginName}:${skill}`]
@@ -685,7 +687,8 @@ export const register: Register = on => {
     return next(e)
   })
 
-  on('skill.prompt', async ($, e, next) => {
+  // Narrowed to the badge skills so plugins that answer other skills' prompts never skip it.
+  on('skill.prompt', { skill: BADGE_SKILL_NAMES }, async ($, e, next) => {
     const badge = badgeOf(e.skill, e.pluginName)
 
     if (badge !== undefined) {
