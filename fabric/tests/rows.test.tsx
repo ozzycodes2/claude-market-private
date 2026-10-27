@@ -248,6 +248,30 @@ test('a folded group is one node, an expanded one keeps its rows', async ($, on)
   expect(await expanded.find({ type: 'Text', text: 'stock row' })).toBeDefined()
 })
 
+test('a blank line closes each folded call on the terminal, under its output', async ($, on) => {
+  stubEngine(on)
+
+  const result = (id: string, tool: string, isErrored = false, surface: (typeof SURFACES)[number] = 'terminal') =>
+    ({ ...SITE, surface, component: 'ToolResult', requestId: id, props: { tool_use_id: id, tool, output: { stdout: 'ok', stderr: '', interrupted: false }, isErrored } }) as const
+  const marginOf = async (props: Parameters<Engine['ui']['mount']>[0]) => {
+    const ui = await $.ui.mount(props)
+    const outer = (await ui.find({ type: 'Box' })) as Found
+    await ui.unmount()
+
+    return outer?.props.marginBottom
+  }
+
+  expect(await marginOf(result('r1', 'Bash')), 'a folded call').toBe(1)
+  expect(await marginOf(result('r2', 'Bash', true)), 'a failure opens its row, which draws the answer').toBeUndefined()
+  expect(await marginOf(result('r3', 'Bash', false, 'desktop')), 'the desktop keeps its own spacing').toBeUndefined()
+  expect(await marginOf(result('r4', 'Task')), 'a row the skin leaves to Claude Code').toBeUndefined()
+
+  const calls = [call('Read', {}), call('Grep', { pattern: 'x' })]
+  const group = { ...SITE, surface: 'terminal', component: 'ToolGroup', requestId: 'g1', props: { calls, isActive: false, isExpanded: false } } as const
+  const ui = await $.ui.mount(group)
+  expect(((await drawing(ui)) as Found)?.props.marginBottom, 'a folded group').toBe(1)
+})
+
 test('a folded group counts a shell command that only looks apart from one that runs', async ($, on) => {
   stubEngine(on)
 

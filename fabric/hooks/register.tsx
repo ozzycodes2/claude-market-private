@@ -565,6 +565,17 @@ async function inset<E extends { surface: RenderSurface; requestId: string }, N 
   return <Box flexDirection="column" paddingX={SIDE_PAD}>{drawn as RenderElement}</Box>
 }
 
+// A blank line closes each folded call on the terminal, under its output when it has one.
+function spaced<R>($: EngineInterface, e: { surface: RenderSurface; requestId: string }, drawn: R, isFolded: boolean): R | RenderElement {
+  if (!isFolded || e.surface !== 'terminal' || drawn === undefined) {
+    return drawn
+  }
+
+  const { Box } = $.ui.resolve(e)
+
+  return <Box flexDirection="column" marginBottom={1}>{drawn as RenderElement}</Box>
+}
+
 export const register: Register = on => {
   // Adds `$.fabric` for other mods. A call is the `fabric.markdown` event, which the hook
   // below answers with this session's `$`; the method itself is the chain's floor.
@@ -951,8 +962,11 @@ export const register: Register = on => {
       return groupRow(lookOf($.ui.resolve(e), active, e.surface), e.props.calls)
     }))
 
-  on('ui.render', { component: 'ToolResult' }, async ($, e, next) =>
-    inset($, e, next, async stock => {
+  on('ui.render', { component: 'ToolResult' }, async ($, e, next) => {
+    const isFolded =
+      (await activeSkin($)) !== null && kindOf(e.props.tool) !== null && !isOpen(await read($, memberOf(disclosureAtom, e)), e.props.isErrored)
+
+    return spaced($, e, await inset($, e, next, async stock => {
       const active = await activeSkin($)
       const output = e.props.output as { stdout?: unknown } | null
       const copy = (text: string) => {
@@ -1029,7 +1043,8 @@ export const register: Register = on => {
       return stdout === output.stdout
         ? stock(e)
         : stock({ ...e, props: { ...e.props, output: { ...output, stdout } } })
-    }))
+    }), isFolded)
+  })
 
   on('prompt.submit', async ($, e, next) => {
     if (e.attachments !== undefined && e.attachments.length > 0) {

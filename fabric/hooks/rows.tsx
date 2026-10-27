@@ -251,7 +251,7 @@ function groupOf(call: Call): { kind: Kind; label: string } {
 // A run of reads and searches on one node: `●─ Read 3 · Search 2 · Look 1 ▸`. The `▸` is
 // plain text, not a button: a click anywhere on the line is Claude Code's, and opens the group.
 export function groupRow(look: Look, calls: readonly Call[]) {
-  const { Text } = look.ui
+  const { Box, Text } = look.ui
   const { palette } = look.skin
   const counts = new Map<string, { kind: Kind; count: number }>()
 
@@ -274,20 +274,22 @@ export function groupRow(look: Look, calls: readonly Call[]) {
     return iconRow(look, look.svg, lead, calls, <Text wrap="truncate-end">{parts}</Text>)
   }
 
-  return apart(
-    look,
-    stack(
-      look,
-      <Text wrap="truncate-end">
-        {node(look, calls)}
-        {parts}
-      </Text>,
-    ),
+  // Apart from the reply above, and a blank line below like each folded call's.
+  return (
+    <Box marginTop={1} marginBottom={1}>
+      {stack(
+        look,
+        <Text wrap="truncate-end">
+          {node(look, calls)}
+          {parts}
+        </Text>,
+      )}
+    </Box>
   )
 }
 
-// A blank line above a row of the turn's own (the spinner, the footer, a folded group, the
-// question band), so it stands off the reply above it.
+// A blank line above a row of the turn's own (the spinner, the footer, the question band),
+// so it stands off the reply above it.
 export function apart(look: Look, row: ReturnType<Ui['Text']>) {
   const { Box } = look.ui
 
