@@ -102,6 +102,13 @@ method+path, request (headers/body), response (success/error), error codes.
 Omit internals. For an OpenAPI-first repo, prefer proposing the spec edit and
 let the render regenerate, rather than hand-writing prose (see `docs-drift`).
 
+If `technical-writing:write-doc` is available, shape README/Reference prose
+with its matching template (`templates/readme.md` / `reference.md`) and
+`references/common-doc-guidelines.md`; emit the text into `generated.api_docs`,
+write no file, and ask no questions. Otherwise generate inline as above.
+Docstrings (Step 3) and CHANGELOG entries (Step 4) stay as they are, since
+CHANGELOG is not a `write-doc` type.
+
 ## Step 6: Generate lint fixes
 
 Only trivial issues: unused variable → `_`-prefix, trailing commas, whitespace,

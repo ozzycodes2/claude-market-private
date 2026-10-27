@@ -116,6 +116,22 @@ remedy:    <remedy>
 doc says:  <extra.doc_says, or "(n/a)">
 code says: <extra.code_says, or "(n/a)">
 
+## How to rewrite
+A drift finding changes the claim by design, which fix-doc's guardrails refuse,
+so for drift apply the rules below by hand. For any other prose finding, if the
+`technical-writing:fix-doc` skill is available, invoke it with this finding as a
+one-row findings table and the phrase `findings-only`; otherwise apply the rules
+below by hand. Cell values are single-line, with `|` escaped as `\|`.
+
+| ID | Dimension | Location | Class | Issue | Fix |
+|---|---|---|---|---|---|
+| <ID> | <closest Expression/Form dimension, or "Clarity" if unsure> | <path>:<line> | apply | <symptom> | <remedy> |
+
+If fix-doc returns the row as flagged and leaves the text unedited, make no edit
+and report outcome: needs-decision. The rules below still bind, Scope above all:
+if fix-doc's edit reaches past the flagged line and its paragraph, or changes a
+claim it should not, undo the excess and report outcome: needs-decision.
+
 ## Rules
 <§1 Clarity, §2 House voice, and §4 Scope of references/prose-rules.md, inlined>
 
