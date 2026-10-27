@@ -3,7 +3,7 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "Run /review:fix for PR https://github.com/vlognow/voice-connect/pull/2 with --dry-run. The ledger holds a stale README paragraph, a lint failure, a rendered-lag artifact, a hardcoded credential, and a 'consider whether to introduce an outbox' finding.",
+      "prompt": "Run /review:fix for PR https://github.com/example-org/example-service/pull/2 with --dry-run. The ledger holds a stale README paragraph, a lint failure, a rendered-lag artifact, a hardcoded credential, and a 'consider whether to introduce an outbox' finding.",
       "expected_output": "A plan assigning exactly one strategy per finding — prose, formatter, regenerate, repair, defer — with the regenerate step ordered before anything else touching the same path, the refactors last, and nothing written to the working tree.",
       "assertions": [
         "Every finding in the ledger appears in the plan exactly once; none is silently dropped",

@@ -14,7 +14,7 @@ description: >
   touch docs — code changes silently invalidate docs elsewhere in the tree.
 allowed-tools: Bash Read Grep Glob
 metadata:
-  author: machinify
+  author: Osniel Quintana-Salgado
   facet-of: review
 ---
 
@@ -156,9 +156,9 @@ Keep the finding when a reader of the current doc would act wrongly.
 
 Then write `docs-drift-<PR_NUMBER>.json`.
 
-## mac-ui repos (Machinify Web Components)
+## mac-ui repos (Web Components)
 
-When the repo is or consumes `@vlognow/mac-ui`, resolve docs live. Read
+When `analyze` set `uses_mac_ui: true`, resolve docs live. Read
 `references/mac-ui-docs.md` for the fetch recipe.
 
 ## Gotchas

@@ -4,13 +4,13 @@ description: >-
   Open a Claude Code working session in a fresh, isolated git worktree, so the
   user can start a task with a single /start-session <name>. Use at the START of a
   session when the user says "start session", "start a worktree", "spin up a
-  worktree for COB-103", "begin work on <ticket>", or passes a name/ticket to work
+  worktree for ABC-123", "begin work on <ticket>", or passes a name/ticket to work
   under. Creates and ENTERS a worktree via the EnterWorktree tool (never `git
   worktree add`) under .claude/worktrees/, named exactly after the argument, on a
   local branch `worktree-<argument>`. Reports what the worktree inherited
   (`.worktreeinclude` copies, symlinked node_modules) and whether its `.env` still
   points at the main checkout's stack. If the argument is a JIRA key (e.g.
-  COB-103, SUBRO-1505), also loads that story with the Atlassian CLI (`acli`) when
+  ABC-123, PROJ-1505), also loads that story with the Atlassian CLI (`acli`) when
   available and summarizes the implementation ask. Also renames the session to the
   argument (the same effect as `/rename <NAME>`) so it's easy to find in `/resume`.
   Then stops and waits — it sets up the workspace and context, it does not implement.
@@ -20,7 +20,7 @@ compatibility: >-
   worktree.baseRef: fresh). JIRA loading is optional and needs the Atlassian CLI
   (`acli`) installed and authenticated (`acli auth login`). EnterWorktree is
   deferred — load it via ToolSearch before calling.
-argument-hint: "<worktree/branch name — a JIRA key like COB-103, or any slug like random-misc>"
+argument-hint: "<worktree/branch name — a JIRA key like ABC-123, or any slug like random-misc>"
 disable-model-invocation: true
 ---
 
@@ -39,7 +39,7 @@ user types another word.
    `/tmp`) does not move the session cwd — Bash resets to repo root after every
    call, forcing a `cd …/worktree &&` prefix on every command for rest of the
    session. This skill exists to prevent that. Use the tool.
-2. **The argument is the name — verbatim.** Whatever the user passes (`COB-103`,
+2. **The argument is the name — verbatim.** Whatever the user passes (`ABC-123`,
    `random-misc`) is the worktree directory name. Do not rename, slugify, or prefix it.
    EnterWorktree derives the branch as `worktree-<NAME>` — that prefix is the tool's, not
    yours to add or strip. Report the branch it actually created; do not claim `<NAME>`.
@@ -83,7 +83,7 @@ user types another word.
   only letters, digits, dots, underscores, and dashes; ≤64 chars total. If it violates
   this, tell the user and stop.
 - **Is it a JIRA key?** True if `NAME` matches `^[A-Za-z][A-Za-z0-9]*-[0-9]+$`
-  (e.g. `COB-103`, `SUBRO-1505`). Uppercase it for the JIRA lookup only — the worktree
+  (e.g. `ABC-123`, `PROJ-1505`). Uppercase it for the JIRA lookup only — the worktree
   and branch keep the exact string the user passed.
 
 ### Phase 1 — Preconditions (read-only)

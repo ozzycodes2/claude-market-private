@@ -5,8 +5,8 @@ change analysis (with **risk_class** routing), a 2-pass deep
 code review (expanded concurrency), risk-gated quality-review passes
 (`domain-architecture`, `data-contracts`, `ops-reliability`, `change-evolution`),
 security scanning (OWASP deepen), documentation-drift checks (light DX fold) — then posts a single unified GitHub review (summary +
-inline comments). Rust and Machinify `mac-ui` changes get first-class, tailored
-checks. Test execution and coverage analysis are intentionally left to CI.
+inline comments). Rust and `mac-ui` Web Components changes get first-class,
+tailored checks. Test execution and coverage analysis are intentionally left to CI.
 
 ## Usage
 
@@ -54,11 +54,15 @@ Kerievsky, *Refactoring to Patterns*), using the language's idiom where it
 diverges from the catalog's OO move.
 
 **Rust & mac-ui tailoring:** `analyze` detects Rust (cargo/just/nextest)
-and `@vlognow/mac-ui` (Machinify Web Components) usage. When present, `security-scan`
+and `mac-ui` Web Components usage. When present, `security-scan`
 and `docs-drift` adapt automatically — running cargo supply-chain tools
 and Rust correctness/PHI checks, and fetching mac-ui's **live** authority docs
-(`ai-behavior-spec`, `ai-code-audit`, `ai-testing-guide`, per-component `mac-*.md`)
 at review time since the framework changes.
+
+mac-ui tailoring is off until you set two environment variables, e.g. in the
+`env` block of `~/.claude/settings.json`: `MAC_UI_PACKAGE` (the npm package,
+`@scope/mac-ui`) and `MAC_UI_REF_REPO` (the GitHub repo holding its docs,
+`owner/repo`).
 
 Each sub-skill can also be invoked standalone (e.g. `/review:security-scan <PR_URL>`,
 `/review:domain-architecture <PR_URL>`).

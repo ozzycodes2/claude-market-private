@@ -3,7 +3,7 @@ name: codegen
 description: Generates simple tests, docstrings, and documentation updates for PR changes. Use when reviewing a PR and you want draft tests, docstrings, or CHANGELOG entries to fill the gaps it surfaced (human review required before committing).
 allowed-tools: Bash Read Write
 metadata:
-  author: machinify
+  author: Osniel Quintana-Salgado
   facet-of: review
 ---
 

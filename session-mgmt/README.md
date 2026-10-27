@@ -7,7 +7,7 @@ Manage the lifecycle of a Claude Code working session — open one cleanly with
   after the argument. Uses the `EnterWorktree` tool (so the session's working directory
   follows into the worktree — no `cd` flood), places it under `.claude/worktrees/`,
   reports what untracked state the worktree inherited and whether it has a stack of its
-  own, and if the name is a JIRA key (e.g. `COB-103`) loads that story with the Atlassian
+  own, and if the name is a JIRA key (e.g. `ABC-123`) loads that story with the Atlassian
   CLI (`acli`) and summarizes the implementation ask. Then it stops and waits — it sets up
   the workspace, it doesn't start coding.
 - **`exit-session`** — tear down the ephemeral resources a session spun up **permission-free**
@@ -17,9 +17,9 @@ Manage the lifecycle of a Claude Code working session — open one cleanly with
 ## start-session
 
 ```
-> /start-session COB-103        # worktree "COB-103", branch "worktree-COB-103", + JIRA
+> /start-session ABC-123        # worktree "ABC-123", branch "worktree-ABC-123", + JIRA
 > /start-session random-misc    # worktree "random-misc", branch "worktree-random-misc"
-> start a worktree for SUBRO-1505
+> start a worktree for PROJ-1505
 ```
 
 Whatever name you pass becomes the worktree directory verbatim; `EnterWorktree` derives

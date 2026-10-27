@@ -8,8 +8,8 @@
   "plugins": [
     {
       "name": "review",
-      "version": "0.14.0",
-      "description": "Comprehensive multi-phase PR review — change analysis with risk_class routing, 2-pass deep code review, risk-gated quality-review passes (domain-architecture, data-contracts, ops-reliability, change-evolution), security scanning (OWASP deepen), and documentation-drift checks, posted as one unified GitHub review. Test execution and coverage analysis are left to CI. Plus fix: apply the findings in the working tree — refactor each code smell by the named Fowler/Kerievsky move in the language's own idiom, rewrite flagged docs and comments, regenerate stale artifacts, and defer anything needing a human design decision, one commit per finding and the test suite once per partition, then push the head branch once it is green and reply to and resolve the review comments it answered. Plus monitor-pr: continuously watch a PR for CI failures and review comments (drive with /loop), delegate the fixing to fix, push, and resolve or reply-acknowledge each comment once its fix ships. Rust and Machinify mac-ui changes get tailored checks.",
+      "version": "0.14.1",
+      "description": "Comprehensive multi-phase PR review — change analysis with risk_class routing, 2-pass deep code review, risk-gated quality-review passes (domain-architecture, data-contracts, ops-reliability, change-evolution), security scanning (OWASP deepen), and documentation-drift checks, posted as one unified GitHub review. Test execution and coverage analysis are left to CI. Plus fix: apply the findings in the working tree — refactor each code smell by the named Fowler/Kerievsky move in the language's own idiom, rewrite flagged docs and comments, regenerate stale artifacts, and defer anything needing a human design decision, one commit per finding and the test suite once per partition, then push the head branch once it is green and reply to and resolve the review comments it answered. Plus monitor-pr: continuously watch a PR for CI failures and review comments (drive with /loop), delegate the fixing to fix, push, and resolve or reply-acknowledge each comment once its fix ships. Rust and mac-ui Web Components changes get tailored checks.",
       "category": "development",
       "repository": "https://github.com/ozzycodes2/claude-market-private",
       "license": "MIT",
@@ -41,7 +41,6 @@
         "rust",
         "mac-ui",
         "web-components",
-        "machinify",
         "development"
       ],
       "source": "./review"
@@ -71,7 +70,7 @@
     },
     {
       "name": "architecture-design",
-      "version": "0.5.0",
+      "version": "0.5.1",
       "description": "Design deep modules, sharpen a project's domain model, and draw the result. Shared vocabulary for module depth, interfaces, and seams; domain terminology, ADRs, and CONTEXT docs; a codebase deepening scan with an HTML report; and 45 self-contained HTML/SVG diagram types in the Fabric skin — including lifecycle phase maps — with .drawio, Mermaid, and Excalidraw import. Run setup-matt-pocock-skills once first.",
       "category": "development",
       "repository": "https://github.com/ozzycodes2/claude-market-private",
@@ -119,7 +118,7 @@
     },
     {
       "name": "session-mgmt",
-      "version": "0.7.0",
+      "version": "0.7.1",
       "description": "Manage the full lifecycle of a Claude Code working session. start-session opens a task in a fresh, isolated git worktree (via EnterWorktree, never `git worktree add`) named after the argument on branch `worktree-<name>`, reports what untracked state the worktree inherited — `.worktreeinclude` copies, symlinked node_modules — and whether its `.env` still points at the main checkout's stack, and loads the JIRA story when the name is an issue key. exit-session tears down the ephemeral resources a session created — background processes and dev servers, Docker/compose stacks with their volumes, networks and locally built images, local Kubernetes, git worktrees (the session's own and every one it handed to a subagent, unlocking them first), throwaway local branches, and temp files — permission-free, then quits the CLI. Worktrees are attributed by the pid in their git lock reason and Docker resources by their compose-project label, so teardown survives a compacted context. Runs prompt-free in default, accept-edits and auto mode; a bundled UserPromptSubmit hook refuses only plan mode, where mutating tools are off. It hands back the deny-listed remote/history ops rather than running them.",
       "category": "productivity",
       "repository": "https://github.com/ozzycodes2/claude-market-private",

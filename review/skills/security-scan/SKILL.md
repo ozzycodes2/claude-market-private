@@ -159,7 +159,7 @@ fi
 
 # mac-ui: audit changed .ts against the framework's live authority docs.
 USES_MAC_UI=$(jq -r '.uses_mac_ui // false' "$OUTPUT_DIR/pr-analysis-${PR_NUMBER}.json" 2>/dev/null)
-MAC_UI_REF_REPO=$(jq -r '.mac_ui_ref_repo // "vlognow/mac-ui"' "$OUTPUT_DIR/pr-analysis-${PR_NUMBER}.json" 2>/dev/null)
+MAC_UI_REF_REPO=$(jq -r '.mac_ui_ref_repo // empty' "$OUTPUT_DIR/pr-analysis-${PR_NUMBER}.json" 2>/dev/null)
 ```
 
 **If no tools available:**
@@ -343,9 +343,9 @@ cluster.
 ### mac-ui: idiom & security audit (dynamic)
 
 When `USES_MAC_UI=true`, read `references/mac-ui-audit.md` and follow it: fetch
-mac-ui's live authority docs from `$MAC_UI_REF_REPO` via `gh api` (repo is
-internal), then audit changed `mac-*` `.ts` against the fetched Violation
-Catalog — `innerHTML = var` (XSS), raw `new CustomEvent` dispatch, unsafe casts.
+mac-ui's live authority docs from `$MAC_UI_REF_REPO` via `gh api` (it may be
+private), then audit changed `mac-*` `.ts` against the fetched Violation
+Catalog, security-bearing violations such as unescaped HTML sinks first.
 Fetch at HEAD; never audit from memory, because the framework changes.
 
 ## Step 4: Detect Hardcoded Secrets

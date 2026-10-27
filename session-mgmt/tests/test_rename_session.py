@@ -55,13 +55,13 @@ class RenameSessionTest(unittest.TestCase):
 
     def test_title_records_land_in_the_matching_transcript(self):
         t = self.write_transcript()
-        rc, out = self.run_script(_SID, "COB-103")
+        rc, out = self.run_script(_SID, "ABC-123")
         self.assertEqual(rc, 0)
-        self.assertIn("renamed session -> COB-103", out)
+        self.assertIn("renamed session -> ABC-123", out)
         records = [json.loads(line) for line in t.read_text().splitlines()]
         self.assertEqual(
             [(r["type"], r.get("customTitle") or r.get("agentName")) for r in records],
-            [("custom-title", "COB-103"), ("agent-name", "COB-103")],
+            [("custom-title", "ABC-123"), ("agent-name", "ABC-123")],
         )
         self.assertTrue(all(r["sessionId"] == _SID for r in records))
 
@@ -86,15 +86,15 @@ class RenameSessionTest(unittest.TestCase):
     def test_pid_file_for_this_session_is_mirrored(self):
         self.write_transcript()
         p = self.write_pid_file(sessionId=_SID, name="old")
-        rc, out = self.run_script(_SID, "COB-103")
+        rc, out = self.run_script(_SID, "ABC-123")
         self.assertEqual(rc, 0)
         self.assertIn("mirrored into the live pid file", out)
-        self.assertEqual(json.loads(p.read_text())["name"], "COB-103")
+        self.assertEqual(json.loads(p.read_text())["name"], "ABC-123")
 
     def test_another_sessions_pid_file_is_left_alone(self):
         self.write_transcript()
         theirs = self.write_pid_file("999.json", sessionId="someone-else", name="theirs")
-        _, out = self.run_script(_SID, "COB-103")
+        _, out = self.run_script(_SID, "ABC-123")
         self.assertNotIn("mirrored", out)
         self.assertEqual(json.loads(theirs.read_text())["name"], "theirs")
 
@@ -102,9 +102,9 @@ class RenameSessionTest(unittest.TestCase):
         self.write_transcript()
         (self.sessions / "corrupt.json").write_text("{not json")
         mine = self.write_pid_file(sessionId=_SID)
-        _, out = self.run_script(_SID, "COB-103")
+        _, out = self.run_script(_SID, "ABC-123")
         self.assertIn("mirrored into the live pid file", out)
-        self.assertEqual(json.loads(mine.read_text())["name"], "COB-103")
+        self.assertEqual(json.loads(mine.read_text())["name"], "ABC-123")
 
     def test_missing_arguments_skip_rather_than_fail(self):
         for args in ((), (_SID,), (_SID, ""), ("", "name"), (_SID, "name", "extra")):

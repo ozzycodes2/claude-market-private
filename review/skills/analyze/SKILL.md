@@ -81,7 +81,7 @@ Writes analysis to `<OUTPUT_DIR>/pr-analysis-<PR_NUMBER>.json`:
   "security_sensitive": true,
   "needs_security_review": true,
   "uses_mac_ui": false,
-  "mac_ui_ref_repo": "vlognow/mac-ui",
+  "mac_ui_ref_repo": "owner/mac-ui",
   "risk_class": ["domain", "auth", "api"]
 }
 ```
@@ -91,7 +91,7 @@ The orchestrator uses it to gate QR passes (see `shared/risk-class-routing.md`).
 
 `uses_mac_ui` (see Step 4) tells `security-scan` and `docs-drift`
 to fetch mac-ui's live authority docs. `mac_ui_ref_repo` is the repo they fetch
-from. Downstream skills read both from this JSON.
+from, taken from `$MAC_UI_REF_REPO`. Downstream skills read both from this JSON.
 
 ## Step 0: Parse Arguments
 
@@ -189,11 +189,13 @@ Look for framework indicators in changed files or project root.
 - Command source: prefer a `justfile` — its `fmt`/`clippy`/`test`/`coverage`/`ci`
   recipes are what CI runs; record exact recipes, don't guess.
 
-**mac-ui / Web Components (`@vlognow/mac-ui`):**
+**mac-ui / Web Components (`$MAC_UI_PACKAGE`):**
+- Only when both `$MAC_UI_PACKAGE` (npm name, e.g. `@scope/mac-ui`) and
+  `$MAC_UI_REF_REPO` (`owner/repo`) are set; otherwise leave `uses_mac_ui: false`.
 - Set `uses_mac_ui: true` when any of: `package.json` (root or a workspace
-  package) depends on `@vlognow/mac-ui`/`mac-ui-react`/`mac-ui-utils`; a changed
+  package) depends on `$MAC_UI_PACKAGE` or its `-react`/`-utils` siblings; a changed
   file registers or consumes a `mac-*` custom element (`customElements.define`,
-  a `<mac-…>` tag, or an import from `@vlognow/mac-ui`).
+  a `<mac-…>` tag, or an import from `$MAC_UI_PACKAGE`).
 - Monorepo: `lerna.json` + `packages/` → lerna workspace; `biome.json` → Biome
   lint/format; `vite.config.ts`/`web-dev-server-config.js` → Vite/WTR.
 - Test runner: per-package `package.json` `test` script is authoritative
@@ -347,7 +349,7 @@ jq -n \
   --argjson security_sensitive "$SECURITY_SENSITIVE" \
   --argjson needs_security_review "$NEEDS_SECURITY_REVIEW" \
   --argjson uses_mac_ui "${USES_MAC_UI:-false}" \
-  --arg mac_ui_ref_repo "vlognow/mac-ui" \
+  --arg mac_ui_ref_repo "${MAC_UI_REF_REPO:-}" \
   --argjson risk_class "${RISK_CLASS_JSON:-[]}" \
   '{
     pr: $pr,

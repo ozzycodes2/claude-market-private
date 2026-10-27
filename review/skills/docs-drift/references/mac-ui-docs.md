@@ -1,38 +1,32 @@
 # Fetching mac-ui's live docs
 
-`@vlognow/mac-ui` (Machinify Web Components, `github.com/vlognow/mac-ui`) is a
-fast-moving framework. Its docs — not this skill — are the authority, so fetch
-them at HEAD when a PR touches `mac-*` components or `docs/adrs/` inside a
-mac-ui repo. The repo is `internal`, so use `gh api` (WebFetch can't read it).
+mac-ui is a fast-moving Web Components framework whose repo is set by
+`$MAC_UI_REF_REPO` (`owner/repo`). Its docs — not this skill — are the
+authority, so fetch them at HEAD when a PR touches `mac-*` components or
+`docs/adrs/` inside a mac-ui repo. The repo may be private, so use `gh api`
+(WebFetch can't read it).
 
 ## Entry point: the Reading Authority table
 
 The repo root `CLAUDE.md` lists the authoritative sources in priority order.
-Fetch it first and follow it — the file list below can go stale, the table
-won't:
-
-```bash
-gh api repos/vlognow/mac-ui/contents/CLAUDE.md \
-  --jq '.content' | base64 -d
-```
-
-## Fetch a doc at HEAD
+Fetch it first and follow it:
 
 ```bash
 fetch_macui () {  # $1 = path within the mac-ui repo
-  gh api "repos/vlognow/mac-ui/contents/$1" --jq '.content' | base64 -d
+  gh api "repos/${MAC_UI_REF_REPO:?}/contents/$1" --jq '.content' | base64 -d
 }
+fetch_macui CLAUDE.md
 ```
 
 ## Docs that matter for drift/completeness review
 
-| Path | Use for |
-|------|---------|
-| `docs/adrs/` (+ `README.md`, `template.md`) | mac-ui's own ADR set — for the ADR cross-checks in Step 4 when reviewing the mac-ui repo itself |
-| `packages/mac-ui/docs/ai-behavior-spec.md` | Component patterns, decorators, events, a11y, anti-patterns |
-| `packages/mac-ui/docs/ai-code-audit.md` | Violation Catalog + structural transforms — the authority for whether a doc's described pattern is still current |
-| `packages/mac-ui/docs/INDEX.md` | Index of per-component docs; confirms which `mac-*.md` exist |
-| `packages/mac-ui/docs/mac-{name}.md` and `packages/mac-ui/docs/ai/mac-{name}.md` | Per-component slots/attributes/events/CSS parts |
+From the table, fetch:
+
+- the repo's own ADR set, for the ADR cross-checks in Step 4 when reviewing the
+  mac-ui repo itself;
+- the behavior spec (component patterns, events, a11y, anti-patterns);
+- the per-component docs index and each referenced `mac-{name}` doc (slots,
+  attributes, events, CSS parts).
 
 ## How to use them here
 
