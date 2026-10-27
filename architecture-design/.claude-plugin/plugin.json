@@ -1,6 +1,6 @@
 {
   "name": "architecture-design",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Design deep modules, sharpen a project's domain model, and draw the result. Shared vocabulary for module depth, interfaces, and seams; domain terminology, ADRs, and CONTEXT docs; a codebase deepening scan with an HTML report; and 45 self-contained HTML/SVG diagram types in the Fabric skin — including lifecycle phase maps — with .drawio, Mermaid, and Excalidraw import. Run setup-matt-pocock-skills once first.",
   "repository": "https://github.com/ozzycodes2/claude-market-private",
   "license": "MIT",
