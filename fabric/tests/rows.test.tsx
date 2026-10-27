@@ -469,7 +469,7 @@ test('the markdown pack draws alerts and task lists everywhere, headings and par
   expect(spanColor((await terminal.find({ type: 'Text', text: /Ran 54 tests/ })) as Found, '3.2s')).toBe('#f7f8f8')
   expect(await terminal.find({ type: 'Text', text: '▲ Warning' })).toBeDefined()
   expect(JSON.stringify(await terminal.find({ type: 'Box' }))).toContain('"borderStyle":"round"')
-  expect(await terminal.find({ type: 'Text', text: '☑ ' })).toBeDefined()
+  expect(await terminal.find({ type: 'Text', text: '● ' })).toBeDefined()
   expect(await terminal.find({ type: 'Text', text: '1/2 done' })).toBeDefined()
   await terminal.unmount()
 
@@ -482,6 +482,32 @@ test('the markdown pack draws alerts and task lists everywhere, headings and par
   await runSkin($, 'markdown off')
   const off = await $.ui.mount(reply('terminal'))
   expect(await off.find({ type: 'Text', text: 'stock row' })).toBeDefined()
+})
+
+test('a task’s text keeps its inline markdown, and its mark is the skin’s own status glyph', async ($, on) => {
+  stubEngine(on)
+
+  type Span = { props?: { bold?: unknown; color?: unknown }; children?: readonly unknown[] }
+  const spans = (node: unknown): Span[] => {
+    const span = node as Span | undefined
+
+    return span === undefined || typeof span !== 'object' ? [] : [span, ...(span.children ?? []).flatMap(spans)]
+  }
+  const ui = await $.ui.mount({
+    ...SITE,
+    surface: 'terminal',
+    component: 'AssistantMessage',
+    requestId: 'task-inline',
+    props: { text: '- [ ] **Dead code:** drop `old()`\n- [x] tidy', isFirstOfReply: true },
+  })
+  const all = spans(await ui.find({ type: 'Box' }))
+  const textOf = (span: Span) => span.children?.join('')
+
+  expect(all.find(span => textOf(span) === 'Dead code:')?.props?.bold).toBe(true)
+  expect(all.find(span => textOf(span) === 'old()')?.props?.color).toBe(fabric.palette.code)
+  expect(all.some(span => typeof textOf(span) === 'string' && (textOf(span) as string).includes('**'))).toBe(false)
+  expect(await ui.find({ type: 'Text', text: '○ ' })).toBeDefined()
+  expect(all.find(span => textOf(span) === 'tidy')?.props?.color).toBe(fabric.palette.muted)
 })
 
 test('inline code takes the skin’s code colour, on its band or on none when transparent', async ($, on) => {

@@ -1,3 +1,4 @@
+import { inlineRuns } from './blocks'
 import type { AlertType, Block, Line, Run, RunStyle, Task } from './blocks'
 import { safeHref, touchOf } from './links'
 import type { Look } from './rows'
@@ -13,8 +14,10 @@ const ALERTS: Record<AlertType, { title: string; slot: keyof Palette; unicode: s
   caution: { title: 'Caution', slot: 'err', unicode: '✖', ascii: 'x' },
 }
 
+// A task takes the skin's own status marks: a ballot box is missing from common monospace
+// fonts and falls back to one that draws it out of line.
 const glyphs = (look: Look): Glyphs =>
-  look.prefs.icons === 'ascii' ? { mark: '-', done: '[x]', open: '[ ]' } : { mark: '•', done: '☑', open: '☐' }
+  look.prefs.icons === 'ascii' ? { mark: '-', done: '[x]', open: '[ ]' } : { mark: '•', done: look.icons.ok, open: look.icons.running }
 
 // The slot each highlighted kind of text takes from the skin.
 const SLOTS: Partial<Record<RunStyle, keyof Palette>> = {
@@ -33,7 +36,8 @@ function pathSlot(look: Look, text: string): keyof Palette {
   return touch === 'created' ? 'ok' : touch === 'edited' ? 'warn' : 'read'
 }
 
-function runText(look: Look, run: Run) {
+// `plain` is the colour of text no style picks out.
+function runText(look: Look, run: Run, plain = look.skin.palette.fg) {
   const { Link, Text } = look.ui
   const { palette } = look.skin
   const slot = run.style === 'path' ? pathSlot(look, run.text) : SLOTS[run.style]
@@ -51,7 +55,7 @@ function runText(look: Look, run: Run) {
 
   return (
     <Text
-      color={slot === undefined ? palette.fg : palette[slot]}
+      color={slot === undefined ? plain : palette[slot]}
       bold={run.style === 'bold'}
       italic={run.style === 'italic'}
       strikethrough={run.style === 'strike'}
@@ -115,7 +119,7 @@ function taskRows(look: Look, items: readonly Task[]) {
       {items.map(item => (
         <Box flexDirection="row" paddingLeft={item.depth * 2}>
           <Text color={item.done ? palette.ok : palette.muted}>{`${item.done ? mark.done : mark.open} `}</Text>
-          <Text color={item.done ? palette.muted : palette.fg}>{item.text}</Text>
+          <Text>{inlineRuns(item.text).map(run => runText(look, run, item.done ? palette.muted : palette.fg))}</Text>
         </Box>
       ))}
       <Text color={palette.muted}>{`${done}/${items.length} done`}</Text>
