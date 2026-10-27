@@ -60,11 +60,18 @@ PR_NUMBER=$(echo "$PR_URL" | grep -oE 'pull/[0-9]+' | grep -oE '[0-9]+')
 3. Optionally skim `shared/severity-rubric.md`.
 4. If present, read analysis JSON for ops/hot-path hints.
 
-## Step 2: Fetch PR diff
+## Step 2: Load the PR diff
+
+`/review:review` captures the PR once into `$OUTPUT_DIR` and every pass shares
+it. Read `$OUTPUT_DIR/pr.diff` and `$OUTPUT_DIR/pr-view.json`; never write to
+either — the other passes are reading them. Fetch only when run standalone:
 
 ```bash
-gh pr diff "$PR_URL" > "$OUTPUT_DIR/pr.diff"
-gh pr view "$PR_URL" --json title,body,files,additions,deletions
+if [ ! -s "$OUTPUT_DIR/pr.diff" ]; then
+  gh pr diff "$PR_URL" > "$OUTPUT_DIR/pr.diff"
+  gh pr view "$PR_URL" --json title,body,files,additions,deletions,commits \
+    > "$OUTPUT_DIR/pr-view.json"
+fi
 ```
 
 Focus on clients/HTTP calls, queues/consumers, retries/timeouts, caches, pagination, resource pools, metrics/logging on new paths.

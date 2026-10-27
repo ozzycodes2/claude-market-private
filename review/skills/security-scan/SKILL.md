@@ -177,9 +177,14 @@ defers them round after round. Run the auditors only when the PR changes a
 manifest or a lockfile.
 
 ```bash
-gh pr diff "$PR_URL" --name-only > "$OUTPUT_DIR/changed-files.txt"
+# /review:review captures pr.diff and pr.files once for every pass; read them,
+# never write them. Fetch only on a standalone run.
+if [ ! -s "$OUTPUT_DIR/pr.diff" ]; then
+  gh pr diff "$PR_URL" > "$OUTPUT_DIR/pr.diff"
+  gh pr diff "$PR_URL" --name-only > "$OUTPUT_DIR/pr.files"
+fi
 MANIFEST_RE='(^|/)(package-lock\.json|package\.json|yarn\.lock|pnpm-lock\.yaml|requirements[^/]*\.txt|poetry\.lock|Pipfile\.lock|pyproject\.toml|Cargo\.lock|Cargo\.toml|go\.mod|go\.sum|Gemfile\.lock|pom\.xml|build\.gradle[^/]*)$'
-if grep -qE "$MANIFEST_RE" "$OUTPUT_DIR/changed-files.txt"; then
+if grep -qE "$MANIFEST_RE" "$OUTPUT_DIR/pr.files"; then
   AUDIT_DEPS=true
 else
   AUDIT_DEPS=false
@@ -198,10 +203,9 @@ unaffected — they are scoped to changed files already.
 
 `semgrep`, `bandit` and `gosec` report per file, not per hunk, so a thirty-line
 change to a two-thousand-line module returns findings on all two thousand lines.
-Scope them to the lines the PR added.
+Scope them to the lines the PR added, using the `pr.diff` from 1.1.
 
 ```bash
-gh pr diff "$PR_URL" > "$OUTPUT_DIR/pr.diff"
 FILTER="$CLAUDE_PLUGIN_ROOT/scripts/changed_lines.py"
 ```
 
@@ -355,7 +359,7 @@ Fetch at HEAD; never audit from memory, because the framework changes.
 Look for common secret patterns in diff.
 
 ```bash
-gh pr diff <PR_URL> | grep -E "(password|secret|key|token|api_key)" | grep -v "test\|example"
+grep -E "(password|secret|key|token|api_key)" "$OUTPUT_DIR/pr.diff" | grep -v "test\|example"
 ```
 
 **Patterns to detect:**

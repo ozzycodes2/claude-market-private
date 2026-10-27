@@ -62,11 +62,18 @@ PR_NUMBER=$(echo "$PR_URL" | grep -oE 'pull/[0-9]+' | grep -oE '[0-9]+')
 3. Optionally skim `shared/severity-rubric.md` for Clean Code blocking rules.
 4. If present, read `$OUTPUT_DIR/pr-analysis-${PR_NUMBER}.json` for impact hints.
 
-## Step 2: Fetch PR diff
+## Step 2: Load the PR diff
+
+`/review:review` captures the PR once into `$OUTPUT_DIR` and every pass shares
+it. Read `$OUTPUT_DIR/pr.diff` and `$OUTPUT_DIR/pr-view.json`; never write to
+either — the other passes are reading them. Fetch only when run standalone:
 
 ```bash
-gh pr diff "$PR_URL" > "$OUTPUT_DIR/pr.diff"
-gh pr view "$PR_URL" --json title,body,files,additions,deletions
+if [ ! -s "$OUTPUT_DIR/pr.diff" ]; then
+  gh pr diff "$PR_URL" > "$OUTPUT_DIR/pr.diff"
+  gh pr view "$PR_URL" --json title,body,files,additions,deletions,commits \
+    > "$OUTPUT_DIR/pr-view.json"
+fi
 ```
 
 ## Step 3: Review

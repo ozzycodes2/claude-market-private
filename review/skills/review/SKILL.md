@@ -14,7 +14,7 @@ Master orchestrator. Runs comprehensive PR review by coordinating specialized sk
 Workflow:
 
 **Phase 1: Foundation**
-1. Analyze changes (languages, frameworks, impact, **risk_class**)
+1. Capture the PR diff once, for every pass; analyze changes (languages, frameworks, impact, **risk_class**)
 2. Deep code review (2-pass bug hunting — expanded concurrency) **in parallel with** risk-gated QR passes
 
 **Phase 2: Quality Checks** (parallel)
@@ -83,6 +83,23 @@ fi
 If both variables are unset, Glob for `**/scripts/review_formatter.py` and use
 that file's parent-of-parent.
 
+### 1.4 Capture the PR once
+
+```bash
+gh pr diff "$PR_URL" > "$OUTPUT_DIR/pr.diff"
+gh pr diff "$PR_URL" --name-only > "$OUTPUT_DIR/pr.files"
+gh pr view "$PR_URL" --json number,title,url,body,baseRefName,headRefName,headRefOid,author,state,additions,deletions,files,commits \
+  > "$OUTPUT_DIR/pr-view.json"
+```
+
+Every pass reads these three files and fetches nothing itself. They are the
+pass's inputs, read-only: passes run in parallel in one `$OUTPUT_DIR`, so a
+pass that rewrote `pr.diff` would change the diff under every other pass
+mid-read. A pass run standalone, with no `pr.diff` in its directory, fetches
+its own.
+
+If `gh pr diff` fails, stop — there is nothing to review.
+
 ## Step 2: Run Change Analysis (Foundation)
 
 ```
@@ -119,9 +136,18 @@ Each:
 - `subagent_type`: `general-purpose`
 - `model`: from table. **Do not omit** — an omitted `model` inherits the session model, collapsing both passes onto one.
 - `description`: `Bug hunter pass [1 opus / 2 sonnet]`
-- `prompt`: Bug-Finder Prompt below, with the PR diff inserted as `{{DIFF}}` and the contents of `references/anti-patterns.md` as `{{ANTI_PATTERNS}}`.
+- `prompt`: Bug-Finder Prompt below, with the contents of `$OUTPUT_DIR/pr.diff` as `{{DIFF}}` and the contents of `references/anti-patterns.md` as `{{ANTI_PATTERNS}}`.
 
 Read `references/anti-patterns.md` yourself and paste it in. These are raw Task prompts, not skill invocations — the subagents run with the reviewed repo as their working directory and cannot resolve a path in this skill.
+
+### Fresh eyes
+
+A pass's prompt is its template with the placeholders filled — nothing else.
+Every pass reviews the diff cold: what another pass found, and what you
+suspect, stays out of the prompt. The QR, security and docs passes read the
+analysis JSON themselves; the bug-finders see only the diff. Two passes primed with the same
+hunch report the same hunch, and the "[Found by 2/2 models]" agreement in Step
+5 stops meaning two independent reads.
 
 ### Bug-Finder Prompt (both passes)
 
@@ -214,7 +240,7 @@ Use Task tool:
     Write docs-drift-<PR_NUMBER>.json. One-line summary.
 ```
 
-**Send every Step 3 and Step 4 Task in ONE message** — 2 bug-finders, 0–4 QR passes, security-scan, docs-drift. They are independent and all read the same analysis JSON. Collect in Step 5.
+**Send every Step 3 and Step 4 Task in ONE message** — 2 bug-finders, 0–4 QR passes, security-scan, docs-drift. They are independent and all read the same Step 1.4 capture. Collect in Step 5.
 
 ## Step 5: Collect Results
 
@@ -407,6 +433,7 @@ View full review: <PR_URL>
 - bug-finder fails → omit Code Review section; recommend manual review
 - a QR pass fails → omit that section; continue
 - both analyze and bug-finder fail → do not post incomplete review
+- Step 1.4 capture fails → stop; no pass can run without the diff
 - GitHub rejects the review (422) → the formatter re-posts suggested changes as
   prose, then without inline comments at all; nothing to do by hand
 - post fails → dry-run + save JSON under `$OUTPUT_DIR`

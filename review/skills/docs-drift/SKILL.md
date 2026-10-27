@@ -84,9 +84,14 @@ REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo .)"
 
 ```bash
 python3 scripts/docs_inventory.py --repo-root "$REPO_ROOT" > "$OUTPUT_DIR/docs-inventory.json"
-gh pr diff "$PR_URL" --patch > "$OUTPUT_DIR/pr.diff"
-gh pr diff "$PR_URL" --name-only > "$OUTPUT_DIR/pr.files"
+if [ ! -s "$OUTPUT_DIR/pr.diff" ]; then   # standalone; /review:review captures these
+  gh pr diff "$PR_URL" > "$OUTPUT_DIR/pr.diff"
+  gh pr diff "$PR_URL" --name-only > "$OUTPUT_DIR/pr.files"
+fi
 ```
+
+`pr.diff` and `pr.files` are shared with the passes running beside this one.
+Read them; never write to them.
 
 ### Step 2: Extract claims
 

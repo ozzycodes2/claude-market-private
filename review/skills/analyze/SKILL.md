@@ -114,8 +114,16 @@ echo "PR number: $PR_NUMBER" >&2
 
 ## Step 1: Fetch PR Metadata
 
+`/review:review` captures the PR once into `$OUTPUT_DIR` before this skill
+runs. Read `$OUTPUT_DIR/pr-view.json` and `$OUTPUT_DIR/pr.files`; fetch only
+when they are absent (standalone run):
+
 ```bash
-gh pr view "$PR_URL" --json number,title,url,baseRefName,headRefName,author,state,additions,deletions,body
+if [ ! -s "$OUTPUT_DIR/pr.files" ]; then
+  gh pr view "$PR_URL" --json number,title,url,baseRefName,headRefName,author,state,additions,deletions,body \
+    > "$OUTPUT_DIR/pr-view.json"
+  gh pr diff "$PR_URL" --name-only > "$OUTPUT_DIR/pr.files"
+fi
 ```
 
 Store in variables for later use.
@@ -123,7 +131,7 @@ Store in variables for later use.
 ## Step 2: Get Changed Files
 
 ```bash
-gh pr diff <PR_URL> --name-only
+cat "$OUTPUT_DIR/pr.files"
 ```
 
 Count files and categorize by type:
@@ -137,7 +145,7 @@ Count files and categorize by type:
 
 Analyze file extensions and count:
 ```bash
-gh pr diff <PR_URL> --name-only | sed 's/.*\.//' | sort | uniq -c | sort -rn
+sed 's/.*\.//' "$OUTPUT_DIR/pr.files" | sort | uniq -c | sort -rn
 ```
 
 **Primary language**: extension with most files
