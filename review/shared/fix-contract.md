@@ -82,6 +82,12 @@ to tell.
    handles the edge case`, no address to a reviewer. That belongs in the commit
    message; git remembers. If your change makes an existing comment wrong,
    correct it from the code — or delete it.
+8. **Apply the move with a tool when one covers it.** A refactoring engine or
+   an analyzer autofix resolves every reference the same way each run; a hand
+   edit is only as good as the agent's reading of each site. The tool rows are
+   in `skills/fix/references/refactoring-tools.md`. Run a tool only on paths
+   inside the finding's file set — a project-wide fixer is the orchestrator's,
+   like the formatter.
 
 ### Report
 
@@ -91,6 +97,7 @@ The last thing an agent outputs, exactly these keys:
 outcome:             applied | needs-decision | not-reproducible
 files_changed:       repo-relative paths, newline-separated, or "none"
 refactoring_applied: catalog name, or "none"
+tool_applied:        the exact command run, or "none — <why>"
 idiom_divergence:    one line, or "none"
 behavior_preserved:  yes | no — and how you established it
 verification:        the reason to believe the change is correct — the invariant
@@ -212,6 +219,7 @@ established, because an unbacked claim is worse than no claim:
 | Situation | Line |
 |---|---|
 | Refactor, green | `Behavior-preserving; <test command> passes unchanged.` |
+| Refactor, tool-applied | Prefix either line above or below with `Applied by \`<tool_applied>\`.` |
 | Refactor, green after a red partition | `Behavior-preserving; <test command> passes. Reached after N iterations; the first attempt <one clause on what was wrong>.` |
 | Refactor, no local suite | `Behavior-preserving refactoring. Suite not run locally (<reason>); CI gates it.` |
 | Repair | **No preservation claim.** State the before and after behavior, and name the test that now covers it. |

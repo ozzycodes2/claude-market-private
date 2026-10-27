@@ -159,7 +159,9 @@ Per `references/strategy-routing.md`:
 
 ## Step 4: Dispatch
 
-Partition open findings by **file set**. Disjoint sets get one agent each, all
+Partition open findings by **file set**. A rename's file set is every file that
+references the symbol — find them with LSP `findReferences`, or `rg -w`, before
+partitioning, because the rename tool rewrites all of them. Disjoint sets get one agent each, all
 dispatched in a single message. Findings sharing any file collapse into one
 agent that handles them sequentially, re-reading the file between findings. Cap
 concurrency at `--max-concurrent` (default 4).
@@ -185,8 +187,17 @@ inherits the session model and collapses the intended split:
 | S3, S4 | `general-purpose` | `haiku` |
 
 Use the verbatim prompts in `references/subagent-prompts.md`, with the catalog
-row, the idiom rows, and the rules **inlined** — a subagent runs in the reviewed
-repo and cannot resolve a path inside this skill.
+row, the idiom rows, the tool rows, and the rules **inlined** — a subagent runs
+in the reviewed repo and cannot resolve a path inside this skill.
+
+### Deterministic first
+
+Read `references/refactoring-tools.md`. A move a tool covers is applied by the
+tool, not rewritten by a model: the prompt carries the tool row, and the agent
+reports the command in `tool_applied`. A tool the table marks
+orchestrator-only — it rewrites the whole project — you run yourself, like
+S0, before dispatching the partition it touches, and commit it as that
+finding.
 
 S0, S5, and S6 need no agent: run the formatter, run the regeneration recipe, or
 record the deferral.

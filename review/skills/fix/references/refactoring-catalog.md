@@ -21,6 +21,8 @@ commit body says which was applied and why.
    and report.
 4. **Find every call site** before changing a signature. A compiler that catches
    them all is a tool, not an excuse to skip looking.
+5. **Let a tool apply the move** where `refactoring-tools.md` has a row for it.
+   It resolves call sites by symbol, not by string.
 
 ## Structure and size
 

@@ -34,7 +34,15 @@ resolving refactoring: <name, or "(none named — select one from the catalog be
 Where the catalog's object-oriented move and this language's idiom diverge, the
 idiom wins. Name which you applied, and why, in your report.
 
+## Tools for this move
+<the "Preference order" and "Availability and scope" sections of
+references/refactoring-tools.md, plus the matching move row, inlined — or "no
+tool row covers this move">
+
 ## Rules
+0. APPLY THE MOVE WITH THE TOOL ABOVE when one covers it and is available.
+   Hand-edit only what the tool leaves. If you hand-edit a move a tool row
+   covers, say why in `tool_applied`.
 1. BEHAVIOR-PRESERVING. Same inputs, same outputs, same side effects, same error
    values. If resolving this finding REQUIRES changing observable behavior, stop
    and report outcome: needs-decision. Do not change behavior and call it a
@@ -59,6 +67,7 @@ idiom wins. Name which you applied, and why, in your report.
    they pass, the edge case you traced. "It compiles" is not one.
    A pure check that writes nothing and takes no lock is fine — a type check, a
    linter in check mode, a single file parsed. Name it and its result.
+   A rule-0 tool is an edit, not a check: run it on your files only.
    <ENDIF>
 7. COMMENTS. Do not narrate your change. No "fixed", no "now handles", no
    address to a reviewer. If your change makes an existing comment wrong,
@@ -68,6 +77,7 @@ idiom wins. Name which you applied, and why, in your report.
 outcome: applied | needs-decision | not-reproducible
 files_changed: <newline-separated repo-relative paths, or "none">
 refactoring_applied: <catalog name, or "none">
+tool_applied: <the exact command you ran, or "none — <why>">
 idiom_divergence: <one line, or "none">
 behavior_preserved: yes | no — <how you established it>
 verification: <the reason to believe this is correct — invariant preserved, call
@@ -97,8 +107,12 @@ behavior_changed: <before: … / after: …>
 covering_test: <test name and file>
 ```
 
-Everything else — scope, no-git, locate-by-content, no suite run, no narration
-— is unchanged.
+For `## Tools for this move`, inline the "Analyzer findings with an autofix"
+section of `references/refactoring-tools.md` when the finding carries
+`extra.rule`; otherwise write "no tool row covers this move".
+
+Everything else — tool first, scope, no-git, locate-by-content, no suite run,
+no narration — is unchanged.
 
 ---
 

@@ -115,6 +115,19 @@
         "No review thread is resolved, since no commit reached the remote",
         "The run exits with the ledger unlocked"
       ]
+    },
+    {
+      "id": 11,
+      "prompt": "Resolve a Python finding 'Rename `calc_amt` to `calculate_line_amount` at the definition and every call site' (Change Function Declaration). The function is imported in two other modules; one of them also has an unrelated local variable named `calc_amt` and a log string containing the text 'calc_amt'.",
+      "expected_output": "The rename is applied by a scope-aware refactoring tool (rope via `uv run --with rope`), not by text replacement, and the commit records the command.",
+      "assertions": [
+        "The edit is made by a refactoring engine; the agent report's `tool_applied` names the command",
+        "No `sed`, `perl -pi`, or other text replacement touches source files",
+        "The unrelated local variable and the log string still read `calc_amt`",
+        "No tool dependency is added to the repository and no tool artifact (`.ropeproject`, scripts) is left in the tree",
+        "The partition's file set includes every module that references the symbol",
+        "The commit body states `Applied by` the tool command before the behavior-preservation line"
+      ]
     }
   ]
 }
