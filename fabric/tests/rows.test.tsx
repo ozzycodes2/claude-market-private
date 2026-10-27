@@ -597,6 +597,7 @@ test('the terminal spinner shimmers, the desktop one is an animated icon beside 
     .filter(span => typeof span.children?.[0] === 'string' && /^[A-Za-z]+$/.test(span.children[0] as string))
     .map(span => span.props.color)
   expect(colors).toContain(fabric.palette.shimmer)
+  expect(spanColor((await terminal.find({ type: 'Text', text: /^⠋ / })) as Found, '⠋ ')).toBe(fabric.palette.shimmer)
   expect(colors.every(color => typeof color === 'string' && color !== fabric.palette.muted)).toBe(true)
   await terminal.unmount()
 

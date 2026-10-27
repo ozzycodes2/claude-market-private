@@ -826,7 +826,7 @@ export function spinnerRow(look: Look, word: string, frame: number, elapsedMs: n
   return apart(
     look,
     <Text>
-      <Text color={palette.user}>{`${look.icons.frames[frame % look.icons.frames.length] ?? ''} `}</Text>
+      <Text color={palette.shimmer}>{`${look.icons.frames[frame % look.icons.frames.length] ?? ''} `}</Text>
       {runs.map(run => (
         <Text color={run.color}>{run.text}</Text>
       ))}
