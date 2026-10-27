@@ -1,7 +1,7 @@
 {
   "name": "technical-writing",
   "version": "0.4.0",
-  "description": "Human-facing developer writing, done well, as a pipeline: write-doc or writing-design-docs drafts, review-doc scores against the Practical Prose rubric, fix-doc applies the findings and strips AI tells. Docs that describe structure or flow get a diagram (architecture-design if installed, else Mermaid). Ships the laconic output style: write the conclusion, not the path to it.",
+  "description": "Human-facing developer writing, done well, as a pipeline: write-doc or writing-design-docs drafts, review-doc scores against the Practical Prose rubric, fix-doc applies the findings and strips AI tells. Docs that describe structure or flow get a diagram (architecture-design if installed, else Mermaid). Ships the laconic output style: write the conclusion, not the path to it. Adapted from ceej-skills, Practical Prose (jlevy/practical-prose), humanizer (blader/humanizer), and pertinent, under MIT and CC BY 4.0.",
   "repository": "https://github.com/ozzycodes2/claude-market-private",
   "license": "MIT",
   "author": {

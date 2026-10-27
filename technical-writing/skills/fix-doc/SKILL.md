@@ -1,6 +1,6 @@
 ---
 name: fix-doc
-description: Use when the user asks to fix, edit, polish, tighten, humanize, or de-slop a Markdown doc or pasted text, or says "make this read less AI". Applies review-doc findings, generates flagged diagrams, lists substantive issues for the author, then runs the AI-tell pass last. Modifies the target.
+description: Use when the user asks to fix, edit for prose quality, polish, tighten, humanize, or de-slop a Markdown doc or pasted text, or says "make this read less AI". Applies review-doc findings, generates flagged diagrams, lists substantive issues for the author, then runs the AI-tell pass last. Modifies the target.
 ---
 
 # Fixing Docs
@@ -15,9 +15,11 @@ References, relative to this skill:
 - `../../references/diagrams.md`: when and how to produce a diagram, tool choice, placement.
 - `../../references/common-doc-guidelines.md`: structure, style, and Markdown formatting.
 
+Vendored files keep upstream names in their text: `practical-prose-guidelines.md` is `pprose-guidelines.md`, `practical-prose-rubric.md` is `pprose-rubric.md`, `ai-prose-corrections.md` is `ai-tells.md`. Principles, metrics, and runbooks are not vendored; ignore links to them.
+
 ## Modes
 
-- **Full (default).** Use the findings already in the conversation. If there are none, run `review-doc` first: use the Skill tool for `technical-writing:review-doc`, or follow `../review-doc/SKILL.md` if the Skill tool is unavailable. The humanizer pass covers the whole doc.
+- **Full (default).** Use the findings already in the conversation only if they were produced for this target and the doc has not changed since. Otherwise run `review-doc` first: use the Skill tool for `technical-writing:review-doc`, or follow `../review-doc/SKILL.md` if the Skill tool is unavailable. The humanizer pass covers the whole doc.
 - **`findings-only`.** The caller (for example `review:fix`) passes a findings table, possibly one row, with the phrase `findings-only`. Do not run `review-doc`. Apply only the rows given, still honoring each row's Class: `flag` rows are listed, never rewritten, and `diagram` rows are still generated. Limit the humanizer pass to the passages you edited. Edit nothing outside the given rows.
 
 ## Steps

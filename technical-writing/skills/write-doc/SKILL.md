@@ -31,8 +31,8 @@ Templates live in `templates/`. The Diataxis types differ by what the reader nee
 ## Steps
 
 1. **Pick the type.** If the caller supplied one (for example "type ADR"), use it and skip this question. Otherwise infer it from the request and ask only if two types fit. If the request is an RFC or design doc, switch to `writing-design-docs`.
-2. **Follow the repo's existing doc layout and naming.** Look for a `docs/` directory, sibling docs of the same type, and filename conventions before choosing a path. ADRs default to `docs/adr/NNNN-slug.md`, numbered by scanning the directory for the highest number and adding one. Create the directory only when the first doc needs it.
-3. **Fill the template** per `../../references/common-doc-guidelines.md`. Gather facts from the code, config, and conversation. Delete sections that add nothing; never invent a fact to fill one. Ask for what is missing.
+2. **Follow the repo's existing doc layout and naming.** Look for a `docs/` directory, sibling docs of the same type, and filename conventions before choosing a path. ADRs default to `docs/adr/NNNN-slug.md`, numbered by scanning the directory for the highest number and adding one. Create the directory only when the first doc needs it. If the target file already exists, stop and offer `review-doc` or `fix-doc`, or ask before replacing it.
+3. **Fill the template** per `../../references/common-doc-guidelines.md`. Gather facts from the code, config, and conversation. Replace every `<…>` placeholder and delete the template's HTML comments. Delete sections that add nothing; never invent a fact to fill one. Ask for what is missing.
 4. **Add diagrams** per `../../references/diagrams.md` when the doc describes structure, flow, or state.
 5. **Produce Markdown.** Write to Notion only on explicit request, after confirming.
-6. **End with** "Run `review-doc` on it?"
+6. **End with** "Run `review-doc` on it?" Skip the offer when another skill invoked you.

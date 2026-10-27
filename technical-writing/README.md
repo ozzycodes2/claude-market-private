@@ -17,7 +17,7 @@ write-doc / writing-design-docs  ->  review-doc  ->  fix-doc
 
 | Skill | Stage | What it does |
 |-------|-------|--------------|
-| `write-doc` | Write | Drafts a README, ADR, runbook, tutorial, how-to, explanation, or reference doc from a Diataxis template. Edits nothing existing. |
+| `write-doc` | Write | Drafts a README, ADR, runbook, tutorial, how-to, explanation, or reference doc from a Diataxis template. Never replaces an existing file without asking. |
 | `writing-design-docs` | Write | Drafts a problem-statement design doc one section at a time, before you commit to a non-obvious technical direction. Covers RFCs and design docs, which `write-doc` leaves out. |
 | `review-doc` | Review | Read-only. Scores a doc on the 20 Practical Prose dimensions and emits a Scores table and a Findings table. Each finding is `apply`, `flag`, or `diagram`. |
 | `fix-doc` | Fix | Applies the `apply` findings, generates the `diagram` findings, lists the `flag` findings for the author without rewriting them, then runs an AI-tell pass last. |

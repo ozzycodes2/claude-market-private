@@ -18,6 +18,8 @@ Skip it when a short paragraph or list says the same thing as clearly.
 
 - If `architecture-design:create-diagram` is available, invoke it with format `html+png`.
   It writes the `.html` source and the `.png` export.
+  Tell it the output path `<doc-dir>/images/<doc-stem>-<slug>.html` (or the repo's convention).
+  For Notion targets, write to a temp dir, then upload.
   To export an existing diagram-design `.html`, invoke `architecture-design:export-diagram`; it writes `.svg` and `.png` next to the source.
 - Otherwise write a fenced `mermaid` block in the doc.
   Do not hand-draw ASCII art.
@@ -35,7 +37,7 @@ Skip it when a short paragraph or list says the same thing as clearly.
 
 Only when the user explicitly asked for Notion output.
 
-- Upload the PNG with `notion-create-file-upload` (Notion MCP) and embed it in the page.
+- Create the upload with `notion-create-file-upload` (Notion MCP), send the PNG to the returned upload URL, then embed it using the returned markdown or file reference.
 - With the Mermaid fallback, use a `mermaid` code block; Notion renders it natively.
 
 ## Never
