@@ -100,7 +100,7 @@ export function galleryPane(look: Look, columns: number) {
             desktopSpinnerRow(look, svg, 'requesting', 'Waiting for the model'),
           )}
       {section('Band above a question', askBand(look, ['Approach', 'Store']))}
-      {section('Turn footer (terminal)', footerRow(look, look.skin.done[0] ?? 'Done', 41_000, { tools: 6, added: 18, removed: 3 }))}
+      {section('Turn footer (terminal)', footerRow(look, look.skin.done[0] ?? 'Done', 41_000, { tools: 6 }))}
     </Box>
   )
 }

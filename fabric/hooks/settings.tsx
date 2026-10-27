@@ -61,7 +61,7 @@ function preview(look: Look, width: number) {
         { tool: 'Grep', input: {}, ...done },
       ])}
       {tableRows(look, SAMPLE, Math.max(20, width - 4))}
-      {footerRow(look, word, 41_000, { tools: 6, added: 18, removed: 3 })}
+      {footerRow(look, word, 41_000, { tools: 6 })}
     </Box>
   )
 }

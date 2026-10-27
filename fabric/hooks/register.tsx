@@ -90,7 +90,7 @@ const TYPED = new Set(['composer', 'bridge', 'sdk'])
 
 type Active = { prefs: Prefs; skin: Skin; custom: Record<string, CustomSkin> }
 
-const NO_STATS: TurnStats = { tools: 0, added: 0, removed: 0 }
+const NO_STATS: TurnStats = { tools: 0 }
 
 async function activeSkin($: EngineInterface): Promise<Active | null> {
   const prefs = await read($, prefsAtom)
@@ -696,12 +696,7 @@ export const register: Register = on => {
     }
 
     if (e.agentId === undefined && e.tool !== DESIGN && ran.deny === undefined) {
-      const diff = diffstat(ran.result)
-      stats = {
-        tools: stats.tools + 1,
-        added: stats.added + (diff?.added ?? 0),
-        removed: stats.removed + (diff?.removed ?? 0),
-      }
+      stats = { tools: stats.tools + 1 }
     }
 
     return ran

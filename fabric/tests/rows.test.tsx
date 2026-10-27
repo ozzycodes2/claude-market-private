@@ -621,6 +621,14 @@ test('the turn footer names the time in the skin’s words', async ($, on) => {
   expect(await ui.find({ type: 'Text', text: /^◆ .+ in 1m 4s$/ })).toBeDefined()
 })
 
+test('the turn footer counts the tools and leaves the lines changed out', async ($, on) => {
+  stubEngine(on)
+
+  const pane = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  expect(await pane.find({ type: 'Text', text: /in 41s {2}· {2}6 tools$/ })).toBeDefined()
+  expect(await pane.find({ type: 'Text', text: /6 tools.*\+18/ })).toBeUndefined()
+})
+
 test('the spinner, the footer, a folded group and the question band each stand a line below the reply', async ($, on) => {
   stubEngine(on)
 

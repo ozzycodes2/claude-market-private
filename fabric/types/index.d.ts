@@ -79,7 +79,7 @@ export type CustomSkin = {
 }
 
 // What one turn did, shown in its footer.
-export type TurnStats = { tools: number; added: number; removed: number }
+export type TurnStats = { tools: number }
 
 // What this turn did to a file: made it, or changed one that was there.
 export type Touch = 'created' | 'edited'

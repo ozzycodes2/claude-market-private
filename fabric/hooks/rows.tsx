@@ -841,7 +841,6 @@ export function footerRow(look: Look, word: string, durationMs: number, stats: T
   const facts = [
     ...(stats === undefined || stats.tools === 0 ? [] : [`${stats.tools} tool${stats.tools === 1 ? '' : 's'}`]),
   ]
-  const hasDiff = stats !== undefined && stats.added + stats.removed > 0
 
   return apart(
     look,
@@ -849,9 +848,6 @@ export function footerRow(look: Look, word: string, durationMs: number, stats: T
       <Text color={palette.user}>{`${look.icons.done} `}</Text>
       {`${word} in ${formatDuration(durationMs)}`}
       {facts.length > 0 ? `  ·  ${facts.join('  ·  ')}` : ''}
-      {hasDiff ? '  ·  ' : ''}
-      {hasDiff ? <Text color={palette.ok}>{`+${stats.added}`}</Text> : ''}
-      {hasDiff ? <Text color={palette.err}>{` −${stats.removed}`}</Text> : ''}
     </Text>,
   )
 }
