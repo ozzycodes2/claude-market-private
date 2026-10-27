@@ -1,0 +1,21 @@
+{
+  "name": "ember",
+  "version": "0.1.0",
+  "description": "Keeps the prompt cache warm while you are away: forks the session just before its cache expires and leaves a bulleted status card above the prompt for when you return.",
+  "repository": "https://github.com/ozzycodes2/claude-market-private",
+  "license": "MIT",
+  "author": {
+    "name": "Osniel Quintana-Salgado",
+    "email": "osniel.quintana-salgado@machinify.com"
+  },
+  "keywords": ["claude-code-mods", "prompt-cache", "keepwarm", "status"],
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "maxHours": {
+      "type": "number",
+      "title": "Hours to keep warm",
+      "description": "Longest time away to keep the cache warm. Warming also stops once its pings would cost more than one cold rewrite.",
+      "default": 8
+    }
+  }
+}

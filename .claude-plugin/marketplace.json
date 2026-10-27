@@ -193,6 +193,26 @@
         "productivity"
       ],
       "source": "./fabric"
+    },
+    {
+      "name": "ember",
+      "version": "0.1.0",
+      "description": "Keeps the prompt cache warm while you are away: forks the session just before its cache expires (55m on a 1h cache, 4m on 5m, read from promptCacheTtl and the billing path) and leaves a bulleted status card above the prompt for when you return. Stops at the break-even point, when more pings would cost more than one cold rewrite.",
+      "category": "productivity",
+      "repository": "https://github.com/ozzycodes2/claude-market-private",
+      "license": "MIT",
+      "author": {
+        "name": "Osniel Quintana-Salgado",
+        "email": "osniel.quintana-salgado@machinify.com"
+      },
+      "keywords": [
+        "claude-code-mods",
+        "prompt-cache",
+        "keepwarm",
+        "status",
+        "productivity"
+      ],
+      "source": "./ember"
     }
   ]
 }
