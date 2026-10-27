@@ -62,6 +62,10 @@ to its `user`. The spinner word is `shimmer`, and its sweep lifts that colour to
   repository.
 - Identifiers use the plugin name: `mcp__fabric__design`, `$.fabric.markdown`, and the
   `fabric-*` pane ids.
+- Once a turn that ran `/review:review` ends with an answer, a green `reviewed` pill
+  sits on the row above the prompt; `/review:fix` adds an orange `fixed` pill. These
+  colours are fixed whatever the skin. The pills last until `/clear` and hide while
+  skins are off or a survey holds the band.
 
 ## Development
 

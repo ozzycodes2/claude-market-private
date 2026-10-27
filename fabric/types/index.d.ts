@@ -81,6 +81,9 @@ export type CustomSkin = {
 // What one turn did, shown in its footer.
 export type TurnStats = { tools: number }
 
+// A pill above the prompt: the session ran /review:review, or /review:fix, to the end of a turn.
+export type Badge = 'reviewed' | 'fixed'
+
 // What this turn did to a file: made it, or changed one that was there.
 export type Touch = 'created' | 'edited'
 
@@ -130,6 +133,7 @@ declare module 'claude-code' {
       pinned: boolean
       settle: number
       lastReply: string
+      badges: Badge[]
     }
   }
 }

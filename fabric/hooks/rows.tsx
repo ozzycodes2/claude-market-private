@@ -1,6 +1,6 @@
 import type { ElementTable, RenderSurface } from 'claude-code'
 
-import type { Prefs, Touch, TurnStats } from '../types'
+import type { Badge, Prefs, Touch, TurnStats } from '../types'
 import { formatDuration, formatMs } from './format'
 import { columnWidths, isShell, tableArt, widthOf, wrapLines } from './markdown'
 import { diffFenceTag, diffRows, fenceDiff, newOnly } from './diff-fence'
@@ -863,6 +863,25 @@ export function askBand(look: Look, headers: readonly string[]) {
       {headers.map((header, i) => (
         <Text color={i === 0 ? palette.fg : palette.muted} bold={i === 0}>
           {`${i === 0 ? '' : '  ·  '}${header}`}
+        </Text>
+      ))}
+    </Text>
+  )
+}
+
+// The pills above the prompt for what this session has finished. Fixed colours, whatever the
+// skin: green for a review, Fabric's accent for its fixes, white type on both.
+export const BADGE_COLORS: Readonly<Record<Badge, string>> = { reviewed: '#15803d', fixed: '#ef6306' }
+
+export function badgeRow(look: Look, badges: readonly Badge[]) {
+  const { Text } = look.ui
+
+  return (
+    <Text>
+      {badges.map((badge, i) => (
+        <Text>
+          {i === 0 ? '' : ' '}
+          <Text color="#ffffff" backgroundColor={BADGE_COLORS[badge]} bold>{` ${badge} `}</Text>
         </Text>
       ))}
     </Text>

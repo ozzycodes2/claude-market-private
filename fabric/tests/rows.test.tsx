@@ -724,6 +724,56 @@ test('the question dialog keeps Claude Code’s drawing under a band naming its 
   expect(await ui.find({ type: 'Text', text: /Approach {2}· {2}Store/ })).toBeDefined()
 })
 
+test('a finished /review:review and /review:fix each put a pill above the prompt', async ($, on) => {
+  stubEngine(on)
+  on('skill.prompt', ($, e) => ({ text: e.text }))
+  on('turn.complete', ($, e) => ({ text: e.answer }))
+
+  const skill = (name: string, pluginName?: string) =>
+    $.skill.prompt({ skill: name, text: 'go', frontmatter: {}, source: 'plugin', ...(pluginName === undefined ? {} : { pluginName }) })
+  const turn = (reason: 'answer' | 'aborted', agentId?: string) =>
+    $.turn.complete({ durationMs: 1000, isAborted: reason === 'aborted', reason, turnId: 't', answer: 'ok', ...(agentId === undefined ? {} : { agentId }) })
+  const band = (hasSurvey = false) =>
+    $.ui.mount({
+      ...SITE,
+      surface: 'terminal',
+      component: 'AbovePrompt',
+      requestId: 'above',
+      props: { hasSurvey, isWorking: false, maxRows: 10, bodyColumns: 80, scroll: { offset: 0, bodyRows: 9 }, view: {} },
+    })
+  const pills = async (hasSurvey = false) => {
+    const ui = await band(hasSurvey)
+    // The query matches the Texts wrapping a pill too; only the pill carries a fill.
+    const found = ((await ui.findAll({ type: 'Text', text: /^ (reviewed|fixed) $/ })) as { props: { backgroundColor?: string } }[])
+      .map(el => el.props.backgroundColor)
+      .filter(fill => fill !== undefined)
+    await ui.unmount()
+
+    return found
+  }
+
+  expect(await pills(), 'nothing finished yet').toEqual([])
+
+  await skill('review:fix')
+  await turn('aborted')
+  expect(await pills(), 'an interrupted fix earns nothing').toEqual([])
+
+  await skill('review', 'review')
+  await turn('answer', 'a1')
+  expect(await pills(), 'a subagent’s end is not the turn’s').toEqual([])
+  await turn('answer')
+  expect(await pills()).toEqual(['#15803d'])
+
+  await skill('review:fix')
+  await skill('other:fix')
+  await turn('answer')
+  expect(await pills(), 'reviewed, then fixed, each once').toEqual(['#15803d', '#ef6306'])
+  expect(await pills(true), 'a survey keeps the band').toEqual([])
+
+  await runSkin($, 'off')
+  expect(await pills(), 'skins off draws Claude Code’s own band').toEqual([])
+})
+
 test('the settings pane picks a skin, switches the rail and paints a slot', async ($, on) => {
   stubEngine(on)
 

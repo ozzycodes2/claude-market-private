@@ -1,7 +1,7 @@
 import { atom, memberOf, read, update } from 'claude-code'
 import type { EngineInterface, Register, RenderElement, RenderSurface, Timer } from 'claude-code'
 
-import type { CustomSkin, Disclosure, Prefs, SkinSlot, SkinsMarkdownArgs, Touch, TurnStats } from '../types'
+import type { Badge, CustomSkin, Disclosure, Prefs, SkinSlot, SkinsMarkdownArgs, Touch, TurnStats } from '../types'
 import { DEFAULT_PREFS, listing, nextTables, parsePrefs, runSkinCommand, TOGGLES, withCalm } from './command'
 import { buildCustom, resolveSkin, skinNames, withSlot } from './custom'
 import { forTheme, gnomeDark, macDark, resolveLight, windowsDark } from './light'
@@ -13,7 +13,7 @@ import { bodyOf, inputFields, isOpen } from './detail'
 import { disclosedRow, openedRows } from './detail-rows'
 import { copyOf } from './markdown'
 import { commandSegments } from './command-output'
-import { apart, askBand, desktopSpinnerRow, diffCard, footerRow, terminalCard, groupRow, promptRow, quietResult, replyRows, spinnerRow, toolRow } from './rows'
+import { apart, askBand, badgeRow, desktopSpinnerRow, diffCard, footerRow, terminalCard, groupRow, promptRow, quietResult, replyRows, spinnerRow, toolRow } from './rows'
 import type { Look, SvgElement, Ui } from './rows'
 import { galleryPane } from './gallery'
 import { keepsOwnRow, SHELLS, shellResultOf } from './shell'
@@ -80,6 +80,15 @@ const touchedAtom = atom({ plugin: 'fabric', key: 'touched' } as const, {} as Re
 const foldsAtom = atom({ plugin: 'fabric', key: 'folds' } as const, [] as string[])
 // The main loop's last answer, for `/skin copy`.
 const lastReplyAtom = atom({ plugin: 'fabric', key: 'lastReply' } as const, '')
+// What the session has finished, for the pills above the prompt; /clear empties it with the rest.
+const badgesAtom = atom({ plugin: 'fabric', key: 'badges' } as const, [] as Badge[])
+
+// The skills that earn a pill, by `plugin:skill`.
+const BADGE_SKILLS: Readonly<Record<string, Badge>> = { 'review:review': 'reviewed', 'review:fix': 'fixed' }
+const BADGE_ORDER: readonly Badge[] = ['reviewed', 'fixed']
+
+const badgeOf = (skill: string, pluginName: string | undefined): Badge | undefined =>
+  BADGE_SKILLS[skill.includes(':') || pluginName === undefined ? skill : `${pluginName}:${skill}`]
 
 const EDITS = new Set(['Edit', 'MultiEdit', 'Write'])
 const WRITES = new Set([...EDITS, 'NotebookEdit'])
@@ -571,6 +580,8 @@ export const register: Register = on => {
   let ticker: Timer | undefined
   // The width the last reply was drawn at, shown by /skin list to tune table sizing.
   let lastColumns: number | undefined
+  // Skills started this turn that earn a pill once the turn ends with an answer.
+  const pendingBadges = new Set<Badge>()
 
   on('session.start', async ($, e, next) => {
     await $.command.register({
@@ -662,6 +673,23 @@ export const register: Register = on => {
       if (e.answer.trim() !== '') {
         await update($, lastReplyAtom, () => e.answer)
       }
+
+      const earned = e.reason === 'answer' ? [...pendingBadges] : []
+      pendingBadges.clear()
+
+      if (earned.length > 0) {
+        await update($, badgesAtom, badges => BADGE_ORDER.filter(badge => badges.includes(badge) || earned.includes(badge)))
+      }
+    }
+
+    return next(e)
+  })
+
+  on('skill.prompt', async ($, e, next) => {
+    const badge = badgeOf(e.skill, e.pluginName)
+
+    if (badge !== undefined) {
+      pendingBadges.add(badge)
     }
 
     return next(e)
@@ -1159,6 +1187,32 @@ export const register: Register = on => {
       <Box flexDirection="column">
         <Box paddingX={SIDE_PAD}>{apart(look, askBand(look, headers))}</Box>
         {theirs}
+      </Box>
+    )
+  })
+
+  // The pills sit last in the band, on the row right above the prompt.
+  on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+    const theirs = await next(e)
+
+    if (e.props.hasSurvey) {
+      return theirs
+    }
+
+    const badges = await read($, badgesAtom)
+    const active = badges.length === 0 ? null : await activeSkin($)
+
+    if (active === null) {
+      return theirs
+    }
+
+    const look = lookOf($.ui.resolve(e), active, e.surface)
+    const { Box } = look.ui
+
+    return (
+      <Box flexDirection="column">
+        {theirs}
+        {badgeRow(look, badges)}
       </Box>
     )
   })
