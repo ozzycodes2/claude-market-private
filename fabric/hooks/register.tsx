@@ -538,12 +538,14 @@ const SIDE_PAD = 1
 const drawnColumns = (e: { viewport?: { columns: number } }): number => (e.viewport?.columns ?? 100) - 2 * SIDE_PAD
 
 // Insets what `draw` returns, and leaves alone what it hands back from `next`: Claude Code's
-// own drawing keeps its own margins.
+// own drawing keeps its own margins. `insetsStock` insets that too, for tool rows that sit in
+// a column with the skin's own.
 async function inset<E extends { surface: RenderSurface; requestId: string }, N extends (e: E) => Promise<unknown>, R>(
   $: EngineInterface,
   e: E,
   next: N,
   draw: (next: N) => Promise<R>,
+  insetsStock = false,
 ): Promise<R | RenderElement> {
   const theirs = new Set<unknown>()
   const drawn = await draw((async (passed: E) => {
@@ -554,7 +556,7 @@ async function inset<E extends { surface: RenderSurface; requestId: string }, N 
     return result
   }) as N)
 
-  if (drawn === undefined || theirs.has(drawn)) {
+  if (drawn === undefined || (!insetsStock && theirs.has(drawn))) {
     return drawn
   }
 
@@ -872,10 +874,11 @@ export const register: Register = on => {
     return withSettle($, e, galleryPane({ ...look, ...(look.svg === undefined ? {} : { isFirstDraw: await firstDraws($, e, active.prefs) }) }, e.props.bodyColumns))
   })
 
-  on('ui.render', { component: 'ToolUse' }, async ($, e, next) =>
-    inset($, e, next, async stock => {
+  on('ui.render', { component: 'ToolUse' }, async ($, e, next) => {
+    const active = await activeSkin($)
+
+    return inset($, e, next, async stock => {
       const kind = kindOf(e.props.tool)
-      const active = await activeSkin($)
 
       if (kind === null || active === null) {
         return stock(e)
@@ -929,7 +932,8 @@ export const register: Register = on => {
       })
 
       return withSettle($, e, disclosedRow(look, row, true, toggle, opened))
-    }))
+    }, active !== null)
+  })
 
   on('ui.render', { component: 'ToolGroup' }, async ($, e, next) =>
     inset($, e, next, async stock => {
@@ -963,11 +967,10 @@ export const register: Register = on => {
     }))
 
   on('ui.render', { component: 'ToolResult' }, async ($, e, next) => {
-    const isFolded =
-      (await activeSkin($)) !== null && kindOf(e.props.tool) !== null && !isOpen(await read($, memberOf(disclosureAtom, e)), e.props.isErrored)
+    const active = await activeSkin($)
+    const isFolded = active !== null && kindOf(e.props.tool) !== null && !isOpen(await read($, memberOf(disclosureAtom, e)), e.props.isErrored)
 
     return spaced($, e, await inset($, e, next, async stock => {
-      const active = await activeSkin($)
       const output = e.props.output as { stdout?: unknown } | null
       const copy = (text: string) => {
         void $.ui.copy({ text, surface: e.surface }).then(result => $.ui.toast(result.isCopied ? 'Copied' : 'Could not copy here'))
@@ -1043,7 +1046,7 @@ export const register: Register = on => {
       return stdout === output.stdout
         ? stock(e)
         : stock({ ...e, props: { ...e.props, output: { ...output, stdout } } })
-    }), isFolded)
+    }, active !== null), isFolded)
   })
 
   on('prompt.submit', async ($, e, next) => {

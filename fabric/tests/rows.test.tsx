@@ -2136,3 +2136,22 @@ test('what the skin draws is inset one cell each side, and Claude Code’s own d
   expect(box?.props.paddingX).not.toBe(1)
   await theirs.unmount()
 })
+
+test('a tool row and answer Claude Code draws line up with the skin’s, inset the same', async ($, on) => {
+  stubEngine(on)
+
+  const paddingOf = async (props: Parameters<Engine['ui']['mount']>[0]) => {
+    const ui = await $.ui.mount(props)
+    const outer = (await ui.find({ type: 'Box' })) as Found
+    await ui.unmount()
+
+    return outer?.props.paddingX
+  }
+  const answer = { ...SITE, surface: 'terminal', component: 'ToolResult', requestId: 'sk1', props: { tool_use_id: 'sk1', tool: 'Skill', output: 'Launching skill', isErrored: false } } as const
+
+  expect(await paddingOf(toolUse(call('Skill', { skill: 'review:review' }, { tool_use_id: 'sk1' })))).toBe(1)
+  expect(await paddingOf(answer)).toBe(1)
+
+  await runSkin($, 'off')
+  expect(await paddingOf(toolUse(call('Skill', { skill: 'review:review' }, { tool_use_id: 'sk2' })))).toBeUndefined()
+})
