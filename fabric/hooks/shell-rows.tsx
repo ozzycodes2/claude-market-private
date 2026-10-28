@@ -47,7 +47,7 @@ export function shellRows(look: Look, command: string, result: ShellResult, isEr
     ) : look.prefs.highlight && !line.isErr && line.text !== '' ? (
       outputLine(output, line.text)
     ) : (
-      <Text color={line.isErr ? palette.err : palette.fg}>{line.text === '' ? ' ' : line.text}</Text>
+      <Text color={line.isErr ? palette.err : palette.fg} mono>{line.text === '' ? ' ' : line.text}</Text>
     )
   const text = [result.stdout, result.stderr].filter(part => part.trim() !== '').join('\n')
   const control = text === '' ? undefined : copyButton(look, 'copy-output', text)
@@ -58,7 +58,7 @@ export function shellRows(look: Look, command: string, result: ShellResult, isEr
     <Box flexDirection="column" borderStyle="round" borderColor={palette.muted}>
       <Box key="command" flexDirection="row" paddingX={1} {...(fill(band.commandBg) === undefined ? {} : { backgroundColor: band.commandBg })}>
         <Box flexGrow={1} flexShrink={1}>
-          <Text wrap="truncate-end">
+          <Text wrap="truncate-end" mono>
             <Text color={isBanded ? band.command : band.run}>$ </Text>
             <Text color={band.command} bold>
               {command === '' ? 'Output' : command}

@@ -57,7 +57,7 @@ function fieldRows(look: Look, fields: readonly Field[]) {
   return fields.map(field => (
     <Text>
       <Text color={palette.muted}>{`${field.label}  `}</Text>
-      <Text color={palette.fg}>{field.value.length > MAX_BLOCK ? `${field.value.slice(0, MAX_BLOCK)}…` : field.value}</Text>
+      <Text color={palette.fg} mono>{field.value.length > MAX_BLOCK ? `${field.value.slice(0, MAX_BLOCK)}…` : field.value}</Text>
     </Text>
   ))
 }
@@ -73,14 +73,15 @@ function moreButton(look: Look, total: number, opened: Opened) {
   )
 }
 
-function textLines(look: Look, lines: readonly string[], color: string, opened: Opened) {
+// Search matches are paths and source lines; any other answer is the tool's own prose.
+function textLines(look: Look, lines: readonly string[], color: string, opened: Opened, isMono = false) {
   const { Box, Text } = look.ui
   const shown = opened.isAll ? lines : lines.slice(0, DETAIL_LINES)
 
   return (
     <Box flexDirection="column">
       {shown.map(line => (
-        <Text color={color} wrap="truncate-end">
+        <Text color={color} mono={isMono} wrap="truncate-end">
           {line === '' ? ' ' : line}
         </Text>
       ))}
@@ -112,7 +113,7 @@ async function bodyRows(look: Look, opened: Opened): Promise<RenderElement | str
       return (
         <Box flexDirection="column">
           {body.note === '' ? '' : <Text color={palette.muted}>{body.note}</Text>}
-          {textLines(look, body.lines, palette.fg, opened)}
+          {textLines(look, body.lines, palette.fg, opened, true)}
         </Box>
       )
     case 'shell':

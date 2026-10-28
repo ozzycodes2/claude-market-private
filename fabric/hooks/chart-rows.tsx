@@ -62,7 +62,7 @@ export function artRows(look: Look, art: Art, count: string) {
       </Text>
       <Box flexDirection="column" marginTop={1}>
         {art.rows.map(row => (
-          <Text>
+          <Text mono>
             {row.length === 0 ? ' ' : row.map(run => (run.tone === null && run.back === undefined ? run.text : (
               <Text
                 color={run.tone === null ? undefined : colorOf(run.tone)}
@@ -178,9 +178,9 @@ function barRows(look: Look, rows: readonly BarRow[], maxWidth: number) {
 
   return rows.map(row => (
     <Box flexDirection="row">
-      <Text color={palette.fg}>{`${cutCell(row.label, labelWidth)}${' '.repeat(labelWidth - widthOf(cutCell(row.label, labelWidth)))}  `}</Text>
-      <Text color={row.color}>{row.line === true ? dotRule(Math.abs(row.value) / peak, cells) : blockBar(Math.abs(row.value) / peak, cells)}</Text>
-      <Text color={palette.muted}>{` ${valueOf(row)}`}</Text>
+      <Text color={palette.fg} mono>{`${cutCell(row.label, labelWidth)}${' '.repeat(labelWidth - widthOf(cutCell(row.label, labelWidth)))}  `}</Text>
+      <Text color={row.color} mono>{row.line === true ? dotRule(Math.abs(row.value) / peak, cells) : blockBar(Math.abs(row.value) / peak, cells)}</Text>
+      <Text color={palette.muted} mono>{` ${valueOf(row)}`}</Text>
     </Box>
   ))
 }

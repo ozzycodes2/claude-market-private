@@ -23,7 +23,7 @@ import { codeSvg } from './svg-code'
 import { diffSvg } from './svg-diff'
 import type { DiffInput } from './svg-diff'
 import { cardWidth, settled } from './svg-kit'
-import { tableSvg } from './svg-table'
+import { isMonoCell, tableSvg } from './svg-table'
 import { terminalSvg } from './svg-terminal'
 import type { ShellOutput } from './svg-terminal'
 import { codeRows } from './code-rows'
@@ -174,7 +174,6 @@ function withMeta(look: Look, main: ReturnType<Ui['Text']>, meta: Meta) {
 function stack(look: Look, line: ReturnType<Ui['Text']>) {
   const { Box } = look.ui
 
-  // Box-drawing rails need a monospace font, which only the terminal draws mod text in.
   return look.prefs.rail && look.surface === 'terminal' ? (
     <Box flexDirection="column">
       {railLine(look)}
@@ -212,7 +211,7 @@ export function toolRow(look: Look, call: Call, kind: Kind, target: string, meta
         <Text color={palette[kind]} bold>
           {label}
         </Text>
-        <Text color={targetColor}>{`  ${target}`}</Text>
+        <Text color={targetColor} mono={kind !== 'web'}>{`  ${target}`}</Text>
       </Text>
     )
 
@@ -223,7 +222,7 @@ export function toolRow(look: Look, call: Call, kind: Kind, target: string, meta
     <Text wrap="truncate-end">
       {node(look, [call])}
       <Text color={palette[kind]}>{label}</Text>
-      <Text color={targetColor}>{`  ${target}`}</Text>
+      <Text color={targetColor} mono={kind !== 'web'}>{`  ${target}`}</Text>
     </Text>
   )
 
@@ -379,7 +378,7 @@ export function tableRows(look: Look, table: Table, maxWidth: number, control?: 
       {cells.map((cell, i) => (
         <Box {...size(i)} flexDirection="column" paddingX={CELL_PAD} alignItems={JUSTIFY[table.align[i] ?? 'left']}>
           {wrapLines(cell, widths[i] ?? 0, Infinity).map(line => (
-            <Text color={palette.fg} bold={isHeader} wrap="truncate-end">
+            <Text color={palette.fg} bold={isHeader} mono={!isHeader && isMonoCell(cell)} wrap="truncate-end">
               {line}
             </Text>
           ))}
@@ -479,7 +478,7 @@ function mathRows(look: Look, tex: string, maxWidth: number, key: string) {
       </Text>
       <Box flexDirection="column" marginTop={1} paddingLeft={2}>
         {mathArt(parseTex(tex), Math.max(10, maxWidth - 2)).map(row => (
-          <Text color={palette.fg}>{row === '' ? ' ' : row}</Text>
+          <Text color={palette.fg} mono>{row === '' ? ' ' : row}</Text>
         ))}
       </Box>
       {copyRow(look, key, tex.trim())}

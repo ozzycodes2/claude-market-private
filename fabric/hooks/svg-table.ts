@@ -61,6 +61,8 @@ const measureHead = (text: string): number => measureAt(text, false, HEAD_SIZE) 
 
 const isMonoKind = (kind: CellKind): boolean => kind !== 'text'
 
+export const isMonoCell = (cell: string): boolean => isMonoKind(kindOfCell(cell))
+
 // The cell's text as lines that fit its column, every line kept unless `maxLines` caps it:
 // the card is an image, so a line cut with `…` could not be read anywhere.
 export const wrapCell = (text: string, width: number, isMono: boolean, maxLines = Infinity): string[] =>

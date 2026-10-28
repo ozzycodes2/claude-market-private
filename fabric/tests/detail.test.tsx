@@ -109,6 +109,13 @@ test('an opened Grep shows its pattern, glob and the matching lines or files', a
   expect(await content.find({ type: 'Text', text: /glob {2}\*\.ts/ })).toBeDefined()
   expect(await content.find({ type: 'Text', text: 'src/a.ts:9:// TODO test' })).toBeDefined()
   expect(await content.find({ type: 'Text', text: '2 lines' })).toBeDefined()
+  // The asked-for values and the matches are code; the labels and the count are not.
+  const monoOf = async (text: string) =>
+    ((await content.findAll({ type: 'Text' })) as { props: { mono?: unknown }; children?: readonly unknown[] }[]).find(found => found.children?.[0] === text)?.props.mono
+  expect(await monoOf('TODO')).toBe(true)
+  expect(await monoOf('src/a.ts:9:// TODO test')).toBe(true)
+  expect(await monoOf('pattern  ')).toBeFalsy()
+  expect(await monoOf('2 lines')).toBeFalsy()
   await content.unmount()
 
   const files = await opened($, call('g2', 'Glob', { pattern: '**/*.md' }, { filenames: ['/work/README.md', '/work/docs/compat.md'], numFiles: 2, truncated: false }))

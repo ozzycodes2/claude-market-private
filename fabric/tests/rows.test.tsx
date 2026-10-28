@@ -1882,6 +1882,66 @@ test('a settle refused for seconds lands before the next redraw by another mod o
   expect(isSettled(await svgSource(reply)), 'settled by the redraw at five seconds').toBe(true)
 })
 
+// Whether the first Text reading `text`, outermost first, asks for the surface's monospaced face.
+async function monoOf(ui: { findAll: (query: { type: string }) => Promise<unknown[]> }, text: string | RegExp): Promise<unknown> {
+  const texts = (await ui.findAll({ type: 'Text' })) as { props: { mono?: unknown }; text?: string }[]
+  const held = texts.find(found => typeof found.text === 'string' && (typeof text === 'string' ? found.text === text : text.test(found.text)))
+
+  return held === undefined ? 'missing' : held.props.mono
+}
+
+test('drawn as text off the terminal, code, art and aligned columns take the monospaced face and prose does not', async ($, on) => {
+  stubEngine(on)
+  await runSkin($, 'tables text')
+
+  const reply = (requestId: string, text: string) =>
+    ({ ...SITE, surface: 'desktop', component: 'AssistantMessage', requestId, props: { text, isFirstOfReply: true } }) as const
+  const mounted = async (requestId: string, text: string, check: (ui: Awaited<ReturnType<Engine['ui']['mount']>>) => Promise<void>) => {
+    const ui = await $.ui.mount(reply(requestId, text))
+    await check(ui)
+    await ui.unmount()
+  }
+
+  await mounted('mono-prose', '- [ ] Run `pnpm test` before the release', async ui => {
+    expect(await monoOf(ui, 'pnpm test')).toBe(true)
+    expect(await monoOf(ui, ' before the release')).toBe(false)
+  })
+
+  await mounted('mono-table', '| file | owner |\n|---|---|\n| src/a.ts | Ada |', async ui => {
+    expect(await monoOf(ui, 'src/a.ts')).toBe(true)
+    expect(await monoOf(ui, 'Ada')).toBeFalsy()
+    expect(await monoOf(ui, 'file')).toBeFalsy()
+  })
+
+  await mounted('mono-math', '$$\n\\frac{1}{n}\n$$', async ui => {
+    expect(await monoOf(ui, /─/)).toBe(true)
+  })
+
+  await mounted('mono-pie', '```mermaid\npie title Pets\n  "Dogs" : 3\n  "Cats" : 1\n```', async ui => {
+    expect(await monoOf(ui, /Dogs/)).toBe(true)
+  })
+
+  await mounted('mono-diff', '```diff\n--- a/x.ts\n+++ b/x.ts\n@@ -1 +1 @@\n-old\n+new\n```', async ui => {
+    const lines = ((await ui.findAll({ type: 'Text' })) as { props: { mono?: unknown; wrap?: unknown } }[]).filter(found => found.props.wrap === 'truncate-end')
+    expect(lines.length).toBeGreaterThan(0)
+    expect(lines.every(found => found.props.mono === true)).toBe(true)
+  })
+})
+
+test('a tool row names a command or path in the monospaced face and a web query in the body face', async ($, on) => {
+  stubEngine(on)
+
+  for (const surface of SURFACES) {
+    const shell = await $.ui.mount(toolUse(call('Bash', { command: 'pnpm test' }, { tool_use_id: `mono-run-${surface}` }), surface))
+    expect(await monoOf(shell, '  pnpm test')).toBe(true)
+    await shell.unmount()
+
+    const web = await $.ui.mount(toolUse(call('WebSearch', { query: 'ink layout' }, { tool_use_id: `mono-web-${surface}` }), surface))
+    expect(await monoOf(web, /ink layout/)).toBeFalsy()
+    await web.unmount()
+  }
+})
+
 test('a display formula is stacked art in the terminal and a vector card on the desktop', async ($, on) => {
   stubEngine(on)
 

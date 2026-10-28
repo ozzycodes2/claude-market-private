@@ -59,6 +59,7 @@ function runText(look: Look, run: Run, plain = look.skin.palette.fg) {
       bold={run.style === 'bold'}
       italic={run.style === 'italic'}
       strikethrough={run.style === 'strike'}
+      mono={run.style === 'code' || run.style === 'path'}
       {...(band === undefined ? {} : { backgroundColor: band })}
     >
       {run.text}
