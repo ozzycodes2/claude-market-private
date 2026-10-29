@@ -1,7 +1,7 @@
 {
   "name": "technical-writing",
-  "version": "0.4.0",
-  "description": "Human-facing developer writing, done well, as a pipeline: write-doc or writing-design-docs drafts, review-doc scores against the Practical Prose rubric, fix-doc applies the findings and strips AI tells. Docs that describe structure or flow get a diagram (architecture-design if installed, else Mermaid). Ships the laconic output style: write the conclusion, not the path to it. Adapted from ceej-skills, Practical Prose (jlevy/practical-prose), humanizer (blader/humanizer), and pertinent, under MIT and CC BY 4.0.",
+  "version": "0.5.0",
+  "description": "Human-facing developer writing, done well, as a pipeline: write-doc or writing-design-docs drafts, review-doc scores against the Practical Prose rubric, fix-doc applies the findings and strips AI tells. Docs that describe structure or flow get a diagram (architecture-design if installed, else Mermaid). create-slides builds a minimalist Machinify HTML deck from a doc or report: one claim and one visual per slide, prose in speaker notes, every diagram drawn by architecture-design's create-diagram. Ships the laconic output style: write the conclusion, not the path to it. Adapted from ceej-skills, Practical Prose (jlevy/practical-prose), humanizer (blader/humanizer), pertinent, and a private slide-deck template, under MIT and CC BY 4.0.",
   "repository": "https://github.com/ozzycodes2/claude-market-private",
   "license": "MIT",
   "author": {
