@@ -771,6 +771,7 @@ def check_docs() -> None:
         "doc-inline",
         "doc-wide",
         "slide-16x9",
+        "slide-body",
         "slide-4x3",
         "social-og",
         "social-square",

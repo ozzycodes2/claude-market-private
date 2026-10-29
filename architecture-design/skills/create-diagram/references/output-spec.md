@@ -30,6 +30,7 @@ Pick by destination:
 |---|---|---|
 | Blog post, README, docs site | `html` (embed) or `png` | `doc-inline` |
 | Keynote / PowerPoint / Google Slides | `png` @2 | `slide-16x9` |
+| HTML deck slide with its own headline (`technical-writing:create-slides`) | `svg`, inlined | `slide-body` |
 | Figma / Illustrator / further editing | `svg` | `fit` |
 | X / LinkedIn / OG link card | `png` @2 | `social-og` |
 | Printed handout, PDF deck | `png` @3 | `print-a4-landscape` |
@@ -46,6 +47,7 @@ The preset sets the SVG `viewBox`. Every value below is divisible by 4, so the g
 | `doc-inline` (default) | `0 0 960 600` | 8:5 | 1920×1200 | standard | Body-width diagram in a post or README |
 | `doc-wide` | `0 0 1280 720` | 16:9 | 2560×1440 | standard | Full-width docs, wiki pages |
 | `slide-16x9` | `0 0 1280 720` | 16:9 | 2560×1440 | presentation | Deck slide, projected |
+| `slide-body` | `0 0 1104 520` | ~2.1:1 | 2208×1040 | presentation | Body of an HTML deck slide, under the slide's own headline |
 | `slide-4x3` | `0 0 1024 768` | 4:3 | 2048×1536 | presentation | Legacy deck templates |
 | `social-og` | `0 0 1200 632` | ~1.9:1 | 2400×1264 | presentation | Link preview card |
 | `social-square` | `0 0 1080 1080` | 1:1 | 2160×2160 | presentation | Feed post, carousel |
@@ -168,6 +170,7 @@ Presentation ramp implies fewer nodes — 16px names in 64px boxes eat the canva
 - **All presets:** 40px outer margin; legend strip is the bottom 60px and nothing else lives there.
 - **`social-og`:** keep the outer 64px clear on every side — link-card crops are unpredictable across platforms.
 - **`slide-*`:** keep the bottom 80px clear if the deck template has a footer bar; ask if unsure.
+- **`slide-body`:** the host slide already carries the eyebrow, headline, and footer, and the viewBox is sized to the space between them. Draw no title or eyebrow text inside the SVG, keep `<title>` and `<desc>` for accessibility, and skip the 80px footer reserve.
 
 ---
 
