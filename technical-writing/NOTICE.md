@@ -1,6 +1,6 @@
 # Notice
 
-The reference files in `technical-writing/references/` are derived from two upstream projects. Each section below names the upstream repository, the pinned commit, the files derived from it, the local edits, and the upstream license text.
+The reference files in `technical-writing/references/` are derived from two upstream projects, and the `create-slides` skill from a third. Each section below names the upstream repository, the pinned commit, the files derived from it, the local edits, and the upstream license text.
 
 ## Practical Prose
 
@@ -510,6 +510,52 @@ The upstream MIT license text follows.
 MIT License
 
 Copyright (c) 2025 Siqi Chen
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## Slide Deck Template
+
+- Repository: a private slide-deck template repository (not publicly reachable)
+- Pinned commit: `5b8dda90f58694c66f506538bb1d0db03adda290` (plugin `slide-deck` 1.0.0)
+- Author: Alex Meyer
+
+Derived files:
+
+| Local file | Upstream file |
+| --- | --- |
+| `skills/create-slides/assets/deck-template.html` | `_template/index.html` |
+| `skills/create-slides/references/brand.md` | `machinify-slide-format.md` |
+
+Local edits:
+
+- Reduced the template to eight generic slide types (title, divider, diagram, big number, stat strip, icon trio, statement, closing) and dropped the All-Hands sequence and team-introduction markers.
+- Generated the footer, page numbers, and navigation dots in script, and added speaker notes toggled with `N`.
+- Consolidated the color tokens on one set and added the deep green and deep amber variants for text on light slides.
+- Rewrote the format guide as a token reference for the HTML template, dropping the PowerPoint layout catalogue.
+
+The upstream declares the MIT license in `.claude-plugin/plugin.json` and ships no license file. The standard MIT text follows; the copyright line names the author and the year of the pinned commit.
+
+```text
+MIT License
+
+Copyright (c) 2026 Alex Meyer
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

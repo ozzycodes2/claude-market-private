@@ -1,0 +1,50 @@
+{
+  "skill_name": "create-slides",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Make a 15-minute deck for the engineering all-hands from report.md. It's a CI wall-clock report with before/after tables, a job graph, and a list of open caveats.",
+      "expected_output": "An outline table presented for approval before any HTML exists, then an index.html of about nine slides where every content slide is an eyebrow, a claim headline, and one visual, with the report's explanations in speaker notes.",
+      "assertions": [
+        "The outline table (layout, eyebrow, headline, visual) is shown and approval is awaited before the deck is built",
+        "Every headline is a claim of seven words or fewer, not a topic label",
+        "No slide carries a sub-headline, paragraph, or bullet list outside <aside class=\"notes\">",
+        "Before/after tables become stat strips, big numbers, or create-diagram charts rather than HTML tables",
+        "scripts/check_deck.py exits 0 on the final deck"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Turn these notes into slides: our ingestion service reads from Kafka, validates claims, writes to Postgres, and publishes an event to the pricing service. Add a slide on how the retry queue works.",
+      "expected_output": "Both the service flow and the retry queue are drawn by architecture-design:create-diagram at the slide-body preset under the Machinify profile, exported to SVG, and inlined; no diagram is built from HTML boxes or hand-written SVG.",
+      "assertions": [
+        "architecture-design:create-diagram is invoked once per diagram",
+        "Each request to create-diagram names the slide-body preset, the machinify profile, and no in-diagram title",
+        "A .diagram-design marker containing exactly 'profile: machinify' exists in the deck directory",
+        "Every inline <svg> has a root id ending in -root, a first-child <title>, and a <desc>",
+        "The diagram HTML sources are kept in <deck-dir>/diagrams/"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Here's my outline for a customer update. Slide 3: 'Q3 platform reliability improvements and what they mean for your team' with five bullets about uptime, latency, incident count, MTTR, and on-call load.",
+      "expected_output": "The slide is rewritten before building: a short claim headline, the five metrics reduced to a stat strip with one focal number (or split across slides), and the bullet prose moved to speaker notes, with the rewrite shown to the user in the outline table.",
+      "assertions": [
+        "The proposed headline is seven words or fewer and states a result",
+        "The five bullets do not survive as a list on any slide",
+        "No more than four numbers share one stat strip, and one is marked focus",
+        "The omitted detail appears in <aside class=\"notes\">"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Build me slides about our new architecture, but the architecture-design plugin isn't installed on this machine.",
+      "expected_output": "The skill stops and tells the user to install the architecture-design plugin; it does not draw diagrams by hand or fall back to Mermaid.",
+      "assertions": [
+        "The response names the architecture-design plugin as a requirement",
+        "No SVG, Mermaid block, or HTML-box diagram is produced",
+        "No deck file is written"
+      ]
+    }
+  ]
+}

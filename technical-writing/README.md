@@ -1,7 +1,8 @@
 # technical-writing
 
 Human-facing developer writing, done well: draft a doc, score it, fix it. Four
-skills form one pipeline, plus the `laconic` output style.
+skills form one pipeline, `create-slides` turns content into a deck, and the
+`laconic` output style rounds it out.
 
 ```
 write-doc / writing-design-docs  ->  review-doc  ->  fix-doc
@@ -21,6 +22,7 @@ write-doc / writing-design-docs  ->  review-doc  ->  fix-doc
 | `writing-design-docs` | Write | Drafts a problem-statement design doc one section at a time, before you commit to a non-obvious technical direction. Covers RFCs and design docs, which `write-doc` leaves out. |
 | `review-doc` | Review | Read-only. Scores a doc on the 20 Practical Prose dimensions and emits a Scores table and a Findings table. Each finding is `apply`, `flag`, or `diagram`. |
 | `fix-doc` | Fix | Applies the `apply` findings, generates the `diagram` findings, lists the `flag` findings for the author without rewriting them, then runs an AI-tell pass last. |
+| `create-slides` | Present | Builds one self-contained Machinify HTML deck from a doc, report, PR, or notes: one claim and one visual per slide, prose in speaker notes. Requires `architecture-design`. |
 
 Each stage ends by offering the next. Skills are also callable alone, for
 example `/technical-writing:review-doc docs/runbook.md`.
@@ -54,13 +56,25 @@ only the rows it is given. Leaves code blocks, link targets, citations, and YAML
 frontmatter untouched. For pasted text it returns the edited text and writes no
 file. Reports counts of applied, generated, and flagged items.
 
+### create-slides
+
+Proposes an outline table (layout, eyebrow, headline, visual) and builds
+nothing until it is approved. Each content slide is a 1–3 word eyebrow, a claim
+headline of seven words or fewer, and exactly one visual: a diagram, a big
+number, a stat strip, an icon trio, or a statement. Every diagram is drawn by
+`architecture-design:create-diagram` at its `slide-body` preset under a bundled
+Machinify profile, then inlined as SVG; without that plugin the skill stops.
+`scripts/check_deck.py` enforces the word, layer, visual, color, and diagram
+provenance rules. The deck navigates with the arrow keys, shows notes with `N`,
+and prints one slide per page.
+
 ## Diagrams
 
 When a doc describes structure, flow, states, or more than three interacting
 components, the skills add a diagram. If `architecture-design` is installed,
 `create-diagram` draws it as `.html` plus `.png`. Without it, the diagram is a
-fenced Mermaid block. `architecture-design` is optional. The rule lives in
-`references/diagrams.md`.
+fenced Mermaid block. `architecture-design` is optional for the doc skills and
+required by `create-slides`. The rule lives in `references/diagrams.md`.
 
 ## Output styles
 
@@ -84,6 +98,8 @@ Full notices, pinned commits, local edits, and upstream license texts are in
 - The review rubric and guidelines in `references/` derive from
   [jlevy/practical-prose](https://github.com/jlevy/practical-prose) by Joshua Levy
   (prose under CC BY 4.0).
+- The `create-slides` template and brand reference derive from a private
+  slide-deck template by Alex Meyer, under the MIT license.
 - The AI-tell checklist in `references/ai-tells.md` derives from
   [blader/humanizer](https://github.com/blader/humanizer) by Siqi Chen, merged
   with Practical Prose's AI-prose corrections.
