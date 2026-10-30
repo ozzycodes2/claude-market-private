@@ -11,7 +11,7 @@
 - **Intersection labels** placed inside the overlap region, `node-name` role 12px 600, centered. For small overlaps, use a leader line to a label in clear space.
 - **The accent** on the ONE focal intersection — the "sweet spot". Either an `accent` label stroke OR a clipPath-bounded `accent @ 0.10` fill tint.
 - Circle centers and radii divisible by 4 (a data Venn's radii are data-scaled and exempt).
-- **No legend.** Every region is named in place; a key would repeat the labels. A sentence-case `muted` source line sits bottom-left and says whether area is to scale.
+- **No legend.** Every region is named in place; a key would repeat the labels. A sentence-case `muted` source line (`data-role="source"`, starting `Source: `) sits bottom-left: origin and period first (`illustrative design framework, 2026`), then whether area is to scale. The `<title>` is the claim (`A product ships only where all three tests overlap`, under about 60 characters) and `<desc>` opens with it.
 - **Context rule exception:** a Venn shows set membership, not a measured quantity series, so no reference line is drawn.
 
 ## Anti-patterns

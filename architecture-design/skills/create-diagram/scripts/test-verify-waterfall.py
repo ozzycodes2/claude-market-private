@@ -249,6 +249,32 @@ def main() -> int:
             "zero delta",
         ),
         (
+            "event marker drawn off the centre of the bar it explains",
+            '<line x1="736" y1="40" x2="736" y2="140"',
+            '<line x1="760" y1="40" x2="760" y2="140"',
+            "is drawn at x=760",
+        ),
+        (
+            "event marker naming no bar",
+            'data-event="Storage tiering"',
+            'data-event="Cold storage"',
+            "names no bar",
+        ),
+        (
+            "event marker that is not a straight vertical rule",
+            '<line x1="736" y1="40" x2="736" y2="140"',
+            '<line x1="736" y1="40" x2="800" y2="140"',
+            "needs a straight vertical rule",
+        ),
+        (
+            "a vertical rule outside an event group is still a y-axis line",
+            '<g data-event="Storage tiering" data-event-label="Cold data to archive tiers">\n'
+            '<line x1="736" y1="40" x2="736" y2="140"',
+            '<g data-label="Cold data to archive tiers">\n'
+            '<line x1="736" y1="40" x2="736" y2="420"',
+            "y-axis line",
+        ),
+        (
             "missing contract: no bar declares its role and value",
             'data-role="',
             'data-gone="',

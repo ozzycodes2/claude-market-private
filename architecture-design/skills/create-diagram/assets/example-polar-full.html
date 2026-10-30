@@ -30,8 +30,8 @@
 <body>
   <div class="container">
     <div class="header">
-      <p class="header-eyebrow">Polar · Diagram Design</p>
-      <h1>Request demand by UTC window</h1>
+      <p class="header-eyebrow">Polar · Request demand by UTC window</p>
+      <h1>Request demand peaks at 12–15 UTC</h1>
       <p class="subtitle">One normalized workload series across eight UTC windows, with radius showing percent of the daily peak.</p>
     </div>
 
@@ -42,8 +42,8 @@
          data-polar-radius="160" data-polar-min="0" data-polar-max="100"
          data-polar-start-angle="-90" data-polar-clockwise="true"
          data-polar-radius-encoding="linear" data-polar-inner-radius="0">
-      <title id="polar-full-title">Request demand by UTC window</title>
-      <desc id="polar-full-desc">Polar chart on a 0–100% scale identifying 12–15 UTC as the 100% peak, with the other seven UTC windows proceeding clockwise.</desc>
+      <title id="polar-full-title">Request demand peaks at 12–15 UTC</title>
+      <desc id="polar-full-desc">Request demand peaks at 12–15 UTC. Polar chart on a 0–100% scale identifying 12–15 UTC as the 100% peak, with the other seven UTC windows proceeding clockwise.</desc>
 
       <rect data-polar-background width="100%" height="100%" fill="#f8f8f8"/>
       <text x="40" y="28" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">% of daily peak, 0 to 100</text>
@@ -113,7 +113,7 @@
         <text x="367.064" y="97.064" fill="#171717" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="end">21–24</text>
         <text data-polar-value-label x="355.75" y="85.75" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="end">45</text>
       </g>
-      <text x="40" y="488" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Source: illustrative workload profile, % of daily peak. Centre is 0, outer ring is 100, rings every 20. Order runs clockwise from the top.</text>
+      <text data-role="source" x="40" y="488" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Source: illustrative workload profile, one day in UTC windows. Percent of daily peak. Rings every 20, clockwise.</text>
       </svg>
     </div>
 

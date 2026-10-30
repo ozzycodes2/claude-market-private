@@ -70,7 +70,7 @@ If a schematic exceeds, split into two diagrams (overview + detail). If a chart 
 
 ### Small multiples
 
-The split method for charts. Repeat one small chart per category with an identical frame and identical scales, so panels compare by eye. Each panel gets a direct title (sentence case, in the panel, not a legend); the shared axis is labelled once, on the outer panel. Same marks, same colors, same order in every panel. Schematics split by overview + detail; charts split by small multiples.
+The split method for charts. Repeat one small chart per category with an identical frame and identical scales, so panels compare by eye. Each panel gets a direct title (sentence case, in the panel, not a legend); the shared axis is labelled once, on the outer panel. Same marks, same colors, same order in every panel. Schematics split by overview + detail; charts split by small multiples. Also use small multiples when a second variable explains the first (one panel per segment, same scales). Worked example: [`assets/example-line-small-multiples.html`](../assets/example-line-small-multiples.html).
 
 ### Page layout
 
@@ -101,3 +101,11 @@ Rules:
 - `border-radius: 18px` (`radius-lg`, the ladder's step for editorial cards), `padding: 1.25rem`
 - **No `box-shadow`**
 - Card dots: 7px, `border-radius: 50%` — ink / muted / accent / soft variants (no `link`: this skin has one chroma)
+
+Content rules for chart pages (checked by `scripts/verify-cards.py`):
+
+- Each card (`<h3>` plus `<p>`) names at least one mark visible in the diagram: a string equal, ignoring case, to the full text of an SVG `<text>` of 2 or more characters (a tick label like `S4`, a node name, a series end label).
+- Every number pair written `X → Y`, `X→Y`, `X to Y` or `from X to Y` (plain numbers, not percentages) has both numbers in the bound data (`data-value`, `data-values`, `data-x`, `data-y`, `data-size`, `data-start`, `data-end`, `data-domain`) or as SVG text.
+- Derived numbers (percent change, averages) are right against the data and state their span: "+75% over 8 weeks", never "75% week-over-week" for a total. The script does not check this arithmetic; check it by hand.
+- At most one card is "What the chart doesn't show", the limits of the measure. Encourage it on chart pages.
+- A cause a card names is marked on the chart with an [event marker](primitives-core.md#event-marker).

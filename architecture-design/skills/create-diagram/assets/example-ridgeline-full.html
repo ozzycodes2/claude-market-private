@@ -33,14 +33,14 @@
 <body>
   <div class="container">
     <div class="header">
-      <p class="header-eyebrow">Ridgeline · Diagram Design</p>
-      <h1>Checkout is slow in two different ways</h1>
+      <p class="header-eyebrow">Ridgeline · Request latency by service</p>
+      <h1>Only checkout-api has a second latency peak</h1>
       <p class="subtitle">Five services, one week of request latency, one amplitude scale. Each ridge is the share of that service's own requests in each 40&nbsp;ms bin — so the ridges compare shape, not traffic. Four of them have a single hump and a thinning tail; checkout-api has a second, smaller peak past 300&nbsp;ms, which is a different failure from simply being slow.</p>
     </div>
     <div class="diagram-container">
       <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ridgeline-full-title ridgeline-full-desc">
-        <title id="ridgeline-full-title">Checkout is slow in two different ways</title>
-        <desc id="ridgeline-full-desc">Ridgeline chart of request-latency distributions for five services over one week; each ridge is the share of that service's requests falling in 40-millisecond bins, drawn on one shared amplitude scale, and checkout-api carries a second peak past 300 milliseconds that none of the other four show.</desc>
+        <title id="ridgeline-full-title">Only checkout-api has a second latency peak</title>
+        <desc id="ridgeline-full-desc">Only checkout-api has a second latency peak. Ridgeline chart of request-latency distributions for five services over one week; each ridge is the share of that service's requests falling in 40-millisecond bins, drawn on one shared amplitude scale, and checkout-api carries a second peak past 300 milliseconds that none of the other four show.</desc>
         <rect width="100%" height="100%" fill="#f8f8f8"/>
 
         <!-- ONE amplitude on every ridge: y = baseline - 2.4 x (share in %). Per-ridge
@@ -92,7 +92,7 @@
 
         <!-- Legend -->
         <line x1="40" y1="462" x2="960" y2="462" stroke="rgba(23,23,23,0.10)" stroke-width="0.8"/>
-        <text x="40" y="478" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Share of each service's own requests per 40 ms bin · 1% = 2.4px on every ridge · Unsmoothed · Illustrative figures</text>
+        <text data-role="source" x="40" y="478" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Source: illustrative request latency per service, one week. Share of requests per 40 ms bin, unsmoothed.</text>
 
         <rect x="40" y="486" width="24" height="10" fill="rgba(239,99,6,0.16)"/>
         <line x1="40" y1="486" x2="64" y2="486" stroke="#ef6306" stroke-width="2.4"/>
@@ -106,15 +106,15 @@
       <div class="card">
         <p class="eyebrow">FOCAL · CHECKOUT-API</p>
         <div class="card-header"><span class="card-dot accent"></span><h3>A second peak is not a long tail</h3></div>
-        <p>About a third of checkout's requests land past 280&nbsp;ms, and they arrive as a distinct bump peaking near 360&nbsp;ms rather than as a thinning tail. A tail says "sometimes slower"; a second peak says there are two paths through the code and one of them is always slow. Its p50 is 160&nbsp;ms and its p99 is 400&nbsp;ms — both true, and neither says the requests between them arrive in two clusters instead of one spread.</p>
+        <p>About a third of checkout-api's requests (33 in 100) land at 280&nbsp;ms or later, and they arrive as a distinct bump peaking near 360&nbsp;ms rather than as a thinning tail. A tail says "sometimes slower"; a second peak says two clusters of requests. A p50 and p99 pair would call the service slow without showing the cluster.</p>
       </div>
       <div class="card">
         <div class="card-header"><span class="card-dot ink-strong"></span><h3>Height is share, so the ridges compare shape</h3></div>
-        <p>static-cdn is the tallest ridge because its requests are concentrated in three bins, not because it serves the most traffic. Each ridge is normalised to its own service's request count and then drawn on one shared amplitude — that is what makes the silhouettes comparable, and it is the one thing a ridgeline must never fudge.</p>
+        <p>auth-api is the tallest ridge because 82 in 100 of its requests sit in three bins (28, 36 and 18), not because it serves the most traffic. Each ridge is normalised to its own service's request count and then drawn on one shared amplitude — that is what makes the silhouettes comparable, and it is the one thing a ridgeline must never fudge.</p>
       </div>
       <div class="card">
         <div class="card-header"><span class="card-dot ink-light"></span><h3>Overlap is deliberate; occlusion would not be</h3></div>
-        <p>Ridges sit 56&nbsp;px apart and the tallest rises 86&nbsp;px, so peaks cross the row above and the stack reads as depth. The rule is that no peak may reach the row two above it — past that a peak hides behind a peak, and the fix is more pitch, never a smaller amplitude on one ridge.</p>
+        <p>Ridges sit 56&nbsp;px apart and the tallest, auth-api, rises 86&nbsp;px, so peaks cross the row above and the stack reads as depth. The rule is that no peak may reach the row two above it — past that a peak hides behind a peak, and the fix is more pitch, never a smaller amplitude on one ridge.</p>
       </div>
     </div>
     <div class="footer">

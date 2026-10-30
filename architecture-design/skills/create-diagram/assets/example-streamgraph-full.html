@@ -33,14 +33,14 @@
 <body>
   <div class="container">
     <div class="header">
-      <p class="header-eyebrow">Streamgraph · Diagram Design</p>
-      <h1>Where the extra build minutes went</h1>
-      <p class="subtitle">Weekly CI build minutes per pipeline, stacked on a symmetric baseline so the height of the whole stream is the week's total. The build roughly doubled in twelve weeks, from 124 to 278 minutes, and almost all of the growth is one layer: the end-to-end suite, up from 12 to 118 minutes a week.</p>
+      <p class="header-eyebrow">Streamgraph · Build minutes by pipeline</p>
+      <h1>The end-to-end suite drove most of the growth</h1>
+      <p class="subtitle">Weekly CI build minutes per pipeline, stacked on a symmetric baseline so the height of the whole stream is the week's total. The build more than doubled in twelve weeks, from 124 to 278 minutes, and about two thirds of the growth is one layer: the end-to-end suite, up from 12 to 118 minutes a week.</p>
     </div>
     <div class="diagram-container">
       <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="streamgraph-full-title streamgraph-full-desc">
-        <title id="streamgraph-full-title">Where the extra build minutes went</title>
-        <desc id="streamgraph-full-desc">Streamgraph of weekly CI build minutes by pipeline across twelve weeks, stacked on a symmetric baseline so the envelope height reads as the total; the end-to-end suite grows from 12 to 118 minutes a week and passes the unit suite in week eight, while the docs pipeline pauses to zero in weeks five and six.</desc>
+        <title id="streamgraph-full-title">The end-to-end suite drove most of the growth</title>
+        <desc id="streamgraph-full-desc">The end-to-end suite drove most of the growth. Streamgraph of weekly CI build minutes by pipeline across twelve weeks, stacked on a symmetric baseline so the envelope height reads as the total; the end-to-end suite grows from 12 to 118 minutes a week and passes the unit suite in week eight, while the docs pipeline pauses to zero in weeks five and six.</desc>
       <rect width="100%" height="100%" fill="#f8f8f8"/>
 
       <!-- Symmetric baseline: every period is centred on y=230, so the top and
@@ -84,7 +84,7 @@
 
       <!-- Legend -->
       <line x1="40" y1="462" x2="960" y2="462" stroke="rgba(23,23,23,0.10)" stroke-width="0.8"/>
-      <text x="40" y="478" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Build minutes per week by pipeline · Weekly buckets · Symmetric baseline, envelope height = weekly total · Illustrative figures, not a measured project</text>
+      <text data-role="source" x="40" y="478" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Source: illustrative CI build minutes, 12 weekly buckets. Minutes per week. Symmetric baseline; height is the total.</text>
 
       <rect x="40" y="488" width="16" height="8" fill="#ef6306"/>
       <text data-layer="End-to-end" data-total="688" x="64" y="496" fill="#4d4d4d" font-size="8.5" font-family="'Inter', sans-serif">End-to-end · 688 min · focal</text>
@@ -101,16 +101,16 @@
     <div class="cards">
       <div class="card">
         <p class="eyebrow">FOCAL · END-TO-END</p>
-        <div class="card-header"><span class="card-dot accent"></span><h3>The end-to-end suite is the growth</h3></div>
-        <p>12 minutes a week in week one, 118 in week twelve — it passes the unit suite in week eight and ends as the largest pipeline. Every other layer is roughly flat, so the widening of the whole stream is this one band widening.</p>
+        <div class="card-header"><span class="card-dot accent"></span><h3>The end-to-end suite is most of the growth</h3></div>
+        <p>From 12 minutes a week in W01 to 118 in W12, it passes the unit suite in W08 and ends as the largest pipeline: 106 of the 154 added minutes. Integration (34 to 61) and Unit (58 to 74) grew too, more slowly, so the widening of the whole stream is mostly this one band widening.</p>
       </div>
       <div class="card">
         <div class="card-header"><span class="card-dot ink-strong"></span><h3>The envelope is the total, by construction</h3></div>
-        <p>Each week is centred on one midline, top and bottom of the stream averaging back to it, so the stream's height is the week's total at 1.25px per minute. The smoothing bends only the drawing between weeks — every vertex sits on its true stacked value, which is what the verifier checks.</p>
+        <p>Each week, W01 through W12, is centred on one midline, top and bottom of the stream averaging back to it, so the stream's height is the week's total at 1.25px per minute. The smoothing bends only the drawing between weeks — every vertex sits on its true stacked value, which is what the verifier checks.</p>
       </div>
       <div class="card">
         <div class="card-header"><span class="card-dot ink-light"></span><h3>The docs pinch is data, not a defect</h3></div>
-        <p>The docs pipeline ran nothing in weeks five and six, so its band pinches to zero thickness and reopens. The zero weeks stay in the domain — resampling or bridging them would erase the pause the layer exists to show.</p>
+        <p>The docs pipeline ran nothing in W05 and W06, so its band pinches to zero thickness and reopens. The zero weeks stay in the domain — resampling or bridging them would erase the pause the layer exists to show.</p>
       </div>
     </div>
     <div class="footer">

@@ -33,6 +33,11 @@ it:
    At most one bar may take the accent focal treatment, which replaces its
    sign fill (the signed label and geometry still carry the direction).
 
+6. EVENT MARKERS — a `<g data-event="Storage tiering">` group draws a dashed
+   vertical rule at the centre of the bar of that name (within 0.5px) and the
+   cause in italic text. The rule is not a y-axis line and is exempt from the
+   encoded-once check; an event naming no bar is a finding.
+
 Degenerate data fails closed with a named finding: a start total of zero or
 less has no scale to fit, and a zero delta is invisible ink that still
 occupies a column.
@@ -66,6 +71,8 @@ TAG_RE = re.compile(r"<[^>]+>")
 COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 GROUP_OPEN_RE = re.compile(r"<(?:g|svg)\b(?P<attrs>[^>]*?)(?P<selfclose>/?)>", re.IGNORECASE)
 GROUP_CLOSE_RE = re.compile(r"</(?:g|svg)\s*>", re.IGNORECASE)
+EVENT_GROUP_RE = re.compile(r"<g\b(?P<attrs>[^>]*)>(?P<body>.*?)</g\s*>", re.IGNORECASE | re.DOTALL)
+EVENT_TOLERANCE = 0.5
 STYLE_RE = re.compile(r"<style\b[^>]*>(?P<body>.*?)</style>", re.IGNORECASE | re.DOTALL)
 CSS_MOVES_MARK_RE = re.compile(
     r"(?:^|[{;}\n])\s*(?:-(?:webkit|moz|ms|o)-)?"
@@ -503,6 +510,41 @@ def check_sign_treatment(bars: list[Bar], errors: list[str], paper: str) -> None
         )
 
 
+def event_groups(source: str) -> list[tuple[int, int, dict[str, str], str]]:
+    """(start, end, attrs, body) of every `<g data-event>` group; they do not nest."""
+    groups = []
+    for match in EVENT_GROUP_RE.finditer(COMMENT_RE.sub("", source)):
+        attrs = attrs_of(match.group("attrs"))
+        if "data-event" in attrs:
+            groups.append((match.start(), match.end(), attrs, match.group("body")))
+    return groups
+
+
+def check_events(source: str, bars: list[Bar], errors: list[str]) -> None:
+    """Each event rule sits on the centre of the bar whose name it carries."""
+    by_name = {bar.name: bar for bar in bars}
+    for _start, _end, attrs, body in event_groups(source):
+        label = attrs["data-event"].strip()
+        bar = by_name.get(label)
+        if bar is None:
+            errors.append(
+                f"event marker {label!r} names no bar; data-event must equal a bar's data-name"
+            )
+            continue
+        rules = [attrs_of(m.group("attrs")) for m in LINE_RE.finditer(body)]
+        xs = [(parse_number(r.get("x1", "")), parse_number(r.get("x2", ""))) for r in rules]
+        if not xs or any(a is None or b is None or abs(a - b) > EVENT_TOLERANCE for a, b in xs):
+            errors.append(f"event marker {label!r} needs a straight vertical rule")
+            continue
+        centre = bar.x + bar.w / 2
+        for a, _b in xs:
+            if abs(a - centre) > EVENT_TOLERANCE:
+                errors.append(
+                    f"event marker {label!r} is drawn at x={a:g} but bar {bar.name!r} is centred "
+                    f"at x={centre:g}; the cause must sit on the bar it explains"
+                )
+
+
 def check_encoded_once(source: str, errors: list[str]) -> None:
     """Every bar prints its signed value, so no second encoding of that value may be drawn.
 
@@ -512,9 +554,10 @@ def check_encoded_once(source: str, errors: list[str]) -> None:
     """
     source = COMMENT_RE.sub("", source)
     baselines = baselines_of(source)
+    spans = [(start, end) for start, end, _attrs, _body in event_groups(source)]
     for match in LINE_RE.finditer(source):
         attrs = attrs_of(match.group("attrs"))
-        if "data-carry" in attrs:
+        if "data-carry" in attrs or any(a <= match.start() < b for a, b in spans):
             continue
         coords = [parse_number(attrs.get(key, "")) for key in ("x1", "y1", "x2", "y2")]
         if any(c is None for c in coords):
@@ -586,6 +629,7 @@ def verify_file(path: Path) -> list[str]:
         baseline, scale = fitted
         check_carries(source, bars, levels, baseline, scale, errors)
     check_printed(source, bars, errors)
+    check_events(source, bars, errors)
     check_encoded_once(source, errors)
     check_money_basis(source, errors)
     check_sign_treatment(bars, errors, paper)

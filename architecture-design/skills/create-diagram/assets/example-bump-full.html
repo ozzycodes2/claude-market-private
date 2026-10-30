@@ -33,14 +33,14 @@
 <body>
   <div class="container">
     <div class="header">
-      <p class="header-eyebrow">Bump chart · Diagram Design</p>
-      <h1>The default everyone stopped choosing</h1>
+      <p class="header-eyebrow">Bump chart · Package rank by quarter</p>
+      <h1>legacy-http fell from first to last in a year</h1>
       <p class="subtitle">Six internal packages ranked by weekly downloads, quarter by quarter. legacy-http entered the year in first place and left it in last; fetch-kit took the top rank in Q2 and never gave it back. Position is the only encoding — the vertical axis is rank, not volume.</p>
     </div>
     <div class="diagram-container">
     <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="bump-full-title bump-full-desc">
-        <title id="bump-full-title">The default everyone stopped choosing</title>
-        <desc id="bump-full-desc">Bump chart ranking six internal packages by weekly downloads across four quarters; legacy-http slides from first to sixth while fetch-kit takes the top rank in the second quarter and keeps it.</desc>
+        <title id="bump-full-title">legacy-http fell from first to last in a year</title>
+        <desc id="bump-full-desc">legacy-http fell from first to last in a year. Bump chart ranking six internal packages by weekly downloads across four quarters; legacy-http slides from first to sixth while fetch-kit takes the top rank in the second quarter and keeps it.</desc>
         <rect width="100%" height="100%" fill="#f8f8f8"/>
 
         <!-- Rank is ORDINAL: every vertex sits exactly on a rank row, y = 88 + 56 x
@@ -130,7 +130,7 @@
 
         <!-- Legend -->
         <line x1="40" y1="462" x2="960" y2="462" stroke="rgba(23,23,23,0.10)" stroke-width="0.8"/>
-        <text x="40" y="478" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Ranked by weekly downloads, ties keep prior order · Same measure every quarter · Illustrative figures, not a measured registry</text>
+        <text data-role="source" x="40" y="478" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Source: illustrative registry downloads, Q1 to Q4 2026. Rank by weekly downloads, ties keep prior order.</text>
 
         <line x1="40" y1="492" x2="64" y2="492" stroke="#ef6306" stroke-width="2.4"/>
         <circle cx="52" cy="492" r="4" fill="#ef6306"/>
@@ -144,7 +144,7 @@
       <div class="card">
         <p class="eyebrow">FOCAL · LEGACY-HTTP</p>
         <div class="card-header"><span class="card-dot accent"></span><h3>First to sixth in four quarters, and never a sudden drop</h3></div>
-        <p>One rank, then two more, then two more. No single quarter looks alarming, which is exactly how a default dies — each straight segment joins two measured ranks and says nothing about the weeks between, so the chart claims the decline happened, not when in each quarter it happened.</p>
+        <p>legacy-http lost one rank, then two more, then two more. No single quarter looks alarming, which is exactly how a default dies — each straight segment joins two measured ranks and says nothing about the weeks between, so the chart claims the decline happened, not when in each quarter it happened.</p>
       </div>
       <div class="card">
         <div class="card-header"><span class="card-dot ink-strong"></span><h3>fetch-kit took first place in Q2 and the line goes flat</h3></div>
@@ -152,7 +152,7 @@
       </div>
       <div class="card">
         <div class="card-header"><span class="card-dot ink-light"></span><h3>schema-gen moved one rank and that is the whole story</h3></div>
-        <p>Three flat quarters, then a single step up — inherited from legacy-http falling past it, not from growth of its own. A bump chart cannot tell those apart, which is why the footnote names the ranking key: the reader who needs magnitude follows the measure, not the picture.</p>
+        <p>Rank 6 in Q1, Q2 and Q3, then a single step up in Q4, the quarter legacy-http fell past it. A bump chart cannot say whether schema-gen grew or only inherited the place, which is why the footnote names the ranking key: the reader who needs magnitude follows the measure, not the picture.</p>
       </div>
     </div>
     <div class="footer">

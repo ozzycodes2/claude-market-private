@@ -17,8 +17,20 @@
 - **Direct labels at the last point.** Every series is named at its own last vertex, 16px to its right and on its row: the name in `node-name` (Inter 11px; `ink` at 600 for the focal series, `muted` at 500 for the rest). The names are the identifier; a legend strip is dropped whenever every series carries one. A key is only for an encoding that cannot be written in place, and a line chart has none.
 - **Comparison line.** Draw at least one comparison the data supports: a target, an average, or the prior period. A `soft` 1px line dashed `4,3`, under the data, with a sentence-case label at its right end (`arrow-label` role, 8px, `muted`). Bind it with `data-ref` and `data-value` so its y is held to the same scale as the series.
 - **Banking.** Choose the plot's proportions so the dominant slopes average about 45° (Cleveland's banking): flatter than about 15° hides rate changes, steeper than about 70° exaggerates them. Compute the median absolute segment angle of the focal series, then change the plot's width-to-height ratio, never the data scale, until it nears 45°. The shipped example averages about 28° on its focal series, with a 56px pitch against 2px per signup; the zero-based reading would flatten it further. Banking tunes proportion; it never licenses a truncated axis without the statement above.
-- **Source line:** one `data-role="source"` text under the plot, sentence case, stating the data source, the period, units, and anything the frame leaves out (the axis bounds when not from zero, what a dashed line is). Money across periods says "nominal" or "real (base year)".
-- **Series cap: six.** The limit is end-label collisions, not the lines: two end labels closer than 10px mean the series are too close to name in place. Past six, or when labels collide, split into small multiples: identical frame, identical scales, one panel per series, a direct title per panel.
+- **Source line:** one `data-role="source"` text at bottom-left, in the house order: origin and period (`Source: illustrative analytics, W1 to W8.`), units (`Signups per week.`), then encoding notes (the axis bounds when not from zero, what a dashed line is). Money across periods says "nominal" or "real (base year)".
+- **Mark causes in place.** When a card or caption says *why* a line moved, draw the cause as an event marker: a `<g data-event="W4" data-event-label="Two guides published">` holding a `soft` 1px vertical line dashed `2,3` from plot top to plot bottom and an italic `ink` callout (Inter 10px, under 32 characters, naming the cause, not the mark). `data-event` is the x-axis tick label verbatim and the line's x equals that tick's x. The vertical `2,3` dash keeps it distinct from the horizontal `4,3` comparison line; markers count against the four-callout cap and never use the accent. If the data shows no effect at the marked period, change the claim, not the marker.
+- **Series cap: six.** The limit is end-label collisions, not the lines: two end labels closer than 10px mean the series are too close to name in place. Past six, or when labels collide, split into small multiples (below).
+
+### Small multiples
+
+One panel per series when end labels collide or the question is each series' own shape. `assets/example-line-small-multiples.html` shows weekly signups for six regions.
+
+- **Identical frame, identical scales.** Every panel is a `<g data-panel="Name" data-domain="0,120" data-range="120">`: the same y domain mapped onto the same pixel height, the same x pitch and vertex count. Say so in the source line ("Same x and y scales in every panel"). A shared zero-based scale lets panels compare magnitude; a panel on its own scale compares nothing.
+- **A direct title per panel** (`data-role="title"` with `data-line`), left-aligned above the plot, replaces the end label. No legend.
+- **Range frames per panel**: each panel's axis rules span its own data, with bound ticks at its min and max.
+- **One shared comparison line**: the same `data-ref` value (a mean or target) in every panel, dashed `4,3`, labelled at its right end.
+- **One accent panel at most**, the editorial focal one; the rest take `ink` at 1.2px. Event markers work inside a panel and are held to that panel's own tick labels.
+- Layout is absolute coordinates, no `transform`: the example runs a 3 by 2 grid at `x0` 80/400/720 and baselines `y` 192/384, 28px per week.
 
 ### Telling series apart, honestly
 
@@ -46,8 +58,8 @@ The skin has one chroma, so series cannot be told apart by hue. The identifier i
 <text data-ref="target" data-role="label" x="488" y="203" fill="{muted}" font-size="8" font-family="{sublabel}">Target: 150 a week</text>
 
 <!-- A series: values bound on the line, y = 500 - 2*value, x on one shared grid -->
-<polyline data-line="Organic" data-values="120,135,148,162,155,178,195,210"
-          points="80,260 136,230 192,204 248,176 304,190 360,144 416,110 472,80"
+<polyline data-line="Organic" data-values="120,126,132,170,162,178,195,210"
+          points="80,260 136,248 192,236 248,160 304,176 360,144 416,110 472,80"
           fill="none" stroke="{accent}" stroke-width="1.8" stroke-linejoin="round"/>
 <circle cx="472" cy="80" r="4" fill="{accent}"/>
 <!-- Its end label, bound to the series and placed at its last point -->
@@ -57,7 +69,7 @@ The skin has one chroma, so series cannot be told apart by hue. The identifier i
 <text data-tick="y" data-value="210" x="56" y="83" fill="{muted}" font-size="8" font-family="{sublabel}" text-anchor="end">210</text>
 ```
 
-`data-line` is this contract's own series attribute, deliberately not `data-series` (slopegraph, bump), `data-layer` (streamgraph) or `data-bins` (ridgeline), so no sibling checker claims a line file. `scripts/verify-line.py` binds `data-values` on every polyline and holds every vertex to one linear y scale and one x grid; holds each y tick, the range-frame rules and the comparison line to the same scale; requires each series' end label to name it, sit right of its last point on its row, and stay 10px clear of its neighbours; refuses a legend once every series is labelled, any rotated text or transform, a filled area under a series, more than six series, more than four gridlines, and a series fainter than the 0.53 ink floor. `scripts/test-verify-line.py` proves each check in both polarities and pins the scope treaty. Its `--all` globs `example-line*.html` only, so the variant files below belong to their own checkers.
+`data-line` is this contract's own series attribute, deliberately not `data-series` (slopegraph, bump), `data-layer` (streamgraph) or `data-bins` (ridgeline), so no sibling checker claims a line file. `scripts/verify-line.py` binds `data-values` on every polyline and holds every vertex to one linear y scale and one x grid; holds each y tick, the range-frame rules and the comparison line to the same scale; requires each series' end label to name it, sit right of its last point on its row, and stay 10px clear of its neighbours; refuses a legend once every series is labelled, any rotated text or transform, a filled area under a series, more than six series, more than four gridlines, and a series fainter than the 0.53 ink floor. It also holds each `data-event` marker's vertical line to within 0.5px of the x of the tick label that reads the same text (an unknown category fails), and treats each `data-panel` group as its own plot while requiring every panel to share one `data-domain`, one `data-range`, one x pitch and one comparison value. `scripts/test-verify-line.py` proves each check in both polarities and pins the scope treaty. Its `--all` globs `example-line*.html` only, so the variant files below belong to their own checkers.
 
 ## Anti-patterns
 
@@ -364,6 +376,9 @@ The binding contract is the slopegraph's, one level up: the path declares its ra
 - `assets/example-line.html` — minimal light
 - `assets/example-line-dark.html` — minimal dark
 - `assets/example-line-full.html` — full editorial
+- `assets/example-line-small-multiples.html` — small multiples, minimal light
+- `assets/example-line-small-multiples-dark.html` — small multiples, minimal dark
+- `assets/example-line-small-multiples-full.html` — small multiples, full editorial
 - `assets/example-slopegraph.html` — slopegraph, minimal light
 - `assets/example-slopegraph-dark.html` — slopegraph, minimal dark
 - `assets/example-slopegraph-full.html` — slopegraph, full editorial

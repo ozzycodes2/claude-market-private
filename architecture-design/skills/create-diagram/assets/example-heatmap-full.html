@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CI failure rate by service and sprint · Heatmap</title>
+  <title>Payments failures spiked to 47% in sprint 4 · Heatmap</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;1,400&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -33,15 +33,15 @@
 <body>
   <div class="container">
     <div class="header">
-      <p class="header-eyebrow">Heatmap · Diagram Design</p>
-      <h1>The week payments went dark</h1>
+      <p class="header-eyebrow">Heatmap · CI failure rate by service and sprint · Diagram Design</p>
+      <h1>Payments failures spiked to 47% in sprint 4</h1>
       <p class="subtitle">CI failure rate (%) by service and sprint, six sprints. payments spiked to 47% in sprint 4 — a deploy regression that slipped through the gate — and had recovered to 4% by sprint 6. billing carries the highest structural rate; notifications is the quietest service throughout.</p>
     </div>
 
     <div class="diagram-container">
       <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="heatmap-full-title heatmap-full-desc">
-        <title id="heatmap-full-title">The week payments went dark</title>
-        <desc id="heatmap-full-desc">Heatmap of CI failure rate by service and sprint; payments service spiked to 47% in sprint 4 due to a deploy regression, recovered to 4% by sprint 6; billing carries the highest baseline failure rate at 9% in sprint 3.</desc>
+        <title id="heatmap-full-title">Payments failures spiked to 47% in sprint 4</title>
+        <desc id="heatmap-full-desc">Payments failures spiked to 47% in sprint 4. Heatmap of CI failure rate by service and sprint: payments had recovered to 4% by sprint 6 after a gate misconfiguration let a regression through, and billing carries the highest baseline failure rate at 9% in sprint 3.</desc>
         <rect width="100%" height="100%" fill="#f8f8f8"/>
 
         <!-- Cell grid: 6 columns (x=160,280,400,520,640,760), 5 rows (y=64,124,184,244,304).
@@ -197,6 +197,11 @@
         <line x1="880" y1="244" x2="880" y2="300" stroke="#616161" stroke-width="1" stroke-dasharray="3,2"/>
         <text x="884" y="272" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">High baseline</text>
 
+        <g data-event="payments Sprint 4" data-event-label="Gate misconfigured">
+        <rect x="520" y="124" width="116" height="56" fill="none" stroke="#171717" stroke-width="1"/>
+        <text x="884" y="156" fill="#171717" font-size="10" font-style="italic" font-family="'Inter', sans-serif">Gate misconfigured</text>
+        </g>
+
         <!-- Legend -->
 
         <rect x="120" y="386" width="20" height="12" fill="#f8f8f8"/><rect x="120" y="386" width="20" height="12" fill="rgba(23,23,23,0.07)"/>
@@ -210,8 +215,7 @@
         <text x="116" y="396" fill="#4d4d4d" font-size="7.5" font-family="'SF Mono', monospace" text-anchor="end">Low</text>
         <text x="298" y="396" fill="#4d4d4d" font-size="7.5" font-family="'SF Mono', monospace">High</text>
 
-        <text x="40" y="418" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Source: illustrative CI failure rates, % of builds failing per service and sprint; not measured data.</text>
-        <text x="40" y="432" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Ramp covers the non-focal cells (1–9%); opacity is linear in value, not perceptually calibrated. The focal cell, payments in sprint 4 (47%), is outside the ramp.</text>
+        <text data-role="source" x="40" y="418" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace"><tspan x="40">Source: illustrative CI failure rates, 6 sprints. % of builds failing per service and sprint.</tspan><tspan x="40" dy="12">Ramp covers the non-focal cells (1–9%), linear in opacity. Payments in sprint 4 (47%) sits outside the ramp.</tspan></text>
       </svg>
     </div>
 
@@ -222,7 +226,7 @@
           <div class="card-swatch focal"></div>
           <h3>Deploy regression — 47%</h3>
         </div>
-        <p>A CI gate misconfiguration during the payments sprint 4 deploy let a breaking change through. The spike resolved by sprint 6 after the rollback and a gate fix, returning to a 4% baseline.</p>
+        <p>A CI gate misconfiguration during the payments sprint 4 deploy let a breaking change through, as marked on the chart. The spike resolved by sprint 6 after the rollback and a gate fix, returning to a 4% baseline.</p>
       </div>
       <div class="card">
         <p class="eyebrow">Structural issue · billing</p>

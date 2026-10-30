@@ -72,7 +72,8 @@ to run from the skill directory rather than a repository checkout:
 ```sh
 cd architecture-design/skills/create-diagram
 python3 scripts/verify-contrast.py            # 18 role-and-use pairs, both skins
-python3 scripts/lint-skin.py --all            # palette and font conformance
+python3 scripts/lint-skin.py --all            # palette, font and source-line conformance
+python3 scripts/verify-cards.py --all         # -full cards cite a drawn mark
 python3 scripts/verify-geometry.py --all      # the six connector rules
 python3 scripts/verify-block-registry.py --all  # every example's block inventory
 python3 scripts/verify-skin-polarity.py --all # light/dark claims against the ramp

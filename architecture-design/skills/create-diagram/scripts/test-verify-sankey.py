@@ -803,6 +803,18 @@ def main() -> int:
                                            'stroke="#4d4d4d" stroke-width="1" '
                                            'stroke-dasharray="4000 0"/>'),
                  "neither a readable ribbon", "a dash pattern with no gap, which renders solid"),
+                # The source line and the event marker are the only places the
+                # annotation attributes and a tspan are read. Each is refused
+                # anywhere else; the shipped example proves they pass in place.
+                ("aud-tspan-loose", alongside('<text x="40" y="470"><tspan x="40" dy="12" '
+                                              'fill="#f8f8f8">cover</tspan></text>'),
+                 "outside a <text data-role", "a tspan outside the source line"),
+                ("aud-role-other", alongside('<text data-role="label" x="40" y="470">note</text>'),
+                 "reads only as", "a data-role other than source"),
+                ("aud-role-on-ribbon", altered("<path ", '<path data-role="source" '),
+                 "reads only as", "data-role on a ribbon rather than a text"),
+                ("aud-event-on-ribbon", altered("<path ", '<path data-event="Flaked" '),
+                 "reads only as", "data-event on a ribbon rather than a group"),
                 # CSS reaching the figure.
                 ("aud-css-comment",
                  source.replace("<style>", "<style>" + chr(10)

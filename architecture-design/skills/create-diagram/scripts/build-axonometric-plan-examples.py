@@ -392,8 +392,8 @@ def office() -> Plan:
         caption=("Focal room", "Walls cut at desk height so every room reads from one view; the meeting room is the one under discussion."),
         subtitle="One floor, walls cut at desk height, so every room and what is in it reads from a single view.",
         cards=[("The headline", "accent", "One room is the subject", "The meeting room gets the accent because it is the room being discussed. It seats twelve, and the floor tint marks it without colouring the furniture."),
-               ("", "ink", "Reading the plan", ["Walls are cut low so nothing hides a room", "Tags sit on the floor they name", "Furniture shows how each room is used", "Gaps in walls are doors"]),
-               ("", "muted", "When to use it", "Office moves, seating plans, and space reviews. For a list of rooms and capacities, a table is faster.")],
+               ("", "ink", "Reading the plan", ["Walls are cut low so nothing hides a room", "Tags such as Meeting room and Kitchen sit on the floor they name", "Furniture shows how each room is used", "Gaps in walls are doors"]),
+               ("", "muted", "When to use it", "Office moves, seating plans, and space reviews. For a list of rooms such as Open office and Booth with their capacities, a table is faster.")],
         footer="office floor · axonometric plan")
 
 
@@ -421,8 +421,8 @@ def campus() -> Plan:
         caption=("Focal building", "The library opens in phase 1 and anchors the quad; housing and sport follow as enrolment grows."),
         subtitle="Six buildings in three phases. Each tag carries its phase, so the build order reads without a legend.",
         cards=[("The headline", "accent", "The library comes first", "Everything else on the site is placed around it, so it gets the accent and opens in phase 1 with the labs."),
-               ("", "ink", "Reading the site", ["Heights are to scale with each other", "Roads cross at the quad", "Tags sit on the roof they name", "Trees mark the green edges"]),
-               ("", "muted", "When to use it", "Master plans, site visits, and phasing reviews. For a schedule of phases and dates, use a Gantt chart.")],
+               ("", "ink", "Reading the site", ["Heights are to scale with each other", "Roads cross at the quad", "Tags sit on the roof they name, such as Library and Labs", "Trees mark the green edges"]),
+               ("", "muted", "When to use it", "Master plans, site visits, and phasing reviews. For a schedule of when Dorm A and Sports hall open, use a Gantt chart.")],
         footer="campus · axonometric plan", steps=3)
 
 
@@ -467,9 +467,9 @@ def coffee_shop() -> Plan:
         plate=Rect(0, 0, W, D, 0), plate_t=6, boxes=walls + kitchen + restroom + bar + queue + seating, rooms=rooms,
         caption=("Focal room", "Every customer passes the espresso bar twice, once to order and once to pick up, so it sits beside the door."),
         subtitle="One room with a kitchen behind it. The queue runs along the counter, so ordering, paying and pickup happen in one line.",
-        cards=[("The headline", "accent", "The bar is the bottleneck", "Every order goes through two baristas and one espresso machine. The accent marks the bar because its length sets how many people can wait without blocking the door."),
-               ("", "ink", "Reading the plan", ["Posts mark the queue lane along the counter", "The tall unit on the back bar is the fridge", "Round tables seat two, the long table seats six", "Gaps in walls are doors"]),
-               ("", "muted", "When to use it", "Fit-outs, staffing reviews, and new-store briefs. For a list of equipment and costs, a table is faster.")],
+        cards=[("The headline", "accent", "The bar is the bottleneck", "Every order goes through two baristas and one espresso machine. The accent marks the Espresso bar because its length sets how many people can wait without blocking the door."),
+               ("", "ink", "Reading the plan", ["Posts mark the queue lane in the Entrance room", "The tall unit on the back bar is the fridge", "Round tables seat two, the long table seats six", "Gaps in walls are doors"]),
+               ("", "muted", "When to use it", "Fit-outs, staffing reviews, and new-store briefs. For a list of equipment and costs, such as the Kitchen's, a table is faster.")],
         footer="coffee shop · axonometric plan", steps=3,
         phases={1: "The espresso bar: back bar and counter", 2: "The entrance and the queue posts", 3: "Seating: tables and the window bench"})
 
@@ -505,7 +505,7 @@ def warehouse() -> Plan:
         subtitle="Goods come in on the left and leave on the right. Everything in between is storage, picking and packing, laid out in that order.",
         cards=[("The headline", "accent", "Packing sets the pace", "Receiving and storage can run ahead. An order only ships when someone packs it, so the three stations are the accent and the place to add capacity first."),
                ("", "ink", "Reading the plan", ["Tall racks hold reserve stock", "The low flow rack faces the pick lane", "The conveyor carries packed orders to shipping", "Gaps in the side walls are dock doors"]),
-               ("", "muted", "When to use it", "Layout changes, peak season planning, and new-hire walkthroughs. For pick rates by zone, use a bar chart.")],
+               ("", "muted", "When to use it", "Layout changes, peak season planning, and new-hire walkthroughs. For pick rates in the Pick zone, use a bar chart.")],
         footer="fulfillment floor · axonometric plan", steps=3,
         phases={1: "Inbound: receiving pallets and storage racks", 2: "Pick and pack: carts, flow rack, and packing stations", 3: "Outbound: shipping pallets"})
 

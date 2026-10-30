@@ -512,6 +512,13 @@ def run_cases(h: Harness) -> int:
     h.expect_finding("a bound text with an unknown role is rejected",
                      honest(label("A", "Linux", XA + 16, TOP + 28, "note", role="note")),
                      r"declares data-role='note'")
+    h.expect_clean("an unbound source line is prose, not a bound string",
+                   honest('  <text data-role="source" x="40" y="454" font-size="8">'
+                          'Source: illustrative CI minutes, 30 days.</text>\n'))
+    h.expect_finding("a source line that binds a column is still a bound text and is rejected",
+                     honest('  <text data-role="source" data-column="A" x="40" y="454" '
+                            'font-size="8">Source: illustrative CI minutes, 30 days.</text>\n'),
+                     r"declares data-role='source'")
     h.expect_finding("a bound text with no role is rejected",
                      honest('  <text data-column="A" x="60" y="60">A</text>\n'),
                      r"declares data-role=None")

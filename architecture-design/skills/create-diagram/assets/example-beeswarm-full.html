@@ -33,9 +33,9 @@
 <body>
   <div class="container">
     <div class="header">
-      <p class="header-eyebrow">Beeswarm · Diagram Design</p>
+      <p class="header-eyebrow">Beeswarm · Per-request latency, one checkout endpoint</p>
       <h1>The median hides the tail</h1>
-      <p class="subtitle">A hundred and thirty-eight per-request latency samples for one checkout endpoint, one dot per request on a shared linear axis from zero. The median sits near 105&nbsp;ms and looks perfectly healthy; the story is the three requests past 380&nbsp;ms, because the p99 is what a customer at the wrong moment actually experiences.</p>
+      <p class="subtitle">A hundred and thirty-eight per-request latency samples for one checkout endpoint, one dot per request on a shared linear axis from zero. The median sits at 122.5&nbsp;ms and looks perfectly healthy; the story is the three requests past 380&nbsp;ms, because the p99 is what a customer at the wrong moment actually experiences.</p>
     </div>
     <div class="diagram-container">
       <!-- Value axis: 0-440ms over 880px, x = 80 + 2*ms, linear from zero.
@@ -48,7 +48,7 @@
            radius or non-focal fill. -->
       <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="beeswarm-full-title beeswarm-full-desc">
         <title id="beeswarm-full-title">The median hides the tail</title>
-        <desc id="beeswarm-full-desc">Beeswarm of 138 per-request latency samples for one checkout endpoint on a shared linear value axis from zero; vertical spread is packing only and carries no value. The median is 122.5 ms, p99 is 396.8 ms, and the three requests past 380 ms form the tail.</desc>
+        <desc id="beeswarm-full-desc">The median hides the tail. Beeswarm of 138 per-request latency samples for one checkout endpoint on a shared linear value axis from zero; vertical spread is packing only and carries no value. The median is 122.5 ms, p99 is 396.8 ms, and the three requests past 380 ms form the tail.</desc>
         <rect width="100%" height="100%" fill="#f8f8f8"/>
 
         <!-- Range-frame value axis: the rule spans only the data (first dot to last dot), not the plot box. No gridlines: four bound ticks carry the scale, and the two reference lines below are the only other vertical rules. Scale is linear from zero, x = 80 + 2·ms. -->
@@ -363,24 +363,24 @@
         <text data-name="req-4c1f" data-role="label" x="942" y="120" fill="#171717" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">req-4c1f</text>
 
         <!-- Source line: units, what a dot is, and that the vertical spread is packing. -->
-        <text data-role="source" x="40" y="488" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">One dot = one request (138). Latency in ms, linear from zero. Vertical spread is packing, not a value. p99 by linear interpolation. Illustrative figures, not measured traffic.</text>
+        <text data-role="source" x="40" y="480" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Source: illustrative request log, 14 Oct 2026, five-minute window. One dot = one request (138). Latency in ms.<tspan x="40" dy="12">Linear from zero. Vertical spread is packing, not a value. p99 by linear interpolation.</tspan></text>
       </svg>
     </div>
     <div class="cards">
       <div class="card">
         <div class="card-header"><span class="card-dot accent"></span><h3>The tail is the story</h3></div>
         <p class="eyebrow">Read the swarm, not the middle</p>
-        <p>req-4c1f took 431&nbsp;ms — four times the median — and it is one of three requests past 380&nbsp;ms in a five-minute window. At this rate, roughly one checkout in fifty gets a visibly slow page, which is exactly the reading a single averaged number would have hidden.</p>
+        <p>req-4c1f took 431&nbsp;ms — about 3.5 times the median — and it is one of three requests past 380&nbsp;ms in a five-minute window. At this rate, roughly one checkout in fifty gets a visibly slow page, which is exactly the reading a single averaged number would have hidden.</p>
       </div>
       <div class="card">
         <div class="card-header"><span class="card-dot ink-strong"></span><h3>Every unit keeps its mark</h3></div>
         <p class="eyebrow">One dot = one request</p>
-        <p>No binning, no averaging: each request is its own dot at its exact value. Density reads as thickness — the swarm bulges where requests crowd — so the shape of the distribution and its outliers arrive in one glance.</p>
+        <p>No binning, no averaging: each request is its own dot at its exact value. Density reads as thickness — the swarm bulges between 80 and 120&nbsp;ms, just left of the Median 122.5 ms line — so the shape of the distribution and its outliers arrive in one glance.</p>
       </div>
       <div class="card">
         <div class="card-header"><span class="card-dot ink-light"></span><h3>The vertical axis says nothing</h3></div>
         <p class="eyebrow">Packing, not a value</p>
-        <p>Dots dodge up and down only so they do not overlap; the offset is greedy packing at a fixed pitch and carries no meaning. A dot is never moved along the value axis to make room — crowding is data.</p>
+        <p>Dots dodge up and down only so they do not overlap; the offset is greedy packing at a fixed pitch and carries no meaning. A dot is never moved along the value axis to make room: req-09aa sits at exactly 402&nbsp;ms and req-77d3 at exactly 388&nbsp;ms. Crowding is data.</p>
       </div>
     </div>
     <div class="footer">

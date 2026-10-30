@@ -14,7 +14,8 @@
 - **Phase grouping:** a band behind each phase's rows only when the band encodes the phase. Fill `ink @ 0.04`, no stroke, no frame. If every band would look the same and the phase is already named in the left column, omit them.
 - **Focal task bar:** 1 bar in accent fill/stroke (the key deliverable or critical path task). All others: muted fill @ 0.15, muted stroke. Say why it is focal with a direct callout to the right of the bar (italic `ink`, 9px), not a legend key. There is no legend strip.
 - **Today marker:** a vertical line in `soft` 1px dashed `4,3` from the header rule to the plot bottom, with the direct label "Today" below the plot in `arrow-label` role 8px `muted`. It is the chart's comparison: what is done sits left of it, what remains to its right.
-- **Source line:** sentence case, `Inter` 8.5px `muted` at x=40, y=478. State the unit of the time axis and what the bars span.
+- **Source line:** one `<text data-role="source">` at x=40, y=478, 8px mono `muted`, starting "Source: ". Order: origin and period, then the unit of the time axis, then what the bars span.
+- **Cause callouts:** the focal-bar callout states the cause or dependency ("Full build waits on sign-off"), not a label for the mark ("Critical gate").
 
 ### Data binding
 

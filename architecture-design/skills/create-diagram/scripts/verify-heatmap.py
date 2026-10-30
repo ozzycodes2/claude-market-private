@@ -7,7 +7,7 @@ their visual positions are only "which row" and "which column", not quantities
 measured against a scale. Only the fill encodes "how much" — and the ramp must
 be non-decreasing.
 
-Four invariants:
+Five invariants:
 
 1. COMPLETE GRID — every (row, col) pair in the declared row-and-column
    vocabulary is present. A missing cell is a gap in the reading that looks
@@ -27,6 +27,13 @@ Four invariants:
 4. FAIL CLOSED — zero parseable cells is a finding. A heatmap with no cells is
    not an empty-data edge case; it is an authoring error or a parse failure, and
    a checker that says OK because it found nothing to compare is the bug.
+
+5. EVENT OUTLINE ON ITS CELLS — a `<g data-event="...">` marker holds an
+   outline `<rect>` (no fill) and an italic cause. The event names a row
+   (`payments`), a column (`S4` or its header text `Sprint 4`) or a cell (row,
+   a space, then the column: `payments Sprint 4`). The outline must enclose
+   exactly the named cells (within 0.5px) and no other cell, so the cause is
+   drawn around the mark it explains. An unknown row/column fails.
 
 WHAT THIS DOES NOT CHECK, deliberately:
 
@@ -313,6 +320,85 @@ def parse_cells(source: str, errors: list[str] | None = None) -> list[dict]:
     return cells
 
 
+EVENT_GROUP_RE = re.compile(r"<g\b(?P<attrs>[^>]*)>(?P<body>.*?)</g>", re.IGNORECASE | re.DOTALL)
+EVENT_TOLERANCE = 0.5  # px, outline edge vs cell edge
+
+
+def parse_column_headers(source: str) -> dict[str, str]:
+    """Map every accepted spelling of a column (key and header text) to its key."""
+    aliases: dict[str, str] = {}
+    for m in re.finditer(r"<text\b(?P<attrs>[^>]*)>(?P<body>.*?)</text>",
+                         COMMENT_RE.sub("", source), re.IGNORECASE | re.DOTALL):
+        key = _attr(m.group("attrs"), "data-col")
+        if key:
+            aliases[key] = key
+            header = re.sub(r"<[^>]+>", "", m.group("body")).strip()
+            if header:
+                aliases[html.unescape(header)] = key
+    return aliases
+
+
+def check_events(source: str, cells: list[dict], rows: list[str], cols: list[str],
+                 name: str) -> list[str]:
+    """Each data-event outline encloses the row, column or cell it names, and no more."""
+    findings: list[str] = []
+    aliases = parse_column_headers(source)
+    for group in EVENT_GROUP_RE.finditer(COMMENT_RE.sub("", source)):
+        event = _attr(group.group("attrs"), "data-event")
+        if event is None:
+            continue
+        event = event.strip()
+        row_name, col_key = None, None
+        if event in rows:
+            row_name = event
+        elif event in aliases:
+            col_key = aliases[event]
+        else:
+            head, _, tail = event.partition(" ")
+            if head in rows and tail.strip() in aliases:
+                row_name, col_key = head, aliases[tail.strip()]
+        if row_name is None and col_key is None:
+            findings.append(
+                f"{name}: event marker {event!r} names no row, column or cell — data-event "
+                "must equal a row label, a column key or header, or '<row> <column header>'")
+            continue
+        named = [c for c in cells
+                 if (row_name is None or c["row"] == row_name)
+                 and (col_key is None or c["col"] == col_key)]
+        outline = None
+        for rect in RECT_RE.finditer(group.group("body")):
+            attrs = rect.group("attrs")
+            if (_attr(attrs, "fill") or "none") == "none":
+                box = [_length_px(_attr(attrs, k), k, None) for k in ("x", "y", "width", "height")]
+                if None not in box:
+                    outline = box
+                    break
+        if outline is None or any(None in (c["x"], c["y"], c["width"], c["height"]) for c in named):
+            findings.append(
+                f"{name}: event marker {event!r} needs an unfilled outline <rect> with numeric "
+                "x/y/width/height, and the named cells must have numeric geometry")
+            continue
+        ox, oy, ow, oh = outline
+
+        def encloses(c: dict) -> bool:
+            return (ox <= c["x"] + EVENT_TOLERANCE and oy <= c["y"] + EVENT_TOLERANCE
+                    and ox + ow >= c["x"] + c["width"] - EVENT_TOLERANCE
+                    and oy + oh >= c["y"] + c["height"] - EVENT_TOLERANCE)
+
+        missed = [c for c in named if not encloses(c)]
+        extra = [c for c in cells if c not in named and encloses(c)]
+        if missed:
+            findings.append(
+                f"{name}: event outline for {event!r} does not enclose "
+                f"({missed[0]['row']}, {missed[0]['col']}) — the cause must be drawn around "
+                "the mark it explains")
+        if extra:
+            findings.append(
+                f"{name}: event outline for {event!r} also encloses "
+                f"({extra[0]['row']}, {extra[0]['col']}), which it does not name")
+    return findings
+
+
 def parse_text_labels(source: str, errors: list[str] | None = None) -> list[dict]:
     """Return SVG text labels with their fill, x, y, and rendered text."""
     source_clean = COMMENT_RE.sub("", source)
@@ -485,6 +571,8 @@ def check_file(path: Path) -> list[str]:
                 )
             prev_opacity = mean_opacity
             prev_val = val
+
+    errors.extend(check_events(source, cells, rows, cols, path.name))
 
     # Require focal cell value text to maintain WCAG AA against the rendered focal fill.
     # The fill is composited against the heatmap canvas background, which is light paper in

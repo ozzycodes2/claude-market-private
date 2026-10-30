@@ -3,7 +3,7 @@ name: create-diagram
 description: Create Fabric-skinned architecture, architecture delta, IT current-state, flowchart, sequence, state machine, ER/data model, timeline, swimlane, quadrant, radar/spider, polar chart (polar/radial lollipop), loop/flywheel, nested, tree, org chart, layer stack, exploded axonometric, axonometric plan, Venn, pyramid/funnel, treemap and marimekko, heatmap, bar and dumbbell, waterfall, line (slopegraph, ridgeline, streamgraph, bump), Gantt and scatter charts (bubble, beeswarm), high-level, process, medallion, data flow, DP integration, DP security matrix, Sankey, fishbone, Wardley map, kanban, user journey, service blueprint, deployment, dependency graph, UML class, story map, or database schema diagrams as HTML/SVG/PNG, with .drawio, Mermaid, and .excalidraw import, plus lifecycle phase maps, block decomposition trees, and onboarding guidance. One signal chroma, no serif, accent on objects never type.
 license: MIT
 metadata:
-  version: "2.7"
+  version: "2.8"
 ---
 
 # Diagram Design — Fabric
@@ -49,6 +49,8 @@ Applied to schematics:
 - The accent is **editorial, not a flag.** 1–2 focal nodes per diagram. Using it on 5 nodes erases the signal. It is also the only chroma in the skin, so a second use has nowhere to go.
 - A value is encoded once. A label that repeats a color, a gridline that repeats a value label, or a legend that repeats a direct label is ink to erase.
 - The schematic isn't done when everything is added. It's done when nothing can be removed.
+
+For charts, *Beautiful Evidence* adds six principles: content counts most (the title states the claim), credibility (a source line with origin, period and units), causality (a cause the text names is marked on the chart), integration (cards cite marks the reader can find, and their numbers match the data), multivariate display (ask what second variable explains the first), and comparisons (a reference line, or small multiples). [ADR 0004](docs/adr/0004-analytical-design.md) records the rules.
 
 **Target density: 4/10.** Enough to be technically complete. Not so dense it needs a guide. Above 9 nodes, it's probably two diagrams.
 
@@ -142,12 +144,13 @@ Rules of thumb:
 - If a 3-column table communicates the same thing, pick the table.
 - If two types seem useful, pick the dominant axis; a semantic pattern may add behavior-specific primitives, not a second layout grammar.
 - If you're past the complexity budget (§7), split into an overview + detail.
+- Before settling on one variable, ask which second variable explains it; if one does, route to small multiples, bubble or slopegraph.
 
 **Always load the chosen type reference linked in the guide before drawing.** When routed above, also load `semantic-patterns.md`; when animation is chosen, load `animation.md`.
 
 ### Confirm before drawing
 
-Before rendering, state the plan in one short message: the chosen visual type (and semantic pattern, if routed), the size preset, and anything the complexity budget (§7) will force out. If the user is reachable, let them redirect before you draw; if not, proceed and note the assumptions beside the deliverable. Skip the pause only when the request already pins type, size, and content exactly.
+Before rendering, state the plan in one short message: the chosen visual type (and semantic pattern, if routed), the size preset, and anything the complexity budget (§7) will force out. For a chart, add the one-sentence takeaway the chart must make; it becomes the `<title>`. If the user is reachable, let them redirect before you draw; if not, proceed and note the assumptions beside the deliverable. Skip the pause only when the request already pins type, size, and content exactly.
 
 ---
 
@@ -270,6 +273,8 @@ If you exceed, split into two diagrams (overview + detail). Charts shrink first,
 
 Cards are optional; a diagram with its own labels needs none. When used, don't use 3 identical generic cards. Vary the treatment: column widths such as `1.1fr 1fr 0.9fr`, a `paper-2` background with a 1px `rule` border at `radius-lg`, no `box-shadow`. Markup and the card-dot variants: [layout-budget.md § Summary Card Pattern](references/layout-budget.md#summary-card-pattern).
 
+On chart pages each card names at least one mark visible in the diagram (a tick label, node name or series end label), and every `X → Y` pair in its prose uses numbers that appear in the data or on the chart. Derived numbers (percent change, averages) state their span: "+75% over 8 weeks". At most one card is "What the chart doesn't show". `scripts/verify-cards.py` checks the first two rules.
+
 ---
 
 ## 9. Pre-Output Checklist (Taste Gate)
@@ -336,6 +341,13 @@ Run before producing any diagram.
 - [ ] A comparison shown (target, average, or prior period)?
 - [ ] Each value encoded once; direct labels before a legend?
 - [ ] Sentence case except node type tags; no rotated text?
+
+**Analytical design (charts):**
+
+- [ ] `<title>` states the claim, and `<desc>` opens with that sentence?
+- [ ] One source line: `Source: ` origin and period, then units, then encoding notes; first sentence has a period token?
+- [ ] Every cause the card or caption names is marked on the chart with an event marker?
+- [ ] Each card cites a mark in the diagram, and its numbers match the data?
 
 **Typography:**
 

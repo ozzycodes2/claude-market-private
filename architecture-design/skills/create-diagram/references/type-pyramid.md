@@ -22,7 +22,7 @@ Don't mix orientations on one diagram.
 - Stroke: 1px hairline between layers; outer silhouette 1px muted or ink.
 - **The accent on ONE layer only**: apex of pyramid, conversion layer of funnel, or critical bottleneck.
 - Optional left-margin axis arrow + label in sentence case (`Rarer, fewer`, `Drop-off`), set horizontally above the arrow's tip, left-aligned to the arrow. No rotated text.
-- No legend: layers are named in place. The source line (sentence case) states the data source and whether width is rank only, proportional, or log.
+- No legend: layers are named in place. The source line (`data-role="source"`, sentence case, starting `Source: `) states origin and period first (`illustrative publishing cadence, one working year`), then whether width is rank only, proportional, or log. The `<title>` is the claim (`Each layer ships less often than the one below`, under about 60 characters) and `<desc>` opens with it.
 
 ## Anti-patterns
 - 7+ layers (illegible — compress or split).

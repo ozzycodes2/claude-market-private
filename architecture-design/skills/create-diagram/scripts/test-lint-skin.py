@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for lint-skin.py's Tufte checks: rotated text and the LEGEND heading."""
+"""Tests for lint-skin.py's Tufte checks: rotated text, LEGEND heading, source line."""
 
 from __future__ import annotations
 
@@ -24,7 +24,8 @@ SVG = """\
 
 def lint(directory: Path, name: str, body: str) -> subprocess.CompletedProcess[str]:
     path = directory / f"{name}.html"
-    path.write_text(SVG.format(body=body, slug=name), encoding="utf-8")
+    slug = name.removeprefix("example-")
+    path.write_text(SVG.format(body=body, slug=slug), encoding="utf-8")
     return subprocess.run(
         [sys.executable, str(LINTER), str(path)],
         capture_output=True,
@@ -92,6 +93,43 @@ def main() -> int:
             d,
             "legend-in-longer-text",
             '<text x="30" y="20" fill="#171717">LEGENDARY</text>',
+        )
+
+        def src(inner: str, attrs: str = 'data-role="source"') -> str:
+            return f'<text {attrs} x="30" y="580" fill="#4d4d4d" font-size="8">{inner}</text>'
+
+        good = "Source: team tracker, 8 sprints to Oct 2026. Story points."
+        expect_clean(d, "example-bar", src(good))
+        expect_clean(d, "example-bar-dark", src(good))
+        expect_clean(d, "example-bar-full", src(good))
+        expect_clean(
+            d,
+            "example-line-tspan",
+            src(
+                'Source: team tracker, 8 sprints<tspan x="30" dy="12"> to Oct 2026. Story points.</tspan>'
+            ),
+        )
+        expect_clean(d, "example-bar-judged", src("Source: team judgement. Positions."))
+        expect_clean(d, "example-barfoo", "")  # prefix boundary: not a chart type
+        expect_clean(d, "example-architecture", "")  # non-chart: no source needed
+        expect_finding(d, "example-bar-missing", "", "source-line")
+        expect_finding(
+            d, "example-bar-twice", src(good) + src(good), "source-line"
+        )
+        expect_finding(
+            d, "example-bar-prefix", src("Data from tracker, 2026."), "source-line"
+        )
+        expect_finding(
+            d,
+            "example-bar-noperiod",
+            src("Source: team tracker. Story points, 2026."),
+            "source-line",
+        )
+        expect_finding(
+            d,
+            "example-bar-norole",
+            src(good, attrs=""),
+            "source-line",
         )
     return 0
 

@@ -31,7 +31,7 @@
     <div class="diagram-container">
     <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="marimekko-dark-title marimekko-dark-desc">
       <title id="marimekko-dark-title">One pipeline on one runner is a fifth of all CI time</title>
-      <desc id="marimekko-dark-desc">Marimekko chart of 10,000 CI minutes over 30 days, split five pipelines wide and up to three runner operating systems tall; column width is each pipeline's share of all minutes, segment height is each runner's share within its pipeline, and the mobile pipeline's macOS runners alone account for about 20 percent of the total.</desc>
+      <desc id="marimekko-dark-desc">One pipeline on one runner is a fifth of all CI time. Marimekko chart of 10,000 CI minutes over 30 days, split five pipelines wide and up to three runner operating systems tall; column width is each pipeline's share of all minutes, segment height is each runner's share within its pipeline, and the mobile pipeline's macOS runners alone account for about 20 percent of the total.</desc>
       <rect width="100%" height="100%" fill="#010102"/>
 
       <!-- ─── COLUMNS ─── Five pipelines across 900px of column width (x 40 → 956
@@ -114,7 +114,7 @@
       <text data-column="docs" data-role="caption" x="944" y="438" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">docs · 3%</text>
 
       <!-- Keys and source line -->
-      <text x="960" y="478" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" text-anchor="end">Source: illustrative CI minutes, 30 days, 10,000 min total. Width is pipeline share, height is runner share within a pipeline, area is share of all minutes.</text>
+      <text data-role="source" x="40" y="454" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace">Source: illustrative CI minutes, 30 days. Minutes, 10,000 min total across five pipelines.<tspan x="40" dy="12">Width is pipeline share, height is runner share within a pipeline, area is share of all minutes.</tspan></text>
 
       <rect x="40" y="488" width="16" height="10" rx="2" fill="rgba(247,248,248,0.14)" stroke="rgba(247,248,248,0.30)" stroke-width="1"/>
       <text data-segment="Linux" data-role="key" x="64" y="497" fill="#d0d6e0" font-size="8.5" font-family="'Inter', sans-serif">Linux</text>

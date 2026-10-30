@@ -9,6 +9,7 @@
 - Major milestones: `accent` circle (`r=6`) + bold `node-name`-role label.
 - Time scale must be honest: if intervals are non-equal, space the circles non-equally. Don't fake linear spacing for aesthetics. Break the axis visibly if a region is too dense.
 - No watermark numerals: a year is named by the tick label at its boundary, not by a large faint year behind the axis.
+- Source line: one `<text data-role="source">` at x=40 below the legend, 8px mono `muted`, starting "Source: ", in the order origin and period, then units, then encoding notes ("Months; spacing is proportional to elapsed time"). A card that names a cause is bound to a labelled event on the axis, not to prose alone.
 - Legend: only for encodings that cannot be labelled in place (event versus major milestone). No "LEGEND" heading; keys stay where they were.
 
 ## Anti-patterns

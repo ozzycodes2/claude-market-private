@@ -13,7 +13,8 @@
 - **Series strokes follow the [style-guide series table](style-guide.md#series-palette-multi-series-chart-types-only) exactly.** The focal series is `accent` stroke, `accent-tint` fill, solid. Non-focal series, at most 3, are `ink` solid, `muted` dashed `6,3`, and `soft` dotted `2,3`, each with its own colour at 0.06 fill. Stroke 1.5px; 1.8px on the focal series. There are no hues beyond the accent.
 - **Vertex dots:** **only on the focal series**, `r=4` filled `accent`. Non-focal series are stroke-and-fill only.
 - **Direct-label every series; no legend.** Put the series name (Inter 11px, weight 500, `ink`, never accent) near that series' most distinctive vertex, outside the polygons, joined by a 0.8px `soft` leader. The dash pattern identifies the line; the name sits beside it.
-- **Source line** (sentence case, `muted`, bottom-left): units and scale, axis-order rule, and "read vertices, not area".
+- **Source line** (`data-role="source"`, sentence case, `muted`, bottom-left, starting `Source: `): origin and period first (`illustrative storage review scores, Q3 2026`), then units and scale, then the axis-order rule and "read vertices, not area". A second line is a `<tspan x dy="12">` child.
+- **Title is the claim**, under about 60 characters, true of the scores (`MinIO leads on three of five capabilities`); `<desc>` opens with it. Any -full card quoting an average or a count recomputes it from the vertices and states its span.
 - **Drawing order:** grid rings → axis spokes → axis labels → scale ticks → non-focal series (smallest area first) → focal series → focal vertex dots → series labels → source line.
 
 ## Read the vertices, never the area
@@ -83,8 +84,6 @@ Three non-focal series is the ceiling. A fifth entity means two radars, small mu
 - **Radar with 2 series** — a comparison bar chart or a 2-row table is clearer.
 - **Non-quantitative axes.** All axes must be measurable on the same normalized scale. "Speed" + "color" + "year" mixes don't belong on a radar.
 - **Mono-font axis labels.** Names go in the `node-name` sans family (the global rule). Mono is for technical sublabels only.
-- **All-caps or rotated axis labels.** Sentence case, horizontal.
-- **All-caps or rotated axis labels.** Sentence case, horizontal.
 - **All-caps or rotated axis labels.** Sentence case, horizontal.
 - **Hue-coded series, or a legend strip.** Hue is not available; name the series on the chart.
 - **Reading area as a total.** See [Read the vertices](#read-the-vertices-never-the-area).

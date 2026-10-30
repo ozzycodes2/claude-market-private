@@ -450,6 +450,37 @@ def main() -> int:
         if code != 0:
             failures.append(f"XML-encoded numeric attributes rejected: {output.strip()}")
 
+    # Event outlines (invariant 5): both polarities.
+    outline = '<rect x="520" y="124" width="116" height="56" fill="none"'
+    event = 'data-event="payments Sprint 4"'
+    if outline not in original or event not in original:
+        failures.append("event fixture drift: the shipped light example lost its event marker")
+    else:
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            for label, source, expect, wanted in (
+                ("E1-cell-by-col-key", original.replace(event, 'data-event="payments S4"'), True, ""),
+                ("E2-whole-row", original.replace(event, 'data-event="payments"').replace(
+                    outline, '<rect x="160" y="124" width="716" height="56" fill="none"'), True, ""),
+                ("E3-whole-column-by-header", original.replace(event, 'data-event="Sprint 4"').replace(
+                    outline, '<rect x="520" y="64" width="116" height="296" fill="none"'), True, ""),
+                ("E4-half-pixel-slack", original.replace(outline, outline.replace('x="520"', 'x="519.6"')), True, ""),
+                ("E5-unknown-row", original.replace(event, 'data-event="checkout Sprint 4"'), False,
+                 "names no row, column or cell"),
+                ("E6-unknown-column", original.replace(event, 'data-event="payments Sprint 9"'), False,
+                 "names no row, column or cell"),
+                ("E7-outline-on-wrong-cell", original.replace(outline, outline.replace('x="520"', 'x="640"')), False,
+                 "does not enclose (payments, S4)"),
+                ("E8-outline-too-big", original.replace(outline, outline.replace('width="116" height="56"', 'width="236" height="56"')),
+                 False, "also encloses (payments, S5)"),
+                ("E9-no-outline", original.replace(outline, '<rect x="520" y="124" width="116" height="56" fill="#fff"'),
+                 False, "needs an unfilled outline"),
+            ):
+                code, output = run(write(d, label + ".html", source))
+                if (code == 0) != expect or (wanted and wanted not in output):
+                    failures.append(f"{label}: unexpected result (code {code}): {output.strip()}")
+        print("OK: event outlines must enclose exactly the row, column or cell they name")
+
     if failures:
         for f in failures:
             print("FAIL:", f, file=sys.stderr)

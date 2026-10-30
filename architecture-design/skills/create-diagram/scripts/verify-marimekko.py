@@ -638,6 +638,12 @@ def group_columns(segments: list, findings: list, name: str) -> list:
 
 
 def is_bound(attrs: dict) -> bool:
+    # The source line is prose about the figure, bound to no column or
+    # segment. One that also names a column or segment is still bound, and
+    # still refused, because its role is not one a bound string may carry.
+    if (attrs.get("data-role") == "source"
+            and "data-column" not in attrs and "data-segment" not in attrs):
+        return False
     return "data-column" in attrs or "data-segment" in attrs or "data-role" in attrs
 
 

@@ -107,15 +107,15 @@
       <div class="card">
         <p class="eyebrow">THE HEADLINE</p>
         <div class="card-header"><span class="card-dot accent"></span><h3>Containment is the config</h3></div>
-        <p>Every guidance layer in a parent folder implicitly wraps the one below. No manifest, no import graph — the file tree itself declares scope, so renaming a folder is the only migration you'll ever run.</p>
+        <p>Every guidance layer in a parent folder, from ~/.claude/ (global) down to /project, implicitly wraps the one below. No manifest, no import graph — the file tree itself declares scope, so renaming a folder is the only migration you'll ever run.</p>
       </div>
       <div class="card">
         <div class="card-header"><span class="card-dot ink"></span><h3>Reads outside-in</h3></div>
-        <ul><li>Global rules load first</li><li>Each parent narrows context</li><li>Innermost file gets the last word</li><li>Conflicts resolve by specificity</li></ul>
+        <ul><li>Global rules load first</li><li>Each parent narrows context</li><li>Innermost file, /project, gets the last word</li><li>Conflicts resolve by specificity</li></ul>
       </div>
       <div class="card">
         <div class="card-header"><span class="card-dot muted"></span><h3>Five levels is the ceiling</h3></div>
-        <p>Past five rings the diagram stops teaching — and so does the filesystem. If you need six levels of instruction, you probably need two projects instead.</p>
+        <p>Past five rings, ~/.claude/ to /project, the diagram stops teaching — and so does the filesystem. If you need six levels of instruction, you probably need two projects instead.</p>
       </div>
     </div>
 

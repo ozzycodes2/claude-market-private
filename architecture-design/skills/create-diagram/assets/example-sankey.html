@@ -58,8 +58,8 @@
     <h1>CI compute budget · a month of pipeline minutes</h1>
 
     <svg viewBox="0 0 1000 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="sankey-title sankey-desc">
-      <title id="sankey-title">CI compute budget · a month of pipeline minutes</title>
-      <desc id="sankey-desc">Sankey diagram showing 12,000 monthly CI minutes splitting into unit test, E2E, build, and lint stages, then merging into passed, failed, and flaked outcomes, with the flaky-rerun path highlighted as the one accent flow.</desc>
+      <title id="sankey-title">Flaky reruns take 8% of CI minutes</title>
+      <desc id="sankey-desc">Flaky reruns take 8% of CI minutes. Sankey diagram showing 12,000 monthly CI minutes splitting into unit test, E2E, build, and lint stages, then merging into passed, failed, and flaked outcomes, with the flaky-rerun path highlighted as the one accent flow.</desc>
 
       <rect width="100%" height="100%" fill="#f8f8f8"/>
 
@@ -132,9 +132,13 @@
       <!-- Direct label for the accent path, replacing the legend keys -->
       <line x1="696" y1="108" x2="696" y2="118" stroke="#616161" stroke-width="1"/>
       <text x="696" y="102" fill="#4d4d4d" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">Flaky reruns: ~8% of the budget</text>
+      <g data-event="Flaked" data-event-label="Failed once, passed on rerun">
+        <line x1="696" y1="90" x2="696" y2="94" stroke="#616161" stroke-width="1" stroke-dasharray="2,3"/>
+        <text x="696" y="86" fill="#171717" font-size="10" font-style="italic" font-family="'Inter', sans-serif" text-anchor="middle">Failed once, passed on rerun</text>
+      </g>
 
       <!-- Source line -->
-      <text x="40" y="496" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Source: illustrative CI minutes over one month, 12,000 min total. Ribbon thickness is minutes at one scale; the accent ribbons are the flaky-rerun path.</text>
+      <text data-role="source" x="40" y="496" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Source: illustrative CI minutes, one month. Minutes, 12,000 min total.<tspan x="40" dy="12">Ribbon thickness is minutes at one scale; the accent ribbons are the flaky-rerun path.</tspan></text>
     </svg>
   </div>
 </body>

@@ -101,7 +101,7 @@ The minimal examples use the full 1000×520 canvas. The full-editorial example p
 
 ## Visual treatment
 
-- **Text is sentence case, untracked.** The unit caption (`% of daily peak, 0 to 100`) and the source line carry no `letter-spacing` and no capitals beyond acronyms. The source line begins `Source:` and states the unit and the ring scale.
+- **Text is sentence case, untracked.** The unit caption (`% of daily peak, 0 to 100`) and the source line carry no `letter-spacing` and no capitals beyond acronyms. The source line begins `Source:` and states origin and period first (`illustrative workload profile, one day in UTC windows`), then the unit and the ring scale. It is one line with `data-role="source"`: the allowlist above forbids `<tspan>`, so keep it under 120 characters. The `<title>` is the claim (`Request demand peaks at 12–15 UTC`, under about 60 characters) and `<desc>` opens with it; the topic moves to the -full eyebrow.
 - **Context line is not drawn.** The integrity allowlist above admits no extra circle or line, so a dashed average ring is not available on this type; the 100% outer ring and the focal ray are the comparison. Use Bar or Line when a target or average must be shown.
 - **Rings are a stated exception to the "labels or gridlines, not both" rule**, because ray length is a weak judgement without a concentric ruler; they stay at `ink @ 0.08`, with the outer ring and spokes at `soft` because the reader traces them.
 

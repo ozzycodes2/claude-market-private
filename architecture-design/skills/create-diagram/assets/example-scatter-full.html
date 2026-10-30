@@ -31,14 +31,14 @@
 <body>
   <div class="container">
     <div class="header">
-      <p class="header-eyebrow">Scatter · Diagram Design</p>
-      <h1>Deploy frequency vs. lead time · 12 teams</h1>
+      <p class="header-eyebrow">Scatter · Deploy frequency vs. lead time, 12 teams</p>
+      <h1>Teams that deploy more often ship faster</h1>
       <p class="subtitle">Each point is an engineering team. Moving right means deploying more often; moving down means shipping faster. The Platform team occupies the lower-right — the ideal quadrant.</p>
     </div>
     <div class="diagram-container">
       <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="scatter-full-title scatter-full-desc">
-        <title id="scatter-full-title">Deploy frequency vs. lead time · 12 teams</title>
-        <desc id="scatter-full-desc">Scatter plot showing twelve engineering teams by deploy frequency and lead time, with Platform in the best-performing quadrant.</desc>
+        <title id="scatter-full-title">Teams that deploy more often ship faster</title>
+        <desc id="scatter-full-desc">Teams that deploy more often ship faster. Scatter plot of twelve engineering teams by deploy frequency and lead time, with Platform in the best-performing quadrant and two outliers marked.</desc>
         <rect width="100%" height="100%" fill="#f8f8f8"/>
         <text x="144" y="84" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Lead time, days</text>
         <!-- Range-frame axes: each rule spans only the data min to max -->
@@ -86,22 +86,30 @@
         <circle data-x="18" data-y="3" data-name="Platform" cx="872" cy="372.5" r="6" fill="rgba(239,99,6,0.15)" stroke="#ef6306" stroke-width="1.2"/>
         <rect x="806" y="348" width="48" height="12" fill="#f8f8f8"/>
         <text data-name="Platform" data-role="label" x="830" y="357" fill="#171717" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">Platform</text>
-        <text data-role="source" x="144" y="488" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Source: engineering metrics, 12 teams, trailing quarter. Solid line: least squares fit to all 12 points. Dashed line: median lead time.</text>
+        <g data-event="(2, 20)" data-event-label="Possible approval chains">
+          <circle cx="168" cy="103.3" r="9" fill="none" stroke="#171717" stroke-width="1"/>
+          <text x="186" y="107" fill="#171717" font-size="10" font-style="italic" font-family="'Inter', sans-serif">Possible approval chains</text>
+        </g>
+        <g data-event="(12, 10)" data-event-label="Possible slow integration tests">
+          <circle cx="608" cy="261.7" r="9" fill="none" stroke="#171717" stroke-width="1"/>
+          <text x="624" y="249" fill="#171717" font-size="10" font-style="italic" font-family="'Inter', sans-serif">Possible slow integration tests</text>
+        </g>
+        <text data-role="source" x="144" y="480" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Source: illustrative engineering metrics, 12 teams, trailing quarter. Deploys per week; lead time in days.<tspan x="144" dy="12">Solid line: least squares fit to all 12 points. Dashed line: median lead time.</tspan></text>
       </svg>
     </div>
     <div class="cards">
       <div class="card">
-        <p class="eyebrow">BEST PERFORMER</p>
+        <p class="eyebrow">NAMED TEAM</p>
         <div class="card-header"><span class="card-dot accent"></span><h3>Platform team · (18, 3)</h3></div>
-        <p>18 deploys/week with a 3-day lead time. This combination is achievable because they own the full stack — no cross-team approval gates, and their CI pipeline runs under 4 minutes.</p>
+        <p>Platform deploys 18 times a week with a 3-day lead time. Only the team at (20, 2) is ahead of it on both measures, so Platform sits in the lower-right corner with it.</p>
       </div>
       <div class="card">
         <div class="card-header"><span class="card-dot ink"></span><h3>Correlation is clear</h3></div>
-        <p>Every team deploying more than nine times a week (the median) has a lead time at or below the median of 10 days. The relationship isn't causal — both are symptoms of the same underlying practice: small, frequent, reversible changes.</p>
+        <p>The least squares fit slopes down across all 12 teams, and every team deploying more than nine times a week (the median) has a lead time at or below the 10-day median. Deploy rate and lead time move together; the chart does not show that either causes the other.</p>
       </div>
       <div class="card">
         <div class="card-header"><span class="card-dot muted"></span><h3>Two outliers worth examining</h3></div>
-        <p>The team at (2,20) ships rarely and slowly — high coupling, long approval chains. The team at (12,10) deploys frequently but with higher-than-expected lead time — likely a large monorepo with slow integration tests.</p>
+        <p>The team at (2, 20) ships rarely and slowly; possible approval chains are marked on the chart as a hypothesis. The team at (12, 10) deploys often but sits on the median lead time; possible slow integration tests are marked, also unconfirmed.</p>
       </div>
     </div>
     <div class="footer">

@@ -750,6 +750,8 @@ ALLOWED_TAGS = frozenset((
     "div", "h1", "h3", "p", "span",
     # the figure
     "svg", "g", "desc", "defs", "pattern", "circle", "rect", "path", "line", "text",
+    # a source line may wrap onto a second row; see SOURCE_ONLY below
+    "tspan",
 ))
 SVG_TAGS = frozenset((
     "svg", "g", "desc", "title", "defs", "pattern", "circle", "rect", "path",
@@ -761,6 +763,9 @@ ALLOWED_ATTRS = frozenset((
     "letter-spacing", "name", "opacity", "patternunits", "r", "rel", "role",
     "rx", "stroke", "stroke-width", "text-anchor", "viewbox", "width",
     "x", "x1", "x2", "xmlns", "y", "y1", "y2",
+    # Inert annotation hooks and the second-row offset of a source line. Each
+    # is held to the one element it may sit on by SOURCE_ONLY below.
+    "data-event", "data-event-label", "data-role", "dy",
     # documented in references/type-sankey.md, unused by the shipped example
     "fill-opacity", "stroke-dasharray", "stroke-opacity", "stroke-linecap",
     # Named so the generic "attribute I do not read" message does not fire on
@@ -781,6 +786,16 @@ SELECTOR_TOKEN_RE = re.compile(r"[a-z][\w-]*", re.IGNORECASE)
 RULE_RE = re.compile(r"(?P<selector>[^{}]+)\{(?P<body>[^{}]*)\}")
 CSS_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
 DEFS_BLOCK_RE = re.compile(r"<defs\b[^>]*>(?P<body>.*?)</defs>", re.IGNORECASE | re.DOTALL)
+# Constructs that are inert only in one place: `data-role="source"` on a
+# <text>, a <tspan> inside that text, and the `data-event` pair on a <g>.
+# Anywhere else they are refused like any other attribute this checker was
+# never taught.
+SOURCE_ONLY = {
+    "data-role": ("text", "source"),
+    "data-event": ("g", None),
+    "data-event-label": ("g", None),
+    "dy": ("tspan", None),
+}
 GEOMETRIC_ATTRS = ("x", "y", "width", "height", "x1", "y1", "x2", "y2", "cx", "cy", "r")
 
 
@@ -798,8 +813,17 @@ def certify_readable(name: str, source: str) -> list[str]:
     def refuse(offset: int, why: str) -> None:
         findings.append(f"{name}:{line_of(source, offset)}: {why}")
 
+    blanked = COMMENT_RE.sub(lambda m: " " * len(m.group(0)), source)
+    source_spans = [(m.start(), m.end()) for m in TEXT_RE.finditer(blanked)
+                    if attributes(m.group("attrs")).get("data-role") == "source"]
+
     svg_roots = 0
     for tag, attrs, offset in elements(source):
+        if tag == "tspan" and not any(a < offset < b for a, b in source_spans):
+            refuse(offset, "uses <tspan> outside a <text data-role=\"source\">, which this "
+                           "checker does not read. Only the second row of a source line may "
+                           "wrap; a tspan elsewhere can move or restyle a label unseen")
+            continue
         if tag not in ALLOWED_TAGS:
             refuse(offset, f"uses <{tag}>, which this checker does not read. An element "
                            f"it cannot read may paint, hide, clone or move a ribbon while "
@@ -807,6 +831,13 @@ def certify_readable(name: str, source: str) -> list[str]:
                            f"honest answer — teach it what <{tag}> does before allowing it")
             continue
         for attribute in sorted(attrs):
+            if attribute in SOURCE_ONLY:
+                host, wanted = SOURCE_ONLY[attribute]
+                if tag != host or (wanted is not None and attrs[attribute] != wanted):
+                    refuse(offset, f"<{tag}> carries {attribute}={attrs[attribute]!r}, which "
+                                   f"this checker reads only as <{host}"
+                                   f"{' ' + attribute + '=' + repr(wanted) if wanted else ''}>")
+                continue
             if attribute not in ALLOWED_ATTRS:
                 refuse(offset, f"<{tag}> carries {attribute!r}, which this checker does "
                                f"not read. Conditional processing, filters, clones and "

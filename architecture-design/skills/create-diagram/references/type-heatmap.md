@@ -49,7 +49,8 @@ Every cell is two overlapping `<rect>` elements: a paper-fill underlay (no data 
 ## Legend, source and context
 
 - **No `LEGEND` heading and no key for the focal cell.** The focal cell is labelled in place (value and one word). The only key kept is the 8-step ramp strip with `Low` / `High` in sentence case.
-- **Source line** (sentence case, `muted`, 8px mono, under the strip): the data source and unit (`% of builds failing per service and sprint`), "illustrative" or "measured", the non-focal range, the ramp-linearity note, and the focal cell's value.
+- **Event marker:** when a card names a cause for a cell, mark it on the chart: `<g data-event="payments Sprint 4" data-event-label="Gate misconfigured">` holding an unfilled `ink` 1px outline around the named cell(s) and an italic `ink` callout under 32 characters that states the cause. `data-event` is a row name, a column key or header, or `"<row> <column header>"`. `scripts/verify-heatmap.py` fails an outline that is more than 0.5px off the named cells or encloses any other.
+- **Source line** (one `<text data-role="source">`, starting "Source: ", `muted`, 8px mono, under the strip; two lines are `<tspan x dy="12">` children of the same element; order: origin and period, then units, then encoding notes): the data source and unit (`% of builds failing per service and sprint`), "illustrative" or "measured", the non-focal range, the ramp-linearity note, and the focal cell's value.
 - **Comparison exception.** A heatmap's context is the field of cells itself, so no average or target line is drawn; a row or column average is not added (it would repeat information the cells carry). If a target matters, print it in the source line.
 
 ## Anti-patterns

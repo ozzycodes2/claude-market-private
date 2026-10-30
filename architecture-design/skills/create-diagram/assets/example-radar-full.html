@@ -35,15 +35,15 @@
 <body>
   <div class="container">
     <div class="header">
-      <p class="header-eyebrow">Radar · Diagram Design</p>
-      <h1>Storage backends · Capability radar</h1>
+      <p class="header-eyebrow">Radar · Storage backends, capability scores</p>
+      <h1>MinIO leads on three of five capabilities</h1>
       <p class="subtitle">Four object-storage candidates scored 0–10 across five workload dimensions. The chart is a decision tool — the recommended option carries the only colored fill; everything else sits in the muted comparison palette.</p>
     </div>
 
     <div class="diagram-container">
       <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="radar-full-title radar-full-desc">
-        <title id="radar-full-title">Storage backends · Capability radar</title>
-        <desc id="radar-full-desc">Radar chart comparing MinIO, Amazon S3, Ceph, and Google Cloud Storage across five storage capabilities.</desc>
+        <title id="radar-full-title">MinIO leads on three of five capabilities</title>
+        <desc id="radar-full-desc">MinIO leads on three of five capabilities. Radar chart comparing MinIO, Amazon S3, Ceph, and Google Cloud Storage across five storage capabilities.</desc>
         <rect width="100%" height="100%" fill="#f8f8f8"/>
 
         <polygon points="500,200 538,228 524,272 476,272 462,228" fill="none" stroke="rgba(23,23,23,0.08)" stroke-width="0.8"/>
@@ -89,7 +89,7 @@
         <line x1="415" y1="356" x2="334" y2="369" stroke="#616161" stroke-width="0.8"/>
         <text x="330" y="372" fill="#171717" font-size="11" font-weight="500" font-family="'Inter', sans-serif" text-anchor="end">MinIO, recommended</text>
 
-        <text x="40" y="480" fill="#4d4d4d" font-size="8.5" font-family="'Inter', sans-serif">Source: illustrative scores, 0 to 10 per axis, higher is better. Axes clockwise from the top: data path, operations, ecosystem. Read vertices on each axis, not polygon area.</text>
+        <text data-role="source" x="40" y="472" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Source: illustrative storage review scores, Q3 2026. Scale 0 to 10 per axis, higher is better.<tspan x="40" dy="12">Axes run clockwise from the top. Read vertices on each axis, not polygon area.</tspan></text>
       </svg>
     </div>
 
@@ -109,7 +109,7 @@
       </div>
       <div class="card">
         <div class="card-header"><span class="card-dot soft"></span><h3>Google Cloud Storage</h3></div>
-        <p>Solid middle path. No standout dimension — which is itself an answer when the team optimises for "boring, managed, fine."</p>
+        <p>Solid middle path. It averages 7.2 of 10, between Amazon S3 and Ceph, with its best score, 9, on large-object reads. No dimension is weak enough to rule it out, which is itself an answer when the team optimises for "boring, managed, fine."</p>
       </div>
     </div>
 

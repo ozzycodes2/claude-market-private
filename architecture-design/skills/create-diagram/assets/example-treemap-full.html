@@ -31,14 +31,14 @@
 <body>
   <div class="container">
     <div class="header">
-      <p class="header-eyebrow">Treemap · Diagram Design</p>
-      <h1>World population · six continents</h1>
+      <p class="header-eyebrow">Treemap · World population, six continents</p>
+      <h1>Asia holds 59% of world population</h1>
       <p class="subtitle">Population by continent, mid-2023. Asia holds 4.78 billion people — 59% of everyone alive, and more than the other five continents put together.</p>
     </div>
     <div class="diagram-container">
         <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="treemap-full-title treemap-full-desc">
-          <title id="treemap-full-title">World population · six continents</title>
-          <desc id="treemap-full-desc">Treemap of world population by continent in mid-2023, where cell area is population; Asia holds about 59 percent of the world total and Oceania, at under one percent, is too small to label.</desc>
+          <title id="treemap-full-title">Asia holds 59% of world population</title>
+          <desc id="treemap-full-desc">Asia holds 59% of world population. Treemap of world population by continent in mid-2023, where cell area is population; Asia holds about 59 percent of the world total and Oceania, at under one percent, is too small to label.</desc>
           <rect width="100%" height="100%" fill="#f8f8f8"/>
 
           <!-- ─── CELLS ─── Squarified layout on a 4px grid. Area is the only
@@ -89,7 +89,7 @@
           <text x="948" y="323" fill="#f8f8f8" font-size="7" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">i</text>
 
           <!-- Keys and source line -->
-          <text x="960" y="478" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="end">Area is population. Source: Our World in Data continents (UN WPP), mid-2023, 8.09B total. Parts rounded, may not sum.</text>
+          <text data-role="source" x="40" y="448" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Source: Our World in Data continents (UN WPP), mid-2023. Population in billions, 8.09B total.<tspan x="40" dy="12">Area is population. Parts rounded, may not sum.</tspan></text>
 
           <rect x="40" y="488" width="16" height="10" rx="2" fill="rgba(23,23,23,0.16)" stroke="rgba(23,23,23,0.30)" stroke-width="1"/>
           <text x="64" y="497" fill="#4d4d4d" font-size="8.5" font-family="'Inter', sans-serif">Other continents · stronger contrast is larger</text>
@@ -106,7 +106,7 @@
       </div>
       <div class="card">
         <div class="card-header"><span class="card-dot ink"></span><h3>How to read it</h3></div>
-        <p>Cells are laid out squarified, largest first, so aspect ratios stay near 1 and areas stay comparable by eye. Among the other five, stronger contrast means larger.</p>
+        <p>Cells are laid out squarified, largest first (Asia, then Africa), so aspect ratios stay near 1 and areas stay comparable by eye. Among the other five, stronger contrast means larger.</p>
       </div>
       <div class="card">
         <div class="card-header"><span class="card-dot muted"></span><h3>What the chart doesn't show</h3></div>

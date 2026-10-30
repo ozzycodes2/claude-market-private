@@ -48,6 +48,10 @@ Invariants, each of which a bar chart has shipped broken:
 8. FAIL CLOSED - a file that presents as a bar chart but yields no parseable
    bars is a finding, never a pass.
 
+9. EVENT ON ITS CATEGORY - a `<g data-event="S4">` marker draws a dashed rule
+   whose x (y, horizontal) equals the centre of the bar carrying that
+   category label, within 0.5px. An unknown category is refused.
+
 Markup is read through html.parser.HTMLParser, never a regex, so a tag is
 recognised exactly when a browser would recognise it (see verify-slopegraph.py
 for the failure modes a regex tag matcher has).
@@ -77,6 +81,7 @@ ASSET_DIR = ROOT / "assets"
 
 MAX_BARS = 16
 ROUND_TOLERANCE = 0.75     # px, whole-pixel rounding of data coordinates
+EVENT_TOLERANCE = 0.5      # px, event marker vs bar centre
 VALUE_TOLERANCE = 0.001    # printed label vs bound value
 RULE_SHARE = 0.5           # a rule this share of the plot is a gridline or axis
 
@@ -100,12 +105,13 @@ MARK_TAGS = ("rect", "line")
 
 
 class Element:
-    __slots__ = ("tag", "attrs", "line", "body", "ancestor")
+    __slots__ = ("tag", "attrs", "line", "body", "ancestor", "event")
 
-    def __init__(self, tag, attrs, line, ancestor):
+    def __init__(self, tag, attrs, line, ancestor, event=None):
         self.tag, self.attrs, self.line = tag, attrs, line
         self.body = ""
         self.ancestor = ancestor
+        self.event = event     # the enclosing <g data-event>, if any
 
 
 def first_wins(attrs) -> dict:
@@ -144,6 +150,7 @@ class _Scanner(HTMLParser):
         self.styles: list = []
         self.named: list = []      # title and desc
         self.plots: list = []      # g elements declaring data-plot
+        self.events: list = []     # g elements declaring data-event
         self.error = None
         self._groups: list = []
         self._open: list = []
@@ -158,9 +165,15 @@ class _Scanner(HTMLParser):
             self.error = "%s: %s" % (type(exc).__name__, exc)
 
     def _ancestor(self):
-        for _tag, how in reversed(self._groups):
+        for _tag, how, _event in reversed(self._groups):
             if how is not None:
                 return how
+        return None
+
+    def _event(self):
+        for _tag, _how, event in reversed(self._groups):
+            if event is not None:
+                return event
         return None
 
     def handle_starttag(self, tag, attrs):
@@ -174,17 +187,21 @@ class _Scanner(HTMLParser):
         if tag in GROUP_TAGS:
             if "data-plot" in attrs:
                 self.plots.append(Element(tag, attrs, line, self._ancestor()))
+            event = None
+            if "data-event" in attrs:
+                event = Element(tag, attrs, line, self._ancestor())
+                self.events.append(event)
             if not closes:
                 how = None
                 if "transform" in attrs:
                     how = "an ancestor <g>/<svg> transform"
                 elif transform_carrier(attrs) is not None:
                     how = "an ancestor <g>/<svg> style transform"
-                self._groups.append((tag, how))
+                self._groups.append((tag, how, event))
             return
         if tag not in MARK_TAGS and tag not in BODY_TAGS:
             return
-        element = Element(tag, attrs, line, self._ancestor())
+        element = Element(tag, attrs, line, self._ancestor(), self._event())
         if tag in MARK_TAGS:
             self.marks.append(element)
             return
@@ -451,7 +468,7 @@ def check_encoded_once(doc: _Scanner, bars: list, plot: Plot, findings: list, na
         depth = abs(plot.span())
     for element in doc.marks:
         attrs = element.attrs
-        if element.tag != "line" or "data-reference" in attrs:
+        if element.tag != "line" or "data-reference" in attrs or element.event is not None:
             continue
         x1, y1, x2, y2 = [number(attrs.get(k)) for k in ("x1", "y1", "x2", "y2")]
         if None in (x1, y1, x2, y2):
@@ -493,6 +510,55 @@ def check_encoded_once(doc: _Scanner, bars: list, plot: Plot, findings: list, na
                 "value, so a tick scale repeats it" % (name, element.line, body))
 
 
+def check_events(doc: _Scanner, bars: list, plot: Plot, findings: list, name: str) -> None:
+    """An event marker sits on the bar of the category it names.
+
+    `<g data-event="S4">` holds a dashed rule and an italic cause. The rule's
+    position along the category axis must equal the centre of the bar whose
+    category label is `S4`; a marker that names no bar, or sits between bars,
+    puts the cause on the wrong category.
+    """
+    vertical = plot.orient == "vertical"
+    for event in doc.events:
+        label = event.attrs.get("data-event", "").strip()
+        rules = [m for m in doc.marks if m.event is event and m.tag == "line"]
+        if not label or not rules:
+            findings.append(
+                "%s:%d: an event marker needs a data-event category and a <line> inside "
+                "the group" % (name, event.line))
+            continue
+        target = next((b for b in bars if b.name == label), None)
+        if target is None:      # tick label that differs from the bar's data-name
+            for text in doc.texts:
+                if text.event is None and "data-for" not in text.attrs and text.body.strip() == label:
+                    at = number(text.attrs.get("x" if vertical else "y"))
+                    for bar in bars:
+                        lo, size = (bar.x, bar.w) if vertical else (bar.y, bar.h)
+                        if at is not None and lo - 0.5 <= at <= lo + size + 0.5:
+                            target = bar
+                            break
+                if target is not None:
+                    break
+        if target is None:
+            findings.append(
+                "%s:%d: event marker %r names a category no bar carries — data-event must "
+                "equal a bar's category label exactly" % (name, event.line, label))
+            continue
+        centre = target.x + target.w / 2 if vertical else target.y + target.h / 2
+        for rule in rules:
+            keys = ("x1", "x2") if vertical else ("y1", "y2")
+            a, b = number(rule.attrs.get(keys[0])), number(rule.attrs.get(keys[1]))
+            if a is None or b is None or abs(a - b) > EVENT_TOLERANCE:
+                findings.append(
+                    "%s:%d: event marker %r must be a straight rule across the category "
+                    "axis (%s = %s)" % (name, rule.line, label, keys[0], keys[1]))
+            elif abs(a - centre) > EVENT_TOLERANCE:
+                findings.append(
+                    "%s:%d: event marker %r is drawn at %g but bar %r is centred at %g — "
+                    "the cause must sit on the category it explains"
+                    % (name, rule.line, label, a, target.name, centre))
+
+
 def check_source(path: Path, raw: str) -> list:
     findings: list = []
     doc = _Scanner(raw)
@@ -520,6 +586,7 @@ def check_source(path: Path, raw: str) -> list:
     check_geometry(bars, plot, findings, path.name)
     labelled = check_labels(doc, bars, findings, path.name)
     check_reference(doc, plot, findings, path.name)
+    check_events(doc, bars, plot, findings, path.name)
     if labelled:
         check_encoded_once(doc, bars, plot, findings, path.name)
     return findings

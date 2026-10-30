@@ -31,14 +31,14 @@
 <body>
   <div class="container">
     <div class="header">
-      <p class="header-eyebrow">Marimekko · Diagram Design</p>
+      <p class="header-eyebrow">Marimekko · CI minutes by pipeline and runner</p>
       <h1>One pipeline on one runner is a fifth of all CI time</h1>
       <p class="subtitle">10,000 CI minutes over 30 days, five pipelines wide and up to three runner operating systems tall. The mobile pipeline is a quarter of the bill, and 83% of it runs on macOS — one segment that is a fifth of everything.</p>
     </div>
     <div class="diagram-container">
         <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="marimekko-full-title marimekko-full-desc">
           <title id="marimekko-full-title">One pipeline on one runner is a fifth of all CI time</title>
-          <desc id="marimekko-full-desc">Marimekko chart of 10,000 CI minutes over 30 days, split five pipelines wide and up to three runner operating systems tall; column width is each pipeline's share of all minutes, segment height is each runner's share within its pipeline, and the mobile pipeline's macOS runners alone account for about 20 percent of the total.</desc>
+          <desc id="marimekko-full-desc">One pipeline on one runner is a fifth of all CI time. Marimekko chart of 10,000 CI minutes over 30 days, split five pipelines wide and up to three runner operating systems tall; column width is each pipeline's share of all minutes, segment height is each runner's share within its pipeline, and the mobile pipeline's macOS runners alone account for about 20 percent of the total.</desc>
           <rect width="100%" height="100%" fill="#f8f8f8"/>
 
           <!-- ─── COLUMNS ─── Five pipelines across 900px of column width (x 40 → 956
@@ -121,7 +121,7 @@
           <text data-column="docs" data-role="caption" x="944" y="438" fill="#4d4d4d" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">docs · 3%</text>
 
           <!-- Keys and source line -->
-          <text x="960" y="478" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="end">Source: illustrative CI minutes, 30 days, 10,000 min total. Width is pipeline share, height is runner share within a pipeline, area is share of all minutes.</text>
+          <text data-role="source" x="40" y="454" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Source: illustrative CI minutes, 30 days. Minutes, 10,000 min total across five pipelines.<tspan x="40" dy="12">Width is pipeline share, height is runner share within a pipeline, area is share of all minutes.</tspan></text>
 
           <rect x="40" y="488" width="16" height="10" rx="2" fill="rgba(23,23,23,0.16)" stroke="rgba(23,23,23,0.30)" stroke-width="1"/>
           <text data-segment="Linux" data-role="key" x="64" y="497" fill="#4d4d4d" font-size="8.5" font-family="'Inter', sans-serif">Linux</text>
@@ -144,7 +144,7 @@
       </div>
       <div class="card">
         <div class="card-header"><span class="card-dot ink"></span><h3>How to read it</h3></div>
-        <p>Read across for the pipeline mix, down for the runner mix within a pipeline, and by area for the joint share. Every column is the full plot height, so a segment's height is always a share of its own column, never of the whole — that is what the area is for.</p>
+        <p>Read across for the pipeline mix (web · 31% is the widest column), down for the runner mix within a pipeline, and by area for the joint share. Every column is the full plot height, so a segment's height is always a share of its own column, never of the whole — that is what the area is for.</p>
       </div>
       <div class="card">
         <div class="card-header"><span class="card-dot muted"></span><h3>What the chart doesn't show</h3></div>

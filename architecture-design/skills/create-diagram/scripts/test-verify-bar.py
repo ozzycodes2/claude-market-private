@@ -130,6 +130,33 @@ def main() -> int:
     must_fire("empty domain",
               'data-domain="0 120"', 'data-domain="0 0"', "empty")
 
+    # --- event markers -----------------------------------------------------------
+    S4_EVENT = '<g data-event="S4" data-event-label="API shipped late">'
+    S4_RULE = '<line x1="465" y1="40" x2="465" y2="152"'
+    check("event markers: the shipped chart carries S4 and S5 markers",
+          GOOD_TEXT.count("data-event=") == 2)
+    must_fire("event marker drawn beside its bar, not on the centre",
+              S4_RULE, S4_RULE.replace('x1="465"', 'x1="470"').replace('x2="465"', 'x2="470"'),
+              "is drawn at 470 but bar 'S4' is centred at 465")
+    check("event marker 0.4px off the centre is accepted",
+          findings_for(GOOD_TEXT.replace(S4_RULE, S4_RULE.replace('x1="465"', 'x1="465.4"')
+                                         .replace('x2="465"', 'x2="465.4"'), 1)) == "")
+    must_fire("event marker naming an unknown category",
+              S4_EVENT, S4_EVENT.replace('data-event="S4"', 'data-event="S9"'),
+              "names a category no bar carries")
+    must_fire("event marker without a rule inside",
+              S4_RULE, '<rect x="1" y="1" width="1" height="1"', "needs a data-event category and a <line>")
+    must_fire("event marker that is not a straight rule",
+              S4_RULE, S4_RULE.replace('x2="465"', 'x2="500"'), "must be a straight rule")
+    by_tick = GOOD_TEXT.replace('data-name="S4"', 'data-name="bar-4"').replace(
+        'data-for="S4"', 'data-for="bar-4"')
+    check("event marker resolves a tick label that differs from the bar's data-name",
+          findings_for(by_tick) == "", findings_for(by_tick))
+    check("event marker on a tick label with no bar under it fails",
+          "names a category no bar carries" in findings_for(
+              by_tick.replace('data-event="S4"', 'data-event="S5x"')))
+    check("the event rule is not mistaken for a value-axis line",
+          "value-axis line" not in findings_for(GOOD_TEXT))
     # density cap: 17 bars
     many = GOOD_TEXT.replace("</g>", "".join(
         '<rect x="%d" y="400" width="4" height="20" data-name="X%d" data-value="6.3"/>'
@@ -172,6 +199,14 @@ def main() -> int:
           "numeric tick label" in findings_for(ticks), findings_for(ticks))
     check("horizontal: the zero baseline rule alone passes",
           findings_for(horizontal) == "")
+
+    horizontal_event = horizontal.replace(
+        "</g>", '<g data-event="B"><line x1="200" y1="100" x2="600" y2="100"/></g></g>')
+    check("horizontal: an event rule at the bar centre passes",
+          findings_for(horizontal_event) == "", findings_for(horizontal_event))
+    check("horizontal: an event rule off the bar centre fails",
+          "is drawn at 90" in findings_for(horizontal_event.replace(
+              'y1="100" x2="600" y2="100"/></g></g>', 'y1="90" x2="600" y2="90"/></g></g>')))
 
     # --- scope and CLI ---------------------------------------------------------
     check("a waterfall is out of scope for the bar checker",

@@ -9,7 +9,7 @@ present, and the lie is in the geometry or the layout. `lint-skin.py` reads
 colours and fonts, `verify-geometry.py` reads masks against nodes, and neither
 compares a drawn vertex against the value bound to it.
 
-Eight invariants:
+Eight invariants (plus two extensions below):
 
 1. SHARED SCALES - every polyline declares `data-values`; vertex i of every
    series sits at one x for index i (evenly pitched), and every vertex's y
@@ -48,6 +48,22 @@ Eight invariants:
 
 8. FAIL CLOSED - a file that presents as a line chart but declares no
    parseable series is a finding, never a pass.
+
+Extension A, EVENT MARKERS - every `<g data-event="W5">` marks a cause in
+place. Its one vertical line must sit within 0.5px of the x of the tick label
+whose text equals data-event; an event that names no tick label fails. When
+`data-event-label` is present the group must print that text. Lines inside an
+event group are not gridlines.
+
+Extension B, SMALL MULTIPLES - when the file has `<g data-panel="Name">`
+groups, each panel is its own plot (one series, its own range-frame axes,
+bound ticks, a bound comparison line) and the panels are held to ONE
+declared scale: every panel carries the same `data-domain="lo,hi"` and
+`data-range="height_px"`, every panel's fitted y slope equals
+range/(hi-lo), every panel uses one x pitch and vertex count, and the
+comparison line has one value across panels. The series is named by a
+`data-role="title"` text above the plot, left-aligned to it, instead of an
+end label. The source line must say the scales are shared.
 
 Scope treaty. This contract binds `data-line` on a `<polyline>`. It never
 uses `data-series` (slopegraph, bump), `data-layer` (streamgraph),
@@ -95,6 +111,9 @@ LABEL_PITCH = 10.0
 TICK_BASELINE = 3.0  # tick text baseline sits 3px under its mark
 TICK_TOL = 2.0
 LEGEND_Y = 470.0
+EVENT_TOL = 0.5
+PANEL_SLOPE_TOL = 0.005
+PANEL_PITCH_TOL = 0.05
 
 
 class Element:
@@ -103,6 +122,14 @@ class Element:
         self.attrs = attrs
         self.line = line
         self.body = ""
+        self.ancestors: list = []   # enclosing <g> Elements, outermost first
+
+
+class SubDoc:
+    """A slice of a document (one panel) that the per-plot checks can read."""
+
+    def __init__(self, elements: list):
+        self.elements = elements
 
 
 class _Scanner(HTMLParser):
@@ -110,12 +137,14 @@ class _Scanner(HTMLParser):
         super().__init__(convert_charrefs=True)
         self.elements: list = []
         self._open_text: list = []
+        self._groups: list = []
 
     def _add(self, tag, attrs):
         d: dict = {}
         for key, value in attrs:
             d.setdefault(key.lower(), value if value is not None else "")
         el = Element(tag, d, self.getpos()[0])
+        el.ancestors = list(self._groups)
         self.elements.append(el)
         return el
 
@@ -123,6 +152,8 @@ class _Scanner(HTMLParser):
         el = self._add(tag, attrs)
         if tag == "text":
             self._open_text.append(el)
+        elif tag == "g":
+            self._groups.append(el)
 
     def handle_startendtag(self, tag, attrs):
         self._add(tag, attrs)
@@ -130,6 +161,8 @@ class _Scanner(HTMLParser):
     def handle_endtag(self, tag):
         if tag == "text" and self._open_text:
             self._open_text.pop()
+        elif tag == "g" and self._groups:
+            self._groups.pop()
 
     def handle_data(self, data):
         if self._open_text:
@@ -464,6 +497,8 @@ def check_furniture(doc, series, xs, findings, fname):
     for el in doc.elements:
         if el.tag != "line" or "data-axis" in el.attrs or "data-ref" in el.attrs:
             continue
+        if any("data-event" in a.attrs for a in el.ancestors):
+            continue
         g = hv(el.attrs)
         if g and (abs(g[1] - g[3]) < 0.01 or abs(g[0] - g[2]) < 0.01) \
                 and max(abs(g[2] - g[0]), abs(g[3] - g[1])) >= span:
@@ -502,6 +537,165 @@ def check_source(doc, lo_axis_zero: bool, findings, fname):
                         "say so" % fname)
 
 
+def check_events(elements, findings, fname):
+    """Every [data-event] group marks a cause at its category's own x.
+
+    The category is found by its tick label: a <text> outside any event group
+    whose text equals data-event. The group's vertical line must sit on that
+    label's x (within EVENT_TOL), or the marker blames the wrong period.
+    """
+    for g in elements:
+        if g.tag != "g" or "data-event" not in g.attrs:
+            continue
+        name = g.attrs["data-event"].strip()
+        where = "%s:%d" % (fname, g.line)
+        if not name:
+            findings.append("%s: event marker with an empty data-event" % where)
+            continue
+        verticals = []
+        for e in elements:
+            if e.tag == "line" and g in e.ancestors:
+                geo = hv(e.attrs)
+                if geo is not None and abs(geo[0] - geo[2]) < 0.01:
+                    verticals.append(geo[0])
+        if len(verticals) != 1:
+            findings.append("%s: event %r needs exactly one vertical line, found %d"
+                            % (where, name, len(verticals)))
+            continue
+        cats = []
+        for e in elements:
+            if (e.tag == "text" and e.body.strip() == name
+                    and not any("data-event" in a.attrs for a in e.ancestors)):
+                x = num(e.attrs.get("x"))
+                if x is not None:
+                    cats.append(x)
+        if not cats:
+            findings.append("%s: event %r names no category; no x-axis tick label reads "
+                            "%r" % (where, name, name))
+            continue
+        if not any(abs(verticals[0] - x) <= EVENT_TOL for x in cats):
+            findings.append("%s: event %r is drawn at x=%g but its tick label sits at "
+                            "x=%g; the marker must share the category's x"
+                            % (where, name, verticals[0], cats[0]))
+        label = g.attrs.get("data-event-label", "").strip()
+        if label and not any(e.tag == "text" and g in e.ancestors and e.body.strip() == label
+                             for e in elements):
+            findings.append("%s: event %r declares the label %r but prints no such text"
+                            % (where, name, label))
+
+
+def parse_pair(text: str):
+    parts = [num(t) for t in text.replace(" ", "").split(",")]
+    return parts if len(parts) == 2 and None not in parts else None
+
+
+def check_panel_title(sub, s, findings, fname):
+    titles = [e for e in sub.elements if e.tag == "text" and e.attrs.get("data-role") == "title"
+              and e.attrs.get("data-line", "").strip() == s.name]
+    if len(titles) != 1:
+        findings.append("%s: panel needs exactly one title (data-line=%r data-role=\"title\"), "
+                        "found %d" % (fname, s.name, len(titles)))
+        return
+    el = titles[0]
+    x, y = num(el.attrs.get("x")), num(el.attrs.get("y"))
+    if x is None or y is None:
+        findings.append("%s:%d: panel title needs numeric x and y" % (fname, el.line))
+        return
+    if el.body.strip() != s.name:
+        findings.append("%s:%d: panel title reads %r but is bound to %r"
+                        % (fname, el.line, el.body.strip(), s.name))
+    top = min(py for _, py in s.points)
+    if y >= top:
+        findings.append("%s:%d: panel title sits at y=%g, not above its highest point (y=%g)"
+                        % (fname, el.line, y, top))
+    if x > s.points[0][0]:
+        findings.append("%s:%d: panel title starts at x=%g, right of the plot's first point; "
+                        "titles are left-aligned to the panel" % (fname, el.line, x))
+
+
+def check_panels(doc, panels, findings, fname):
+    """Small multiples: each data-panel is a plot, all on one declared scale."""
+    names = [p.attrs["data-panel"].strip() for p in panels]
+    if len(panels) < 2:
+        findings.append("%s: small multiples need at least two panels" % fname)
+    if len(panels) > MAX_SERIES:
+        findings.append("%s: %d panels; at most %d" % (fname, len(panels), MAX_SERIES))
+    for dup in sorted({n for n in names if names.count(n) > 1}):
+        findings.append("%s: two panels share the name %r" % (fname, dup))
+    for p in panels:
+        if any("data-panel" in a.attrs for a in p.ancestors):
+            findings.append("%s:%d: panels cannot nest" % (fname, p.line))
+    doms = {p.attrs.get("data-domain", "").replace(" ", "") for p in panels}
+    rngs = {p.attrs.get("data-range", "").replace(" ", "") for p in panels}
+    for what, seen in (("data-domain", doms), ("data-range", rngs)):
+        if "" in seen or len(seen) != 1:
+            findings.append("%s: every panel must declare the same %s (found %s); small "
+                            "multiples share one scale" % (fname, what, sorted(seen)))
+    dom = parse_pair(next(iter(doms))) if len(doms) == 1 else None
+    rng = num(next(iter(rngs))) if len(rngs) == 1 else None
+    if dom is not None and dom[1] <= dom[0]:
+        findings.append("%s: data-domain must run low to high" % fname)
+        dom = None
+    if len(doms) == 1 and dom is None and "" not in doms:
+        findings.append("%s: data-domain must be two numbers, \"lo,hi\"" % fname)
+    if len(rngs) == 1 and rng is None and "" not in rngs:
+        findings.append("%s: data-range must be the frame height in px" % fname)
+    all_series, ref_values, pitches, counts = [], set(), [], set()
+    first_xs = None
+    for p in panels:
+        pname = p.attrs["data-panel"].strip()
+        pf = "%s[%s]" % (fname, pname)
+        sub = SubDoc([e for e in doc.elements if p in e.ancestors])
+        series = parse_series(sub, findings, pf)
+        if len(series) != 1:
+            findings.append("%s: a panel holds exactly one series, found %d" % (pf, len(series)))
+            continue
+        s = series[0]
+        if s.name != pname:
+            findings.append("%s: panel is named %r but its series is %r" % (pf, pname, s.name))
+        all_series.append(s)
+        y_fit, xs = check_scales(series, findings, pf)
+        if xs is not None:
+            first_xs = first_xs or xs
+            pitches.append((xs[-1] - xs[0]) / (len(xs) - 1))
+            counts.add(len(xs))
+        if y_fit is None:
+            continue
+        if dom is not None and rng is not None:
+            if abs(y_fit[1] + rng / (dom[1] - dom[0])) > PANEL_SLOPE_TOL:
+                findings.append("%s: the panel's y scale is %.4f px per unit but the declared "
+                                "domain %g..%g over %gpx is %.4f; every panel shares one scale"
+                                % (pf, -y_fit[1], dom[0], dom[1], rng, rng / (dom[1] - dom[0])))
+            for v in s.values:
+                if not dom[0] <= v <= dom[1]:
+                    findings.append("%s: value %g lies outside the declared domain %g..%g"
+                                    % (pf, v, dom[0], dom[1]))
+        check_axes_and_ticks(sub, series, y_fit, xs, findings, pf)
+        check_reference(sub, y_fit, xs, findings, pf)
+        check_panel_title(sub, s, findings, pf)
+        check_events(sub.elements, findings, pf)
+        for e in sub.elements:
+            if e.tag == "line" and "data-ref" in e.attrs and num(e.attrs.get("data-value")) is not None:
+                ref_values.add(num(e.attrs["data-value"]))
+    if len(counts) > 1:
+        findings.append("%s: panels have different vertex counts %s; one x scale for all"
+                        % (fname, sorted(counts)))
+    if pitches and max(pitches) - min(pitches) > PANEL_PITCH_TOL:
+        findings.append("%s: panels use different x pitches (%g..%g); one x scale for all"
+                        % (fname, min(pitches), max(pitches)))
+    if len(ref_values) > 1:
+        findings.append("%s: panels draw different comparison values %s; the comparison "
+                        "is one value shared by every panel" % (fname, sorted(ref_values)))
+    if not all_series:
+        return
+    check_furniture(doc, all_series, first_xs, findings, fname)
+    check_legend(doc, all_series, findings, fname)
+    check_source(doc, dom is None or dom[0] <= 0, findings, fname)
+    srcs = [e for e in doc.elements if e.tag == "text" and e.attrs.get("data-role") == "source"]
+    if len(srcs) == 1 and not re.search(r"(same|identical|shared?|one)\b[^.]*\bscales?", srcs[0].body, re.I):
+        findings.append("%s: the source line does not say the panels share one scale" % fname)
+
+
 def check_source_text(path: Path, raw: str) -> list:
     fname = path.name
     findings: list = []
@@ -511,6 +705,10 @@ def check_source_text(path: Path, raw: str) -> list:
                         "data-line> series; refusing to report OK on a file this "
                         "checker could not read" % fname)
         return findings
+    panels = [e for e in doc.elements if e.tag == "g" and "data-panel" in e.attrs]
+    if panels:
+        check_panels(doc, panels, findings, fname)
+        return findings
     series = parse_series(doc, findings, fname)
     if not series:
         return findings
@@ -518,6 +716,7 @@ def check_source_text(path: Path, raw: str) -> list:
     check_furniture(doc, series, xs, findings, fname)
     check_legend(doc, series, findings, fname)
     check_labels(doc, series, findings, fname)
+    check_events(doc.elements, findings, fname)
     if y_fit is None:
         return findings
     lo, _ = check_axes_and_ticks(doc, series, y_fit, xs, findings, fname)

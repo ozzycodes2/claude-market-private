@@ -89,6 +89,97 @@ LEGEND_HEADING_RE = re.compile(
 )
 CSS_FONT_KEYWORDS = {"inherit", "initial", "revert", "revert-layer", "unset"}
 
+# Chart example prefixes that must carry one source line (house rule R1).
+SOURCE_LINE_PREFIXES = (
+    "bar", "waterfall", "gantt", "timeline", "heatmap", "line", "slopegraph",
+    "ridgeline", "streamgraph", "bump", "scatter", "bubble", "beeswarm",
+    "polar", "radar", "pyramid", "treemap", "marimekko", "sankey", "venn",
+    "quadrant", "wardley",
+)
+PERIOD_TOKEN_RE = re.compile(
+    r"\b(?:\d{4}\b|FY|Q[1-4]\b|W\d"
+    r"|(?:days?|weeks?|weekly|months?|monthly|quarters?|quarterly|sprints?"
+    r"|years?|annual|judgement|judged)\b)",
+    re.IGNORECASE,
+)
+
+
+def has_source_line_prefix(slug):
+    """True when *slug* is a chart type or a variant of one (bar, bar-dark).
+
+    Whole-prefix match: ``bar`` and ``bar-full`` qualify, ``barfoo`` does not.
+    """
+    return any(slug == p or slug.startswith(p + "-") for p in SOURCE_LINE_PREFIXES)
+
+
+class SourceLineParser(HTMLParser):
+    """Collect the text of every ``data-role="source"`` element inside an svg."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.svg_depth = 0
+        self.stack = []
+        self.sources = []  # (line, [text pieces])
+        self.current = None
+
+    def handle_starttag(self, tag, attrs):
+        tag = tag.casefold()
+        attr_map = {name.casefold(): value for name, value in attrs}
+        if tag == "svg":
+            self.svg_depth += 1
+        elif (
+            tag == "text"
+            and self.svg_depth
+            and attr_map.get("data-role") == "source"
+            and self.current is None
+        ):
+            self.current = (self.getpos()[0], [])
+            self.sources.append(self.current)
+            self.stack = [tag]
+            return
+        if self.current is not None:
+            self.stack.append(tag)
+
+    def handle_startendtag(self, tag, attrs):
+        self.handle_starttag(tag, attrs)
+        self.handle_endtag(tag)
+
+    def handle_endtag(self, tag):
+        tag = tag.casefold()
+        if tag == "svg" and self.svg_depth:
+            self.svg_depth -= 1
+        if self.current is not None and self.stack:
+            self.stack.pop()
+            if not self.stack:
+                self.current = None
+
+    def handle_data(self, data):
+        if self.current is not None:
+            self.current[1].append(data)
+
+
+def lint_source_line(text):
+    """Return (line, message) problems with the chart's source line."""
+    parser = SourceLineParser()
+    parser.feed(text)
+    parser.close()
+    if not parser.sources:
+        return [(1, 'chart needs one <text data-role="source"> inside the diagram <svg>')]
+    if len(parser.sources) > 1:
+        return [(parser.sources[1][0], "only one source line is allowed; use <tspan> for a second line")]
+    line, pieces = parser.sources[0]
+    content = re.sub(r"\s+", " ", " ".join(pieces)).strip()
+    if not content.startswith("Source: "):
+        return [(line, 'source line must start with "Source: "')]
+    first = re.split(r"\.(?:\s|$)", content[len("Source: "):], maxsplit=1)[0]
+    if not PERIOD_TOKEN_RE.search(first):
+        return [(
+            line,
+            "first sentence of the source line needs a period token "
+            "(year, FY, Q1-Q4, W<digit>, a unit of time, or judgement)",
+        )]
+    return []
+
 
 def normalized_controller(body):
     """Return a platform-stable representation of an inline controller."""
@@ -621,6 +712,10 @@ def lint_text(
 
     for match in LEGEND_HEADING_RE.finditer(text):
         add(match.start(), "legend-heading", 'the word "LEGEND" is not a heading; the keys are self-evident')
+
+    if has_source_line_prefix(expected_slug):
+        for line, message in lint_source_line(text):
+            findings.append((line, 0, "source-line", message))
 
     script_blocks = {match.start(): match for match in SCRIPT_BLOCK_RE.finditer(text)}
     script_openings = list(SCRIPT_OPEN_RE.finditer(text))

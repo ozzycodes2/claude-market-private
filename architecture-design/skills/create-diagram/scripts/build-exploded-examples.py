@@ -566,8 +566,8 @@ FIGURES = {
         caption=("Focal layer", "Logic is where the product decisions live; the other two layers are swappable."),
         subtitle="Three layers pulled apart along one axis. The middle one carries the product, and the other two can be swapped.",
         cards=[("The headline", "accent", "Logic is the layer that pays rent", "Swapping the database is a migration. Swapping the interface is a redesign. Rewriting the logic is a different product, so that layer gets the accent."),
-               ("", "ink", "Reading the explode", ["Bottom layer stays put", "Equal gaps, one axis", "Dashed lines trace the outer corners", "Labels sit in one column"]),
-               ("", "muted", "Why only three", "A stack this small reads at a glance. Past five parts the explode gets tall and the labels crowd; split it into two figures.")],
+               ("", "ink", "Reading the explode", ["Bottom layer, Data, stays put", "Equal gaps, one axis", "Dashed lines trace the outer corners", "Labels sit in one column"]),
+               ("", "muted", "Why only three", "A stack this small, Data under Logic under Interface, reads at a glance. Past five parts the explode gets tall and the labels crowd; split it into two figures.")],
         footer="app stack · exploded axonometric"),
     "exploded-phone": lambda: Figure(
         slug="exploded-phone",
@@ -575,9 +575,9 @@ FIGURES = {
         desc="Exploded view of a phone: the display lifts off the housing to show the logic board and battery inside, with the logic board as the focal part.",
         parts=phone(), focus="board", gap_k=0.75, buttons=True,
         subtitle="The display comes off first. Underneath, the logic board and battery share one level inside the housing, so they lift together.",
-        cards=[("The headline", "accent", "The board is the phone", "Cameras, radios and the system chip all live on one small board. Everything else holds it, powers it, or shows its output."),
+        cards=[("The headline", "accent", "The logic board is the phone", "Cameras, radios and the system chip all live on the Logic board. Everything else holds it, powers it, or shows its output."),
                ("", "ink", "How it was drawn", ["Rounded corners project as quarter ellipses", "The housing is a tray, so its front walls paint last", "Parts on one level explode together", "Gap widened so the display clears the board"]),
-               ("", "muted", "Four parts", "A real teardown has dozens of parts. The diagram keeps the four a reader needs and drops the screws.")],
+               ("", "muted", "Four parts", "A real teardown has dozens of parts. The diagram keeps four, Housing, Logic board, Battery and Display, and drops the screws.")],
         footer="phone · exploded axonometric"),
     "exploded-unboxing": lambda: Figure(
         slug="exploded-unboxing",

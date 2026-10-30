@@ -12,10 +12,11 @@
 - **Axis title:** one horizontal line above the plot, left-aligned to the plot at x=80, y=28, `eyebrow` role 7px `muted`, sentence case with no tracking ("Story points per sprint"). Never rotated.
 - **Category labels:** centered below each bar, `node-name` role 11px 600 for category names.
 - **Value labels:** `arrow-label` role 8px above each bar (baseline `top − 8`). Focal bar label in `ink` at weight 600; others in `muted`.
-- **Focal bar:** 1 bar max in accent fill/stroke. All others in `muted @ 0.15` fill + `muted` stroke. Say what makes it focal in place — an italic `ink` callout above its value label ("Record high") — not in a legend key.
+- **Focal bar:** 1 bar max in accent fill/stroke. All others in `muted @ 0.15` fill + `muted` stroke. Say what makes it focal in place, with an event marker (below) rather than a legend key.
 - **Comparison line:** every bar chart shows the comparison its data supports (target, average, prior period): a `soft` 1px line dashed `4,3` across the plot, declared `data-reference="<value>"`, with a direct sentence-case label at its right end, `arrow-label` role 8px `muted`, set clear of the value labels. Drawn after the bars so it reads across them.
 - **Direct labels first.** Name things where they are. A legend strip is kept only for encodings that cannot be labelled in place; when the keys all name a bar (focal, "other"), drop the strip. There is no "LEGEND" heading in any case.
-- **Source line:** sentence case, `Inter` 8.5px `muted` at x=40, y=478. State the unit and the period, and that bars start at zero.
+- **Event markers:** when a card or caption explains why a bar changed, mark the cause on the chart: `<g data-event="S4" data-event-label="API shipped late">` holding a `soft` 1px rule dashed `2,3` at the bar's centre and an italic `ink` callout that says the cause, not the mark ("Record high" says nothing). `data-event` equals the category label; `scripts/verify-bar.py` fails a marker that is more than 0.5px off that bar's centre or names no bar. The rule stops above the value label so it never strikes through a number.
+- **Source line:** one `<text data-role="source">` at x=40, y=478, 8px mono `muted`. Fixed order: origin and period, then units, then encoding notes ("Source: team sprint tracker, 8 two-week sprints to Oct 2026. Story points. Bars start at zero.").
 
 ### Data binding
 

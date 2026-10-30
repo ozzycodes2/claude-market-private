@@ -19,7 +19,9 @@ The resulting pixels-per-unit scale and relative comparisons must also be finite
 - **Column headers:** `eyebrow` role 8px, sentence case, no tracking, centered above each column ("Budget", "Test stage", "Outcome"). Short noun phrases, not full sentences.
 - **Drawing order:** background → column headers → ordinary ribbons → the accent path's ribbon(s) (painted last among ribbons so they read on top) → node bars → node labels → accent-path direct label and leader → source line.
 - **No legend.** Node labels name every stage, and the one accent path is named in place: a sentence-case mono 9px `muted` label above it, joined by a 1px `soft` leader. A swatch key would repeat that label. No rect is drawn outside the plot band, and `verify-sankey.py` refuses one.
-- **Source line:** sentence case, `muted`, bottom-left (y=496). States the unit (minutes), the total the stages carry, the scale (px per minute), and which ribbons the accent marks.
+- **Source line:** `data-role="source"`, sentence case, `muted`, bottom-left, starting `Source: ` (last line at y=496; a second line is a `<tspan x dy="12">`, the only place `verify-sankey.py` admits a tspan). States origin and period first (`illustrative CI minutes, one month`), then the unit (minutes) and total the stages carry, then the scale and which ribbons the accent marks.
+- **Title is the claim** (`Flaky reruns take 8% of CI minutes`, under about 60 characters); `<desc>` opens with it.
+- **Cause on the chart (non-time event marker).** When a card names a cause for the accent path, draw it: `<g data-event="Flaked" data-event-label="Failed once, passed on rerun"><line dashed 2,3 soft/><text italic ink 10px Inter/></g>`, a short dashed stub from the accent label plus an italic callout (under 32 characters, never accent). `data-event` names the node or ribbon the cause belongs to. `verify-sankey.py` admits `data-event`/`data-event-label` only on a `<g>`, `data-role` only as `source` on a `<text>`, and `dy` only on a `<tspan>` inside it.
 - **Context rule exception:** a sankey's stage totals are already each other's comparison (conservation across stages), so no reference line is drawn.
 
 ## Scale rule

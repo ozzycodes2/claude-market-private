@@ -125,6 +125,38 @@ Name series, categories and nodes where they are drawn: at the line end, beside 
 
 Expand SVG `viewBox` height by ~60px when a strip is present.
 
+## Source line
+
+Every chart carries exactly one, bottom-left, so the reader can judge where the numbers came from.
+
+```svg
+<text data-role="source" x="30" y="VIEWBOX_H-12" fill="{muted}" font-size="8"
+      font-family="{sublabel}">Source: team sprint tracker, 8 two-week sprints to Oct 2026. Story points. Bars start at zero.</text>
+```
+
+- Starts with `Source: `. Sentences in fixed order: (1) origin and period; (2) units; (3) encoding notes only where not obvious (axis not from zero, area = value, what a dashed line is, nominal vs real money).
+- Invented data says so: `Source: illustrative CI minutes, 30 days.` Judged positions say so: `Source: team judgement, Q3 2026 planning.`
+- The first sentence has a period token: a 4-digit year, `FY`, `Q1` to `Q4`, `W<digit>`, a unit of time (day, week, month, quarter, sprint, year and their plurals, weekly, monthly, quarterly, annual), or `judgement` / `judged`. `lint-skin.py` enforces this on chart examples.
+- Under 120 characters per line, inside the viewBox. A second line is a `<tspan x="30" dy="12">` child of the same `<text>`, never a second source element.
+
+## Event marker
+
+Marks the cause of a change in place, when a card, caption or callout explains why it happened.
+
+```svg
+<g data-event="W5" data-event-label="Public holiday">
+  <line x1="EVENT_X" y1="PLOT_TOP" x2="EVENT_X" y2="PLOT_BOTTOM" stroke="{soft}"
+        stroke-width="1" stroke-dasharray="2,3"/>
+  <text x="EVENT_X+4" y="PLOT_TOP+10" fill="{ink}" font-family="Inter, sans-serif" font-size="10" font-style="italic">Public holiday</text>
+</g>
+```
+
+- `data-event` is the category or index label exactly as on the x axis (`W5`, `S4`, `Sprint 4`); `EVENT_X` is that category's x on the shared scale.
+- The label is the `callout` family (italic Inter) at 10px, written out because `callout` is not one of the ramp roles the snippets tokenize; it sits in the dense-annotation range.
+- Vertical and dashed `2,3`, so it never reads as the horizontal `4,3` comparison line. Never accent.
+- Heatmaps mark the cell or column instead: a 1px `ink` outline around it, plus the same italic text and `data-event` attributes.
+- Text names the cause in sentence case, under 32 characters. It counts toward the chart's callout cap ([primitive-annotation.md](primitive-annotation.md)).
+
 ## Accessible SVG contract
 
 SKILL.md §12 lists these six points one line each; this is the long form.

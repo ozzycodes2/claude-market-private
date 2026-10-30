@@ -27,7 +27,10 @@ verify = __import__("verify-line")
 
 ASSETS = ROOT / "assets"
 SHIPPED = [ASSETS / n for n in ("example-line.html", "example-line-dark.html",
-                                "example-line-full.html")]
+                                "example-line-full.html",
+                                "example-line-small-multiples.html",
+                                "example-line-small-multiples-dark.html",
+                                "example-line-small-multiples-full.html")]
 SCRIPT = ROOT / "scripts" / "verify-line.py"
 
 MONO = "font-family=\"'SF Mono', monospace\""
@@ -52,6 +55,46 @@ CLEAN = """<!DOCTYPE html>
   <text data-role="source" x="64" y="484" fill="#4d4d4d" font-size="8" {M}>Source: test. Y axis spans 5 to 40, not from zero.</text>
 </svg></body></html>
 """.replace("{M}", MONO)
+
+
+def panel(name, base, x0, vals, pitch=56, ref=50, domain="0,100", rng="100", extra="", title=None,
+          title_y=None):
+    """One small-multiples panel on y = base - v, x = x0 + pitch*i."""
+    xs = [x0 + pitch * i for i in range(len(vals))]
+    pts = " ".join("%g,%g" % (x, base - v) for x, v in zip(xs, vals))
+    lo, hi = min(vals), max(vals)
+    title = name if title is None else title
+    title_y = base - 110 if title_y is None else title_y
+    return (
+        '<g data-panel="%(n)s" data-domain="%(d)s" data-range="%(r)s">\n'
+        '  <text data-line="%(n)s" data-role="title" x="%(tx)g" y="%(ty)g" font-size="11">%(t)s</text>\n'
+        '  <line data-axis="y" x1="%(tx)g" y1="%(yh)g" x2="%(tx)g" y2="%(yl)g" stroke="#616161"/>\n'
+        '  <line data-axis="x" x1="%(x0)g" y1="%(xb)g" x2="%(x1)g" y2="%(xb)g" stroke="#616161"/>\n'
+        '  <text data-tick="y" data-value="%(hi)g" x="%(tk)g" y="%(yh3)g" font-size="8">%(hi)g</text>\n'
+        '  <text data-tick="y" data-value="%(lo)g" x="%(tk)g" y="%(yl3)g" font-size="8">%(lo)g</text>\n'
+        '  <text x="%(x0)g" y="%(xl)g" font-size="9" text-anchor="middle">W1</text>\n'
+        '  <text x="%(x2)g" y="%(xl)g" font-size="9" text-anchor="middle">W3</text>\n'
+        '  <line data-ref="mean" data-value="%(ref)g" x1="%(x0)g" y1="%(yr)g" x2="%(x1)g" y2="%(yr)g" '
+        'stroke="#616161" stroke-dasharray="4,3"/>\n'
+        '  <text data-ref="mean" data-role="label" x="%(lx)g" y="%(yr3)g" font-size="8">Mean: %(ref)g</text>\n'
+        '  %(extra)s\n'
+        '  <polyline data-line="%(n)s" data-values="%(v)s" points="%(p)s" fill="none" stroke="#171717"/>\n'
+        '</g>\n'
+    ) % dict(n=name, d=domain, r=rng, tx=x0 - 16, ty=title_y, t=title, yh=base - hi, yl=base - lo,
+             x0=x0, x1=xs[-1], xb=base + 8, hi=hi, lo=lo, tk=x0 - 24, yh3=base - hi + 3,
+             yl3=base - lo + 3, xl=base + 20, x2=xs[2], ref=ref, yr=base - ref, yr3=base - ref + 3,
+             lx=xs[-1] + 8, extra=extra, v=",".join(str(v) for v in vals), p=pts)
+
+
+def multiples(p1=None, p2=None, source=None, wrap=""):
+    p1 = p1 or panel("Alpha", 200, 80, [20, 40, 60, 80])
+    p2 = p2 or panel("Beta", 400, 400, [10, 30, 50, 70])
+    source = source or ("Source: test, W1 to W4. Signups per week. Same x and y scales in every "
+                        "panel, y 0 to 100.")
+    return (
+        '<!DOCTYPE html><html><body>\n<svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">\n'
+        + p1 + p2 + wrap +
+        '<text data-role="source" x="64" y="484" font-size="8">%s</text>\n</svg></body></html>\n' % source)
 
 
 def mut(src: str, old: str, new: str) -> str:
@@ -266,6 +309,129 @@ def run_cases(h: Harness) -> int:
     zero = mut(zero, 'x2="64" y2="400"', 'x2="64" y2="420"')
     zero = mut(zero, " Y axis spans 5 to 40, not from zero.", "")
     h.clean("a zero-based axis needs no truncation statement", zero)
+
+    # --- event markers -----------------------------------------------------
+    w3 = '<text x="192" y="444" fill="#4d4d4d" font-size="9" %s text-anchor="middle">W3</text>' % MONO
+    ev = ('<g data-event="W3" data-event-label="Guides published">'
+          '<line x1="192" y1="260" x2="192" y2="420" stroke="#616161" stroke-dasharray="2,3"/>'
+          '<text x="196" y="270" font-size="10" font-style="italic">Guides published</text></g>')
+    with_ev = mut(CLEAN, "</svg>", w3 + ev + "</svg>")
+    h.clean("an event on its category's x passes (and is not a gridline)", with_ev)
+    h.clean("an event within 0.5px of its category passes",
+            mut(with_ev, '<line x1="192" y1="260" x2="192"', '<line x1="192.4" y1="260" x2="192.4"'))
+    h.flags("an event off its category's x is caught",
+            mut(with_ev, '<line x1="192" y1="260" x2="192"', '<line x1="200" y1="260" x2="200"'),
+            "must share the category's x")
+    h.flags("an event past the 0.5px tolerance is caught",
+            mut(with_ev, '<line x1="192" y1="260" x2="192"', '<line x1="192.7" y1="260" x2="192.7"'),
+            "must share the category's x")
+    h.flags("an event naming an unknown category is caught",
+            mut(with_ev, 'data-event="W3"', 'data-event="W9"'), "names no category")
+    h.flags("an event with no tick label at all is caught",
+            mut(CLEAN, "</svg>", ev + "</svg>"), "names no category")
+    h.flags("an event whose only match is its own callout is caught",
+            mut(mut(CLEAN, "</svg>", ev.replace("Guides published</text>", "W3</text>") + "</svg>"),
+                'data-event-label="Guides published"', 'data-event-label="W3"'), "names no category")
+    h.flags("an event with no vertical line is caught",
+            mut(with_ev, '<line x1="192" y1="260" x2="192" y2="420"', '<line x1="192" y1="260" x2="250" y2="420"'),
+            "exactly one vertical line")
+    h.flags("an event with an empty name is caught",
+            mut(with_ev, 'data-event="W3"', 'data-event=" "'), "empty data-event")
+    h.flags("an event whose label text is not printed is caught",
+            mut(with_ev, 'data-event-label="Guides published"', 'data-event-label="Holiday"'),
+            "prints no such text")
+    h.flags("a strong gridline outside an event group is still caught",
+            mut(with_ev, "</svg>", '<line x1="192" y1="260" x2="192" y2="420" stroke="#616161"/></svg>'),
+            "ink at 0.08 or fainter")
+
+    # --- small multiples ---------------------------------------------------
+    h.clean("two panels on one declared scale pass", multiples())
+    h.flags("panels declaring different domains are caught",
+            multiples(p2=panel("Beta", 400, 400, [10, 30, 50, 70], domain="0,120")), "same data-domain")
+    h.flags("panels declaring different ranges are caught",
+            multiples(p2=panel("Beta", 400, 400, [10, 30, 50, 70], rng="120")), "same data-range")
+    h.flags("a panel with no declared domain is caught",
+            multiples(p2=mut(panel("Beta", 400, 400, [10, 30, 50, 70]), ' data-domain="0,100"', "")),
+            "same data-domain")
+    h.flags("a panel drawn at its own scale is caught",
+            multiples(p1=panel("Alpha", 200, 80, [20, 40, 60, 80], rng="50"),
+                      p2=panel("Beta", 400, 400, [10, 30, 50, 70], rng="50")), "px per unit")
+    h.flags("a value outside the declared domain is caught",
+            multiples(p1=panel("Alpha", 200, 80, [20, 40, 60, 80], domain="0,70"),
+                      p2=panel("Beta", 400, 400, [10, 30, 50, 70], domain="0,70")), "outside the declared domain")
+    h.flags("a domain running high to low is caught",
+            multiples(p1=panel("Alpha", 200, 80, [20, 40, 60, 80], domain="100,0"),
+                      p2=panel("Beta", 400, 400, [10, 30, 50, 70], domain="100,0")), "low to high")
+    h.flags("a malformed domain is caught",
+            multiples(p1=panel("Alpha", 200, 80, [20, 40, 60, 80], domain="0"),
+                      p2=panel("Beta", 400, 400, [10, 30, 50, 70], domain="0")), "two numbers")
+    h.flags("a malformed range is caught",
+            multiples(p1=panel("Alpha", 200, 80, [20, 40, 60, 80], rng="tall"),
+                      p2=panel("Beta", 400, 400, [10, 30, 50, 70], rng="tall")), "frame height")
+    h.flags("panels on different x pitches are caught",
+            multiples(p2=panel("Beta", 400, 400, [10, 30, 50, 70], pitch=60)), "different x pitches")
+    h.flags("panels with different vertex counts are caught",
+            multiples(p2=panel("Beta", 400, 400, [10, 30, 50])), "different vertex counts")
+    h.flags("panels with different comparison values are caught",
+            multiples(p2=panel("Beta", 400, 400, [10, 30, 50, 70], ref=60)), "different comparison values")
+    h.flags("a panel with no title is caught",
+            multiples(p2=mut(panel("Beta", 400, 400, [10, 30, 50, 70]), 'data-role="title"', 'data-role="note"')),
+            "exactly one title")
+    h.flags("a panel title that reads another name is caught",
+            multiples(p2=panel("Beta", 400, 400, [10, 30, 50, 70], title="Gamma")), "panel title reads")
+    h.flags("a panel title below the data is caught",
+            multiples(p2=panel("Beta", 400, 400, [10, 30, 50, 70], title_y=340)), "not above its highest point")
+    h.flags("a panel title right of the plot is caught",
+            multiples(p2=mut(panel("Beta", 400, 400, [10, 30, 50, 70]), 'x="384" y="290"', 'x="500" y="290"')),
+            "left-aligned")
+    h.flags("a panel title with no coordinates is caught",
+            multiples(p2=mut(panel("Beta", 400, 400, [10, 30, 50, 70]), 'x="384" y="290" font-size="11"', 'font-size="11"')),
+            "numeric x and y")
+    h.flags("a panel whose name differs from its series is caught",
+            multiples(p2=mut(panel("Beta", 400, 400, [10, 30, 50, 70]), '<g data-panel="Beta"', '<g data-panel="Delta"')),
+            "is named 'Delta'")
+    h.flags("a panel holding two series is caught",
+            multiples(p2=mut(panel("Beta", 400, 400, [10, 30, 50, 70]), "</g>",
+                             '<polyline data-line="Extra" data-values="1,2,3,4" points="400,399 456,398 512,397 568,396"/></g>')),
+            "exactly one series")
+    h.flags("two panels with one name are caught",
+            multiples(p2=panel("Alpha", 400, 400, [10, 30, 50, 70])), "share the name")
+    h.flags("a single panel is caught",
+            multiples(p2=" "), "at least two panels")
+    h.flags("a panel vertex nudged off the shared scale is caught",
+            multiples(p2=mut(panel("Beta", 400, 400, [10, 30, 50, 70]), "456,370", "456,376")), "shared scale")
+    h.flags("a panel range-frame axis running past its data is caught",
+            multiples(p2=mut(panel("Beta", 400, 400, [10, 30, 50, 70]), 'y2="390"', 'y2="398"')),
+            "range frame spans only min to max")
+    h.flags("a panel comparison line off the scale is caught",
+            multiples(p2=mut(panel("Beta", 400, 400, [10, 30, 50, 70]), 'y1="350" x2="568" y2="350"',
+                             'y1="340" x2="568" y2="340"')), "scale puts it")
+    h.flags("a source line that never says the scales are shared is caught",
+            multiples(source="Source: test, W1 to W4. Signups per week."), "share one scale")
+    h.flags("a legend in small multiples is caught",
+            multiples(wrap='<g data-role="legend"></g>'), "legend element")
+    h.flags("two accent panels are caught",
+            multiples(p1=panel("Alpha", 200, 80, [20, 40, 60, 80]).replace('stroke="#171717"', 'stroke="#ef6306"'),
+                      p2=panel("Beta", 400, 400, [10, 30, 50, 70]).replace('stroke="#171717"', 'stroke="#ef6306"')),
+            "accent series")
+    h.flags("a nested panel is caught",
+            multiples(p2=panel("Beta", 400, 400, [10, 30, 50, 70]).replace("</g>\n", "</g></g>\n", 1).replace(
+                '<g data-panel="Beta"', '<g data-panel="Outer"><g data-panel="Beta"', 1)), "cannot nest")
+    h.flags("a truncated shared domain needs the zero statement",
+            multiples(p1=panel("Alpha", 200, 80, [20, 40, 60, 80], domain="10,100"),
+                      p2=panel("Beta", 400, 400, [10, 30, 50, 70], domain="10,100"),
+                      source="Source: test, W1 to W4. Same x and y scales in every panel."),
+            "does not reach zero")
+    p2_ev = panel("Beta", 400, 400, [10, 30, 50, 70],
+                  extra='<g data-event="W3" data-event-label="Launch"><line x1="512" y1="290" x2="512" y2="400" '
+                        'stroke="#616161" stroke-dasharray="2,3"/><text x="516" y="300">Launch</text></g>')
+    h.clean("an event inside a panel is held to that panel's tick label", multiples(p2=p2_ev))
+    h.flags("a panel event off its panel's category x is caught",
+            multiples(p2=p2_ev.replace('x1="512"', 'x1="200"').replace('x2="512"', 'x2="200"')),
+            "must share the category's x")
+    h.flags("a panel event cannot borrow another panel's tick label",
+            multiples(p2=p2_ev.replace('x1="512"', 'x1="192"').replace('x2="512"', 'x2="192"')),
+            "must share the category's x")
 
     # --- fail closed and scope --------------------------------------------
     h.flags("a line chart with no parseable series is refused",

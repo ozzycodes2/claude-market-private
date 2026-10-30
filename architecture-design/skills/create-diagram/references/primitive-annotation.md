@@ -20,6 +20,8 @@ Use for editorial asides — the "italic pointer" that marks a detail without co
 - Dashed path (`stroke-dasharray="4,3"`) distinguishes the callout leader from primary arrows (which are solid).
 - Place a callout in a margin, or adjacent to the data it explains, joined by the leader line. The text and leader never overlap marks, labels, or primary arrows.
 - Max 2 callouts per schematic; a chart may carry up to 4 short ones (Tufte: annotate the data in place). More becomes commentary, not signal.
+- Event markers (see [primitives-core.md § Event marker](primitives-core.md#event-marker)) count toward that cap of 4.
+- A causal callout says the cause, not the mark: "Two guides published", not "Record high". Sentence case, under 32 characters.
 
 ## Colors
 
