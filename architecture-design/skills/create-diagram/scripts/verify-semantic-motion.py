@@ -544,7 +544,7 @@ def verify_example(path: Path = EXAMPLE) -> list[str]:
         "FAIL": "fail text state",
         "SKIPPED": "skipped text state",
         "NOT REACHED": "not-reached text state",
-        "FIRST DIVERGENCE": "first-divergence marker",
+        ">First divergence</text>": "first-divergence marker",
     }
     for needle, label in required_source.items():
         if needle not in source:

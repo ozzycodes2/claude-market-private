@@ -78,7 +78,7 @@ Use one primary pattern per figure. A second pattern may supply at most one supp
 
 **Selection triggers:** A supported architecture creates a bounded route from intake/build to deployment; trust boundaries, privileged moments, permitted ingress, forbidden ingress, and approved versus blocked deploy paths are the point.
 
-**Required primitives:** Labeled trust boundaries; actors and identities; permitted ingress with a positive text label; forbidden ingress terminating at the boundary; approved deployment path; blocked bypass path; privileged gate; isolated runtime; audit destination. Use different line styles and stop symbols in addition to color.
+**Required primitives:** Labeled trust boundaries; actors and identities; permitted ingress with a positive text label; forbidden ingress terminating at the boundary; approved deployment path; blocked bypass path; privileged gate; isolated runtime; audit destination. Permitted and forbidden routes differ by line style and stop symbol.
 
 **Complexity budget:** ≤3 trust zones, ≤8 components, ≤10 paths, ≤2 forbidden paths, and one privileged gate. Split control detail into a catalog figure.
 
@@ -142,7 +142,7 @@ Use one primary pattern per figure. A second pattern may supply at most one supp
 
 **Anti-patterns:** Actor lifelines or message arrows disguised as phases; a request/response exchange that belongs in Sequence; every guard and event from the underlying implementation; interruption states placed on the primary rail; cancellation and failure collapsed into one color-only state; a retry loop with no labeled re-entry point.
 
-**Static fallback:** Show the complete primary rail, every supporting state, both terminal outcomes, and all labeled transitions in one frame. Position and band labels must distinguish progress, interruption/recovery, and termination without relying on color.
+**Static fallback:** Show the complete primary rail, every supporting state, both terminal outcomes, and all labeled transitions in one frame. Position and band labels distinguish progress, interruption/recovery, and termination.
 
 **Nearest visual type:** **State Machine**. Use **Sequence** when actor messages or request timing carry the story; use ordinary **State Machine** without this pattern when dense transition logic and guards matter more than one subject's progress.
 
@@ -150,5 +150,5 @@ Use one primary pattern per figure. A second pattern may supply at most one supp
 
 - The semantic pattern may specialize status, boundary, queue, or propagation primitives; the selected type still owns page axis, connector grammar, spacing, and type-specific limits.
 - Apply the stricter of the pattern budget and visual-type budget. Semantic cells/statuses are not permission to exceed the nine-node overview target.
-- Use stable text for states and outcomes. Color, motion, and position reinforce meaning but never carry it alone.
+- Use stable text for states and outcomes. No encoding may rely on color alone: an accent always pairs with weight, shape, line style, or a label. Motion and position reinforce meaning but never carry it alone.
 - Optional animation is a presentation layer, not another pattern. Load [`animation.md`](animation.md) only when motion is requested or materially clarifies ordered change.

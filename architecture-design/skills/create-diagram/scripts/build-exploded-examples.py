@@ -324,7 +324,7 @@ def build_svg(fig: Figure, skin: str, motion: bool, slug: str):
     out.append("</g>")
     if fig.caption:
         cy = vh - 28
-        out.append(f'<text x="{left}" y="{cy}" fill="{sk["muted"]}" font-size="8" font-family="\'SF Mono\', monospace" letter-spacing="0.18em">{fig.caption[0]}</text>')
+        out.append(f'<text x="{left}" y="{cy}" fill="{sk["muted"]}" font-size="8" font-family="\'SF Mono\', monospace">{fig.caption[0]}</text>')
         out.append(f'<text x="{left + 104}" y="{cy}" fill="{sk["muted"]}" font-size="8.5" font-family="\'Inter\', sans-serif" font-style="italic">{fig.caption[1]}</text>')
     return "\n        ".join(out), vh, steps
 
@@ -563,7 +563,7 @@ FIGURES = {
         title="App stack · Three layers, one product",
         desc="Exploded view of a three-layer app stack: data at the base, logic in the middle, interface on top, with logic as the focal layer.",
         parts=app_stack(), focus="logic",
-        caption=("FOCAL LAYER", "Logic is where the product decisions live; the other two layers are swappable."),
+        caption=("Focal layer", "Logic is where the product decisions live; the other two layers are swappable."),
         subtitle="Three layers pulled apart along one axis. The middle one carries the product, and the other two can be swapped.",
         cards=[("The headline", "accent", "Logic is the layer that pays rent", "Swapping the database is a migration. Swapping the interface is a redesign. Rewriting the logic is a different product, so that layer gets the accent."),
                ("", "ink", "Reading the explode", ["Bottom layer stays put", "Equal gaps, one axis", "Dashed lines trace the outer corners", "Labels sit in one column"]),
@@ -594,7 +594,7 @@ FIGURES = {
         title="AI agent stack · What sits under the prompt",
         desc="Exploded view of an AI agent stack: a secrets vault at the base, then tools, skills, the agent harness that runs the model, and the chat or terminal interface on top, with skills as the focal layer.",
         parts=ai_stack(), focus="skills", gap_k=0.75,
-        caption=("FOCAL LAYER", "Skills are plain files the agent reads before it acts. Swap the harness or the model and they still work."),
+        caption=("Focal layer", "Skills are plain files the agent reads before it acts. Swap the harness or the model and they still work."),
         subtitle="Five layers pulled apart along one axis. You type at the top, the harness runs the model, and skills decide how the work gets done.",
         cards=[("The headline", "accent", "Skills are the layer you own", "The interface and the harness come from a vendor and change every few months. A skill is a markdown playbook in your repo, so it carries over when the rest of the stack is swapped."),
                ("", "ink", "Reading the explode", ["Top layer is where you type", "The dark chip is the model inside the harness", "Each card on the skills layer is one playbook", "Plugs on the tools layer are the CLIs and APIs it can call"]),

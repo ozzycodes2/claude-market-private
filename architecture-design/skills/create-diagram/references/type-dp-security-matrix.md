@@ -154,7 +154,7 @@ The focal cell can carry a 2nd line (`sub:`) rendered in `accent` with the `subl
 
 Hairline separator at `legend_y_top`. Below the separator, one row of style swatches with their labels — only the styles actually used in the diagram appear in the legend.
 
-- "LEGEND" eyebrow at `(left_pad, legend_y_top + 20)`: `eyebrow` role, muted, letter-spacing 0.14em
+- No "LEGEND" heading word: the first swatch starts at `(left_pad, legend_y_top + 20)`
 - Each style: swatch rect (14×12 `rx=2`) followed by a `sublabel` role label
 - Item x-positions are tabulated left-to-right with ~120-px stride; legend wraps onto a second visual row only if `n_roles ≥ 6` (otherwise fits in one line)
 

@@ -6,16 +6,18 @@
 - **Prefer 2 or 3 circles.** Avoid 4+ (unreadable — use a matrix instead).
 - Circle stroke: 1px hairline, color per-set (ink, muted, soft).
 - Circle fill: very low-opacity tint — `ink @ 0.04` for the ink set, `muted @ 0.05` for the muted one. Tints compound naturally in overlap regions.
-- Radii: equal when sets are comparable in size; proportional when sets are meaningfully different. Don't fake equal sizes for aesthetics.
-- **Set labels** placed outside the circle, NEVER crossing the stroke. `node-name` role 12–14px 600 for the set name, optional `sublabel` role 9px.
+- **Area is either data or not, and the source line says which.** Concept Venns (desirable x feasible x viable) use equal radii, encode no counts, and the source line says "areas and overlaps are not to scale". Data Venns (set sizes or overlaps are counts) scale circle AREA to the count (`r = k * sqrt(n)`), draw overlaps to match where geometry allows, print each count in its region, and state the unit in the source line. Never fake equal sizes for aesthetics when the sets are counts.
+- **Set labels** placed outside the circle, NEVER crossing the stroke. `node-name` role 12–14px 600 for the set name, optional `sublabel` role 9px in sentence case ("People want it"), no tracking.
 - **Intersection labels** placed inside the overlap region, `node-name` role 12px 600, centered. For small overlaps, use a leader line to a label in clear space.
 - **The accent** on the ONE focal intersection — the "sweet spot". Either an `accent` label stroke OR a clipPath-bounded `accent @ 0.10` fill tint.
-- Circle centers and radii divisible by 4.
+- Circle centers and radii divisible by 4 (a data Venn's radii are data-scaled and exempt).
+- **No legend.** Every region is named in place; a key would repeat the labels. A sentence-case `muted` source line sits bottom-left and says whether area is to scale.
+- **Context rule exception:** a Venn shows set membership, not a measured quantity series, so no reference line is drawn.
 
 ## Anti-patterns
 - Unlabeled regions — reader can't tell which set is which.
 - Circles that don't overlap when overlap is the point.
-- Equal-sized circles when sets are obviously different (dishonest).
+- Equal-sized circles when the sets are counts of different size (the area lies), or a source line that claims scale for equal circles.
 - The accent on multiple overlap regions (focal signal dies).
 - Labels sitting on top of circle strokes (illegible).
 - 4+ circles where 2–3 would do.

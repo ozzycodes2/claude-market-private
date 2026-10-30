@@ -48,8 +48,8 @@ dark: false
 ```
 
 **Reserved field semantics:**
-- `lanes[k].key` — the 3-letter role badge text shown inside every node in that lane.
-- `lanes[k].name` — 1 or 2 line lane label; uppercase mono.
+- `lanes[k].key` — the role tag text shown inside every node in that lane. Uppercase and tracked like any type tag; spell the whole lane word when it fits the tag box (`CUSTOMER`, `WAREHOUSE`) and keep an acronym only when the lane is named by one (`IT`). Widen the tag on the 4px grid (§2.4) rather than truncating.
+- `lanes[k].name` — 1 or 2 line lane label; sentence case mono, no tracking (acronyms keep their case).
 - `steps[j].focal: true` — exactly **one** step may declare this. Header chip renders in accent.
 - `nodes[i].focal: true` — exactly **one** node may declare this. Renders with accent border (§5).
 - `nodes[i].chips` — `{in: "<CODE>", out: "<CODE>"}` object (either side `null` to omit). Codes from §8. **Skip** the input chip on the first step's nodes, **skip** the output chip on the last step's nodes (no upstream / downstream).
@@ -70,8 +70,8 @@ n_lanes          = len(lanes)
 viewBox_w        = label_col_w + n_steps * step_slot_w + right_pad   # 11 steps → 1400
 header_h         = 36
 lane_h           = 80
-legend_h         = 80                                 # 3 rows
-viewBox_h        = header_h + n_lanes * lane_h + legend_h            # 6 lanes → 596
+legend_h         = 60                                 # 2 rows
+viewBox_h        = header_h + n_lanes * lane_h + legend_h            # 6 lanes → 576
 
 # Header strip (top)
 chip_y           = 8
@@ -96,7 +96,7 @@ node_y(k)        = lane_y_top(k) + (lane_h - node_h)/2     # 8-px top/bottom mar
 
 # Legend strip (bottom)
 legend_y_top     = header_h + n_lanes * lane_h
-legend_row_y     = [legend_y_top + 16, legend_y_top + 37, legend_y_top + 58]
+legend_row_y     = [legend_y_top + 16, legend_y_top + 37]
 ```
 
 ### 2.1 Background structure
@@ -121,25 +121,25 @@ label_anchor     = (step_cx(j), 32)              # 8-px gap below chip
 - Default fill: `ink @ 0.12`, number text ink.
 - Focal fill: `accent @ 0.20`, number text accent (§5).
 
-**Label** (the uppercase mono text below the chip):
-- Renders `steps[j].label` (uppercased), anchored at `label_anchor`.
-- Font: the `eyebrow` role's mono family at 6 px, weight 500, `letter-spacing="0.12em"`, `text-anchor="middle"`.
+**Label** (the sentence-case mono text below the chip):
+- Renders `steps[j].label` as written (`Allocate`), anchored at `label_anchor`.
+- Font: the `eyebrow` role's mono family at 6 px, weight 500, no `letter-spacing`, `text-anchor="middle"`.
 - Default fill: `muted`.
 - Focal fill: `accent`.
-- Keep labels short (≤ 9 chars). Long labels truncate; if you need more, abbreviate.
+- Keep labels short (≤ 9 chars). Spell the word out; never invent an abbreviation.
 
 ### 2.3 Lane labels
 
-One or two-line mono label, all uppercase, letter-spacing 0.08em, font-size 8, fill muted. Centered at `(lane_label_x, lane_y_mid(k))`:
+One or two-line mono label, sentence case, no letter-spacing, font-size 8, fill muted. Centered at `(lane_label_x, lane_y_mid(k))`:
 - Single-line: anchored at `(lane_label_x, lane_y_mid(k) + 4)`
 - Two-line: lines at `(lane_label_x, lane_y_mid(k) - 4)` and `(lane_label_x, lane_y_mid(k) + 4)`
 
 ### 2.4 Node content layout (inside the 100×64 rect)
 
 ```
-role_chip          rect 14×10 at (node_x+4, node_y+4),  rx=2
-role_chip_text     centered at (node_x+11, node_y+12), font-size=6, weight=600
-                                                                # text = lanes[k].key (3-letter lane code)
+role_chip          rect W×10 at (node_x+4, node_y+4),  rx=2       # W = ceil4(chars × 0.62 × 6 + 8), e.g. CUSTOMER 40, SUPPORT 36
+role_chip_text     centered at (node_x+4+W/2, node_y+12), font-size=6, weight=600
+                                                                # text = lanes[k].key (whole lane word, uppercase)
 title              centered at (step_cx(j), node_y+26),  font-size=9 sans semibold
 in→out             centered at (step_cx(j), node_y+40),  font-size=6.5 mono muted
 tool               centered at (step_cx(j), node_y+52),  font-size=6.5 mono soft
@@ -283,7 +283,7 @@ Unchanged across modes: dividers `ink @ 0.12`, default chip fill `ink @ 0.12`, f
 Before emitting SVG, verify **every** item:
 
 1. `viewBox = "0 0 {viewBox_w} {viewBox_h}"` derived via §2.
-2. Header strip at `y=0..36`; legend strip at `y=legend_y_top..viewBox_h` (`legend_y_top = 36 + n_lanes * 80`).
+2. Header strip at `y=0..36`; legend strip at `y=legend_y_top..viewBox_h` (`legend_y_top = 36 + n_lanes * 80`; the legend is 60 tall).
 3. Every node at `(step_cx(j) - 50, lane_y_top(k) + 8)` size `100×64`.
 4. Empty cells render nothing — no placeholder rect, no text.
 5. Exactly **one** focal step (`steps[j].focal: true`).
@@ -345,13 +345,12 @@ Chip marks are a **separate semantic axis** from the concern flag (§4). The chi
 
 ---
 
-## 9. Legend (3-row strip)
+## 9. Legend (2-row strip)
 
-Each row introduced by a category label at `x = label_col_w + 4` (= 144). The legend has **3 rows** — `STEPS` / `DATA TYPE` / `FLOW`.
+Each row introduced by a sentence-case category label (no tracking) at `x = label_col_w + 4` (= 144). The legend has **2 rows** — `Data type` / `Flow`. There is no `Steps` row: every step is already named in its header chip, so a repeat would be ink that duplicates a label.
 
-- **Row 1 — `STEPS`** at `y = legend_y_top + 16`: repeat the header chips with their labels. Focal step keeps accent fill.
-- **Row 2 — `DATA TYPE`** at `y = legend_y_top + 37`: one swatch per chip type actually used in the diagram. Append a small sub-hint in muted mono: `left chip = input · right chip = output`.
-- **Row 3 — `FLOW`** at `y = legend_y_top + 58`: one segment per arrow style actually used, with marker + label.
+- **Row 1 — `Data type`** at `y = legend_y_top + 16`: one swatch per chip type actually used in the diagram. Append a small sub-hint in muted mono: `Left in · right out`.
+- **Row 2 — `Flow`** at `y = legend_y_top + 37`: one segment per arrow style actually used, with marker + label.
 
 ---
 
@@ -461,7 +460,7 @@ Run §2 of this reference with these inputs:
 
 - `n_lanes = 6`, `n_steps = 11`, 2 nodes carry `concern`.
 - `viewBox_w = 140 + 11 * 112 + 28 = 1400`. ✓
-- `legend_h = 80`, `viewBox_h = 36 + 6 * 80 + 80 = 596`. ✓
+- `legend_h = 60`, `viewBox_h = 36 + 6 * 80 + 60 = 576`. ✓
 - Lane y_top = [36, 116, 196, 276, 356, 436]; lane mid = [76, 156, 236, 316, 396, 476]. ✓
 - Step cx = [198, 310, 422, 534, 646, 758, 870, 982, 1094, 1208, 1320] (the 8-px content-area gutter shifts every value by 8 from `140 + j*112 + 50`). ✓
 - Node 4 (HQ Review): step=3, lane="SVY" (k=3) → x = 534-50 = 484, y = 276+8 = 284. ✓

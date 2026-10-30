@@ -204,6 +204,39 @@ def main() -> int:
             "at most one bar",
         ),
         (
+            "gridline: a full-width rule repeats values every bar already prints",
+            '<rect x="112" y="192" width="96" height="228" fill="#f8f8f8"/>',
+            '<line x1="80" y1="325" x2="960" y2="325" stroke="rgba(23,23,23,0.08)" stroke-width="0.8"/>'
+            '<rect x="112" y="192" width="96" height="228" fill="#f8f8f8"/>',
+            "horizontal rule",
+        ),
+        (
+            "y-axis line: a vertical axis repeats values every bar already prints",
+            '<rect x="112" y="192" width="96" height="228" fill="#f8f8f8"/>',
+            '<line x1="80" y1="40" x2="80" y2="420" stroke="#616161" stroke-width="1"/>'
+            '<rect x="112" y="192" width="96" height="228" fill="#f8f8f8"/>',
+            "y-axis line",
+        ),
+        (
+            "tick label: a y-axis scale repeats values every bar already prints",
+            '<rect x="112" y="192" width="96" height="228" fill="#f8f8f8"/>',
+            '<text x="72" y="329" fill="#4d4d4d" font-size="8" text-anchor="end">100</text>'
+            '<rect x="112" y="192" width="96" height="228" fill="#f8f8f8"/>',
+            "tick label",
+        ),
+        (
+            "rotated text: the axis title is horizontal",
+            '<text x="80" y="28"',
+            '<text transform="rotate(-90 24 230)" x="80" y="28"',
+            "rotated text",
+        ),
+        (
+            "money basis: dollars across periods with no nominal or real statement",
+            "Nominal dollars, not adjusted",
+            "Dollars, not adjusted",
+            "nominal",
+        ),
+        (
             "degenerate start: a zero start total has no scale to fit",
             'data-role="total" data-value="240"',
             'data-role="total" data-value="0"',

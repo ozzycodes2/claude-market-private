@@ -1,11 +1,11 @@
-# Annotation Callout (italic-serif aside)
+# Annotation Callout (italic aside)
 
 Use for editorial asides — the "italic pointer" that marks a detail without competing with the primary diagram grammar. Think marginalia: *"structure IS the index"*, *"no imports, no configuration"*.
 
 ## Grammar
 
 ```svg
-<!-- 1. Italic serif text: the `callout` role from style-guide.md -->
+<!-- 1. Italic Inter text: the `callout` role from style-guide.md -->
 <text x="904" y="36" fill="{ink}" font-size="14" font-style="italic"
       font-family="{callout}" text-anchor="end">no imports, no configuration</text>
 <!-- 2. Dashed Bézier leader -->
@@ -16,21 +16,21 @@ Use for editorial asides — the "italic pointer" that marks a detail without co
 ```
 
 ## Rules
-- Italic + serif together signal "editorial voice" against the diagram's sans/mono body. Don't substitute italic sans or italic mono — the combination is load-bearing.
+- Italic Inter is the editorial voice; no other text in the diagram is italic. Never italic mono, and never a serif.
 - Dashed path (`stroke-dasharray="4,3"`) distinguishes the callout leader from primary arrows (which are solid).
-- Place callouts in margins (top-right, bottom-left). Never inside the active diagram area.
-- Max 2 callouts per diagram. More becomes commentary, not signal.
+- Place a callout in a margin, or adjacent to the data it explains, joined by the leader line. The text and leader never overlap marks, labels, or primary arrows.
+- Max 2 callouts per schematic; a chart may carry up to 4 short ones (Tufte: annotate the data in place). More becomes commentary, not signal.
 
 ## Colors
 
 | Intent | Text | Leader |
 |---|---|---|
 | Neutral aside | `ink` | `ink @ 0.40` |
-| Focal / accent | `accent` | `accent @ 0.50` |
+| Focal / accent | `ink` (accent never paints text) | `accent @ 0.50` |
 | Tertiary (muted) | `muted` | `ink @ 0.30` |
 
 ## Anti-patterns
 - Solid arrow leader (reads as a flow arrow).
-- Italic sans or italic mono — the serif is load-bearing.
-- Callouts crossing primary arrows / lifelines — offset to a clear margin.
+- Italic mono, or any serif face.
+- Callouts crossing primary arrows / lifelines or covering marks — move to clear space.
 - Using a callout to label something the diagram should label directly — put the label on the element.

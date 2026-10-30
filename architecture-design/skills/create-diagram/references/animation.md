@@ -30,7 +30,7 @@ Only `loop` repeats. Queue state, typing, field values, policy outcomes, contain
 
 ## Semantic primitives
 
-Every primitive has text, count, symbol, pattern, or outline in addition to color.
+No encoding relies on color alone: every primitive carries text, count, symbol, pattern, or outline.
 
 | Primitive | Mechanism | Static / reduced-motion result | Limit |
 |---|---|---|---|

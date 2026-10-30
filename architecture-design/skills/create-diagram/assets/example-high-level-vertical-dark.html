@@ -51,7 +51,7 @@
     <p class="eyebrow">Architecture · Diagram Design · Parametric</p>
     <h1>High-level architecture · Vertical Orchestration + Security</h1>
 
-    <svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="high-level-vertical-dark-title high-level-vertical-dark-desc">
+    <svg viewBox="0 0 1060 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="high-level-vertical-dark-title high-level-vertical-dark-desc">
       <title id="high-level-vertical-dark-title">High-level architecture · Vertical Orchestration + Security</title>
       <desc id="high-level-vertical-dark-desc">Architecture diagram showing data sources moving through ingestion, storage, transformation, and visualization alongside orchestration, security, and observability.</desc>
       <defs>
@@ -84,17 +84,17 @@
       <text x="866" y="21" fill="#f7f8f8" font-size="7" font-family="'SF Mono', monospace" letter-spacing="0.14em" text-anchor="middle">VISUALIZATION</text>
 
       <!-- Right strip — 3 vertical chevrons (Orchestration / Security / Observability) -->
-      <polygon points="972,40 1000,40 1000,172 986,184 972,172" fill="rgba(247,248,248,0.20)"/>
-      <text x="986" y="112" fill="#f7f8f8" font-size="7" font-family="'SF Mono', monospace" letter-spacing="0.14em" text-anchor="middle" transform="rotate(-90 986 112)">ORCHESTRATION</text>
+      <polygon points="972,40 1060,40 1060,172 1016,184 972,172" fill="rgba(247,248,248,0.20)"/>
+      <text x="1016" y="115" fill="#f7f8f8" font-size="7" font-family="'SF Mono', monospace" letter-spacing="0.14em" text-anchor="middle">ORCHESTRATION</text>
       <!-- One chroma, so the three concern chevrons alternate on the ink ramp
            instead of each taking a hue. Security no longer shares a colour with
            the Identity bar below; that pairing is now carried by the row the bar
            sits in (y=388..428, the Security band). A fourth concern would have no
            step left and would need its own strip. -->
-      <polygon points="972,184 986,196 1000,184 1000,316 986,328 972,316" fill="rgba(247,248,248,0.06)"/>
-      <text x="986" y="256" fill="#f7f8f8" font-size="7" font-family="'SF Mono', monospace" letter-spacing="0.14em" text-anchor="middle" transform="rotate(-90 986 256)">SECURITY</text>
-      <polygon points="972,328 986,340 1000,328 1000,472 972,472" fill="rgba(247,248,248,0.20)"/>
-      <text x="986" y="400" fill="#f7f8f8" font-size="7" font-family="'SF Mono', monospace" letter-spacing="0.14em" text-anchor="middle" transform="rotate(-90 986 400)">OBSERVABILITY</text>
+      <polygon points="972,184 1016,196 1060,184 1060,316 1016,328 972,316" fill="rgba(247,248,248,0.06)"/>
+      <text x="1016" y="259" fill="#f7f8f8" font-size="7" font-family="'SF Mono', monospace" letter-spacing="0.14em" text-anchor="middle">SECURITY</text>
+      <polygon points="972,328 1016,340 1060,328 1060,472 972,472" fill="rgba(247,248,248,0.20)"/>
+      <text x="1016" y="403" fill="#f7f8f8" font-size="7" font-family="'SF Mono', monospace" letter-spacing="0.14em" text-anchor="middle">OBSERVABILITY</text>
 
       <!-- Structural zones -->
       <rect x="4" y="40" width="184" height="336" rx="6" fill="rgba(247,248,248,0.03)" stroke="#8a8f98" stroke-width="0.8" stroke-dasharray="6,3"/>
@@ -175,8 +175,8 @@
 
       <!-- Cluster nodes -->
       <rect x="212" y="120" width="152" height="80" rx="6" fill="rgba(247,248,248,0.06)" stroke="rgba(247,248,248,0.20)" stroke-width="1"/>
-      <rect x="220" y="126" width="30" height="12" rx="2" fill="transparent" stroke="rgba(247,248,248,0.30)" stroke-width="0.8"/>
-      <text x="235" y="135" fill="rgba(247,248,248,0.65)" font-size="7" font-family="'SF Mono', monospace" text-anchor="middle" letter-spacing="0.08em">COLL</text>
+      <rect x="220" y="126" width="48" height="12" rx="2" fill="transparent" stroke="rgba(247,248,248,0.30)" stroke-width="0.8"/>
+      <text x="244" y="135" fill="rgba(247,248,248,0.65)" font-size="7" font-family="'SF Mono', monospace" text-anchor="middle" letter-spacing="0.08em">COLLECT</text>
       <svg x="332" y="126" width="24" height="24" viewBox="0 0 24 24" fill="#f7f8f8" aria-hidden="true">
         <path d="M11.648 0a.093.093 0 0 0-.084.053A30.71 30.71 0 0 1 8.592 4.73c-2.09 2.728-5.145 6.466-5.145 10.364a8.201 8.201 0 0 0 8.201 8.2v-5.003c0-.106.087-.193.194-.193h2.81v-2.813c0-.106.087-.191.194-.191h5.004c0-3.9-3.056-7.636-5.145-10.364A30.712 30.712 0 0 1 11.732.053.094.094 0 0 0 11.648 0z"/>
       </svg>
@@ -184,8 +184,8 @@
       <text x="288" y="178" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">Collect · route · transform</text>
 
       <rect x="404" y="120" width="152" height="80" rx="6" fill="rgba(247,248,248,0.06)" stroke="rgba(247,248,248,0.20)" stroke-width="1"/>
-      <rect x="412" y="126" width="28" height="12" rx="2" fill="transparent" stroke="rgba(247,248,248,0.30)" stroke-width="0.8"/>
-      <text x="426" y="135" fill="rgba(247,248,248,0.65)" font-size="7" font-family="'SF Mono', monospace" text-anchor="middle" letter-spacing="0.08em">VIRT</text>
+      <rect x="412" y="126" width="48" height="12" rx="2" fill="transparent" stroke="rgba(247,248,248,0.30)" stroke-width="0.8"/>
+      <text x="436" y="135" fill="rgba(247,248,248,0.65)" font-size="7" font-family="'SF Mono', monospace" text-anchor="middle" letter-spacing="0.08em">VIRTUAL</text>
       <svg x="524" y="126" width="24" height="24" viewBox="0 0 24 24" fill="#f7f8f8" aria-hidden="true">
         <path d="M14.124 16.8529a.1615.1615 0 1 1 .1576.1614.1577.1577 0 0 1-.1576-.1614zm-5.607-.1576a.1614.1614 0 1 0 0 .3228.1614.1614 0 0 0 0-.3228zm10.1341-.6648v1.9869c-.031.5788-.524 1.0237-1.1029.9954h-.3843a5.0596 5.0596 0 0 1-1.1298 1.7178.3192.3192 0 0 0 0 .465l.2382.2191a.3036.3036 0 0 1 .0385.4304c-1.126 1.3835-2.9669 2.1521-5.0498 2.1521a6.575 6.575 0 0 1-4.8192-1.8985c-.0029-.0032-.0059-.0063-.0087-.0096a.6302.6302 0 0 1 .0548-.8896c.137-.1265.1371-.3462 0-.4727a4.944 4.944 0 0 1-1.126-1.714h-.3497c-.5797.0284-1.0737-.416-1.1068-.9954v-1.9869c.0351-.5779.5286-1.02 1.1068-.9915h.2728a5.7648 5.7648 0 0 1 2.0791-3.0936c-.4227-1.0991-1.1529-3.2551-1.226-5.0075C6.0229 4.4705 6.2189.078 7.8253.001c1.6064-.0768 1.3719 4.0275 1.0991 6.6946a32.732 32.732 0 0 0-.123 4.4503 6.994 6.994 0 0 1 2.4826-.4304 7.2414 7.2414 0 0 1 1.7371.2075z"/>
       </svg>
@@ -203,8 +203,8 @@
       <text x="480" y="276" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">Object store · S3-API</text>
 
       <rect x="596" y="120" width="152" height="80" rx="6" fill="rgba(247,248,248,0.06)" stroke="rgba(247,248,248,0.20)" stroke-width="1"/>
-      <rect x="604" y="126" width="32" height="12" rx="2" fill="transparent" stroke="rgba(247,248,248,0.30)" stroke-width="0.8"/>
-      <text x="620" y="135" fill="rgba(247,248,248,0.65)" font-size="7" font-family="'SF Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ANLZ</text>
+      <rect x="604" y="126" width="48" height="12" rx="2" fill="transparent" stroke="rgba(247,248,248,0.30)" stroke-width="0.8"/>
+      <text x="628" y="135" fill="rgba(247,248,248,0.65)" font-size="7" font-family="'SF Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ANALYZE</text>
       <svg x="716" y="126" width="24" height="24" viewBox="0 0 24 24" fill="#f7f8f8" aria-hidden="true">
         <path d="M7.157 22.201A1.784 1.799 0 0 1 5.374 24a1.784 1.799 0 0 1-1.784-1.799 1.784 1.799 0 0 1 1.784-1.799 1.784 1.799 0 0 1 1.783 1.799zM20.582 1.427a1.415 1.427 0 0 1-1.415 1.428 1.415 1.427 0 0 1-1.416-1.428A1.415 1.427 0 0 1 19.167 0a1.415 1.427 0 0 1 1.415 1.427zM4.992 3.336A1.047 1.056 0 0 1 3.946 4.39a1.047 1.056 0 0 1-1.047-1.055A1.047 1.056 0 0 1 3.946 2.28a1.047 1.056 0 0 1 1.046 1.056zm7.336 1.517c3.769 0 7.06 1.38 8.768 3.424a9.363 9.363 0 0 0-3.393-4.547 9.238 9.238 0 0 0-5.377-1.728A9.238 9.238 0 0 0 6.95 3.73a9.363 9.363 0 0 0-3.394 4.547c1.713-2.04 5.004-3.424 8.772-3.424zm.001 13.295c-3.768 0-7.06-1.381-8.768-3.425a9.363 9.363 0 0 0 3.394 4.547A9.238 9.238 0 0 0 12.33 21a9.238 9.238 0 0 0 5.377-1.729 9.363 9.363 0 0 0 3.393-4.547c-1.712 2.044-5.003 3.425-8.772 3.425z"/>
       </svg>
@@ -212,8 +212,8 @@
       <text x="672" y="178" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">Jupyter · Python · R</text>
 
       <rect x="790" y="120" width="152" height="80" rx="6" fill="rgba(247,248,248,0.06)" stroke="rgba(247,248,248,0.20)" stroke-width="1"/>
-      <rect x="798" y="126" width="28" height="12" rx="2" fill="transparent" stroke="rgba(247,248,248,0.30)" stroke-width="0.8"/>
-      <text x="812" y="135" fill="rgba(247,248,248,0.65)" font-size="7" font-family="'SF Mono', monospace" text-anchor="middle" letter-spacing="0.08em">DASH</text>
+      <rect x="798" y="126" width="60" height="12" rx="2" fill="transparent" stroke="rgba(247,248,248,0.30)" stroke-width="0.8"/>
+      <text x="828" y="135" fill="rgba(247,248,248,0.65)" font-size="7" font-family="'SF Mono', monospace" text-anchor="middle" letter-spacing="0.08em">DASHBOARD</text>
       <svg x="910" y="126" width="24" height="24" viewBox="0 0 24 24" fill="#f7f8f8" aria-hidden="true">
         <path d="M6.168 6.045C2.603 6.045 0 8.579 0 12.014c0 3.434 2.603 5.941 6.168 5.941 2.184 0 3.888-1.026 5.775-3.078 1.53 2.033 4.037 3.136 5.89 3.078 3.566 0 6.167-2.503 6.167-5.941 0-3.438-2.601-5.97-6.168-5.97-2.864 0-5.138 2.425-5.771 3.173-.76-.9-1.674-1.665-2.682-2.274-1.019-.588-2.084-.898-3.211-.898z"/>
       </svg>
@@ -249,7 +249,6 @@
 
       <!-- Legend (pushed down past 2nd crosscut) -->
       <line x1="40" y1="496" x2="952" y2="496" stroke="rgba(247,248,248,0.18)" stroke-width="0.8"/>
-      <text x="40" y="512" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" letter-spacing="0.18em">LEGEND</text>
 
       <rect x="40"  y="520" width="20" height="12" rx="3" fill="transparent" stroke="#8a8f98" stroke-width="1" stroke-dasharray="4,3"/>
       <text x="68"  y="530" fill="#d0d6e0" font-size="8.5" font-family="'Inter', sans-serif">External · outside cluster</text>

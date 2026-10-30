@@ -8,7 +8,8 @@ is present, and the lie is in the geometry. `lint-skin.py` reads colors and
 fonts, `verify-geometry.py` reads label masks against later-painted nodes, and
 neither compares a drawn coordinate or radius against the value bound to it.
 
-Seven invariants:
+Twelve invariants (the last five are the Tufte pass: uniform fill, a size key,
+K stated in the source line, a labelled comparison line, no rotated text):
 
 1. SHARED AXIS SCALES - every bubble's cx must sit where one linear x scale
    puts its declared x value, and cy likewise for y. A single bubble nudged
@@ -30,7 +31,7 @@ Seven invariants:
    Ties pass: equal radii cannot bury each other in a way paint order fixes.
 
 5. BOUND LABELS ON THEIR OWN BUBBLE - a label names the bubble it is bound to,
-   its visible text matches the binding (case aside - labels ship small-caps),
+   its visible text matches the binding exactly (sentence case),
    and it sits nearer its own bubble's centre than any other's. Two labels
    exchanged between bubbles rename both while every number stays correct.
 
@@ -47,6 +48,20 @@ Seven invariants:
    peers all share one value on an axis: its leave-one-out fit is degenerate,
    so it would define the scale rather than be checked against it, and an
    unmeasurable mark is reported rather than skipped.
+
+8. UNIFORM FILL - every non-focal bubble carries one fill. A fill that fades
+   as area grows is a second encoding of a value already drawn.
+
+9. SIZE KEY - two or three reference circles (data-key-size) drawn on the
+   bubbles' own K, each with a text printing its value.
+
+10. K IN THE SOURCE LINE - a visible `<text data-role="source">` states
+    `K = n`, and n is the K the bubbles actually use.
+
+11. COMPARISON LINE - a `<line data-ref data-value>` on the y scale, dashed
+    4,3, with a direct `<text data-ref>` label.
+
+12. TEXT RULES - no rotated text and no LEGEND heading anywhere.
 
 Markup is read through the stdlib html.parser.HTMLParser, never a regex, so a
 tag is recognized exactly when a browser would recognize it: a quoted `>`
@@ -159,6 +174,7 @@ CSS_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
 # See declares_bubble.
 DECLARES_BUBBLE_RE = re.compile(r"\bdata-size\s*=", re.IGNORECASE)
 HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+K_RE = re.compile(r"\bK\s*=\s*([0-9]+(?:\.[0-9]+)?)")
 
 # The accent stroke on either skin, hex or rgba. The focal count keys on the
 # STROKE because the fill is a translucent tint the paper shows through; the
@@ -183,7 +199,7 @@ OVERLAP_SLACK = 0.5        # px, separation below which two bubbles overlap
 
 GROUP_TAGS = ("g", "svg")                     # the only ancestors whose transform is inherited
 BODY_TAGS = ("text", "title", "desc", "style")  # elements whose character data is read
-MARK_TAGS = ("circle",)                       # the element this contract binds
+MARK_TAGS = ("circle", "line")                # the elements this contract reads
 
 
 # === PARSING =================================================================
@@ -204,9 +220,10 @@ class Element:
 
 
 class Bubble:
-    __slots__ = ("name", "x", "y", "size", "cx", "cy", "r", "accent", "line")
+    __slots__ = ("name", "x", "y", "size", "cx", "cy", "r", "accent", "line", "fill")
 
-    def __init__(self, name, x, y, size, cx, cy, r, accent, line):
+    def __init__(self, name, x, y, size, cx, cy, r, accent, line, fill=""):
+        self.fill = fill
         self.name = name
         self.x, self.y, self.size = x, y, size
         self.cx, self.cy, self.r = cx, cy, r
@@ -245,6 +262,7 @@ class _Scanner(HTMLParser):
     def __init__(self, source: str):
         super().__init__(convert_charrefs=True)
         self.circles: list = []
+        self.lines: list = []
         self.texts: list = []
         self.named: list = []      # <title> and <desc>
         self.styles: list = []
@@ -292,6 +310,9 @@ class _Scanner(HTMLParser):
         element = Element(tag, attrs, self._offset(), self.getpos()[0], self._ancestor())
         if tag == "circle":
             self.circles.append(element)
+            return
+        if tag == "line":
+            self.lines.append(element)
             return
         if tag == "text":
             self.texts.append(element)
@@ -566,7 +587,8 @@ def parse_bubbles(doc: _Scanner, findings: list, name: str) -> list:
             continue
         accent = bool(ACCENT_RE.search(attrs.get("stroke", "")))
         bubbles.append(Bubble(label, parsed[0], parsed[1], parsed[2], parsed[3],
-                              parsed[4], parsed[5], accent, line))
+                              parsed[4], parsed[5], accent, line,
+                              attrs.get("fill", "").strip().casefold()))
     return bubbles
 
 
@@ -761,9 +783,11 @@ def check_labels(bubbles: list, doc: _Scanner, findings: list, name: str) -> Non
             )
             continue
         seen.add(label)
-        # Case-insensitive: labels ship small-caps ("PAYMENTS" for a bubble
-        # named "Payments"), and casing is presentation, not identity.
-        if body.casefold() != label.casefold():
+        # Exact match: labels are sentence case, the same string as the
+        # binding. Small-caps labels used to need a case-insensitive compare;
+        # that slack is gone, so "PAYMENTS" for a bubble named "Payments" is
+        # now a finding rather than presentation.
+        if body != label:
             findings.append(
                 "%s:%d: a label bound to bubble %r reads %r — the visible text "
                 "and the binding must agree"
@@ -869,6 +893,156 @@ def check_ticks(x_fit, y_fit, doc: _Scanner, findings: list, name: str) -> None:
                 )
 
 
+def derived_k(bubbles: list):
+    """The area constant K the set describes: sqrt(median(r^2 / size))."""
+    return math.sqrt(median([b.r * b.r / b.size for b in bubbles]))
+
+
+def check_uniform_fill(bubbles: list, findings: list, name: str) -> None:
+    """Every non-focal bubble wears one fill; tone is not an encoding.
+
+    Opacity that falls as area rises is design, not data: it makes the
+    reader weigh ink that no value asked for. The one occlusion fix that is
+    allowed is the largest-first paint order, which this file checks apart.
+    """
+    fills = {}
+    for b in bubbles:
+        if not b.accent:
+            fills.setdefault(b.fill, []).append(b)
+    if len(fills) > 1:
+        shown = ", ".join("%r (%s)" % (fill, ", ".join(x.name for x in group[:3]))
+                          for fill, group in sorted(fills.items()))
+        findings.append(
+            "%s:%d: non-focal bubbles carry %d different fills - %s. Use one "
+            "uniform fill; a fill ramp by size is a second encoding of the "
+            "area the figure already shows"
+            % (name, bubbles[0].line, len(fills), shown)
+        )
+
+
+def check_size_key(bubbles: list, doc: _Scanner, findings: list, name: str) -> None:
+    """A size key of two or three reference circles drawn on the same K."""
+    k = derived_k(bubbles)
+    keys = [e for e in doc.circles if "data-key-size" in e.attrs]
+    if not 2 <= len(keys) <= 3:
+        findings.append(
+            "%s: the size key has %d reference circle(s) (data-key-size) - area "
+            "needs a key of two or three circles with their values"
+            % (name, len(keys))
+        )
+    key_texts = {}
+    for element in doc.texts:
+        if "data-key-size" in element.attrs:
+            key_texts[element.attrs["data-key-size"]] = element
+    for element in keys:
+        attrs = element.attrs
+        value = number(attrs.get("data-key-size"))
+        r = number(attrs.get("r"))
+        if value is None or value <= 0 or r is None:
+            findings.append(
+                "%s:%d: a size-key circle has an unreadable value or radius"
+                % (name, element.line)
+            )
+            continue
+        expected = k * math.sqrt(value)
+        if abs(r - expected) > RADIUS_TOLERANCE:
+            findings.append(
+                "%s:%d: the size-key circle for %g draws r=%g where the bubbles' "
+                "own area scale puts %.1f - the key must use the same K or it "
+                "teaches the reader the wrong scale"
+                % (name, element.line, value, r, expected)
+            )
+        label = key_texts.get(attrs.get("data-key-size"))
+        shown = printed_number(plain(label.body))[0] if label is not None else None
+        if label is None or shown is None or abs(shown - value) > VALUE_TOLERANCE:
+            findings.append(
+                "%s:%d: the size-key circle for %g has no text printing that "
+                "value (data-key-size on a <text>)" % (name, element.line, value)
+            )
+
+
+def check_source_line(bubbles: list, doc: _Scanner, findings: list, name: str) -> None:
+    """The visible source line states K, and states the K the bubbles use."""
+    k = derived_k(bubbles)
+    sources = [e for e in doc.texts if e.attrs.get("data-role") == "source"]
+    if not sources:
+        findings.append(
+            "%s: no source line (a <text data-role=\"source\">) - the area "
+            "constant K and the units belong in visible text" % name
+        )
+        return
+    stated = K_RE.search(" ".join(plain(e.body) for e in sources))
+    if stated is None:
+        findings.append(
+            "%s:%d: the source line does not state K (write `K = 1.4`) - a "
+            "reader cannot convert an area back into a value without it"
+            % (name, sources[0].line)
+        )
+        return
+    value = number(stated.group(1))
+    if value is None or abs(value - k) > 0.02 * k:
+        findings.append(
+            "%s:%d: the source line states K = %s but the bubbles draw K = %.2f"
+            % (name, sources[0].line, stated.group(1), k)
+        )
+
+
+def check_reference(y_fit, doc: _Scanner, findings: list, name: str) -> None:
+    """At least one comparison line, on the y scale, dashed 4,3 and labelled."""
+    refs = [e for e in doc.lines if "data-ref" in e.attrs]
+    if not refs:
+        findings.append(
+            "%s: no comparison line (a <line data-ref data-value>) - show a "
+            "target, average or prior period the data supports" % name
+        )
+        return
+    slope, intercept = y_fit
+    labels = {e.attrs["data-ref"] for e in doc.texts
+              if "data-ref" in e.attrs and plain(e.body)}
+    for element in refs:
+        attrs = element.attrs
+        ref = attrs["data-ref"]
+        value = number(attrs.get("data-value"))
+        y1, y2 = number(attrs.get("y1")), number(attrs.get("y2"))
+        if value is None or y1 is None or y2 is None or y1 != y2:
+            findings.append(
+                "%s:%d: comparison line %r needs a readable data-value and a "
+                "horizontal y1 == y2" % (name, element.line, ref)
+            )
+            continue
+        if slope is not None and abs(y1 - (slope * value + intercept)) > RESIDUAL_TOLERANCE:
+            findings.append(
+                "%s:%d: comparison line %r declares %g but is drawn at y=%g, off "
+                "the scale the bubbles describe (%.1f)"
+                % (name, element.line, ref, value, y1, slope * value + intercept)
+            )
+        if re.sub(r"\s", "", attrs.get("stroke-dasharray", "")) != "4,3":
+            findings.append(
+                "%s:%d: comparison line %r must be dashed 4,3" % (name, element.line, ref)
+            )
+        if ref not in labels:
+            findings.append(
+                "%s:%d: comparison line %r has no direct label (a <text data-ref>)"
+                % (name, element.line, ref)
+            )
+
+
+def check_text_rules(doc: _Scanner, findings: list, name: str) -> None:
+    """No rotated text, and no LEGEND heading."""
+    for element in doc.texts:
+        carrier = element.attrs.get("transform", "") + element.attrs.get("style", "")
+        if "rotate" in carrier.casefold():
+            findings.append(
+                "%s:%d: rotated text (%s) - axis titles are horizontal, the y "
+                "title above its axis" % (name, element.line, plain(element.body)[:24])
+            )
+        if plain(element.body).casefold() == "legend":
+            findings.append(
+                "%s:%d: a LEGEND heading - drop the word, keep the keys"
+                % (name, element.line)
+            )
+
+
 # === DRIVER ==================================================================
 
 
@@ -914,6 +1088,11 @@ def check_source(path: Path, raw: str) -> list:
     check_paint_order(bubbles, findings, path.name)
     check_labels(bubbles, doc, findings, path.name)
     check_ticks(x_fit, y_fit, doc, findings, path.name)
+    check_uniform_fill(bubbles, findings, path.name)
+    check_size_key(bubbles, doc, findings, path.name)
+    check_source_line(bubbles, doc, findings, path.name)
+    check_reference(y_fit, doc, findings, path.name)
+    check_text_rules(doc, findings, path.name)
     return findings
 
 

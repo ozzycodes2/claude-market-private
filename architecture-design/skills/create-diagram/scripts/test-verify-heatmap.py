@@ -50,7 +50,7 @@ CHILD_ENV = {**os.environ, "PYTHONIOENCODING": "utf-8"}
 # Anchors — literal excerpts of the shipped light example.
 FOCAL_CELL = (
     'data-row="payments" data-col="S4" data-value="47" data-focal="true" '
-    'x="520" y="124" width="116" height="56" fill="rgba(239,99,6,0.85)"'
+    'x="520" y="124" width="116" height="56" fill="#ef6306"'
 )
 FIRST_NONFOCAL = (
     'data-row="auth" data-col="S1" data-value="4" '
@@ -184,7 +184,7 @@ def main() -> int:
         # N1: two focal cells
         second_focal = FIRST_NONFOCAL.replace(
             'fill="rgba(23,23,23,0.29)"',
-            'data-focal="true" fill="rgba(239,99,6,0.85)"',
+            'data-focal="true" fill="#ef6306"',
         )
         case(
             failures,
@@ -361,9 +361,9 @@ def main() -> int:
             "duplicate axis label declaration silently shrinks the grid",
         )
 
-        # N13: dark focal text must be evaluated against the dark background, not paper.
+        # N13: dark focal text must be evaluated against the solid accent fill in the dark skin.
         dark_bad_focal_text = GOOD_DARK.read_text(encoding="utf-8").replace(
-            'fill="#010102" font-size="10" font-weight="600" font-family="\'Inter\', sans-serif" text-anchor="middle">47%</text>',
+            'fill="#171717" font-size="10" font-weight="600" font-family="\'Inter\', sans-serif" text-anchor="middle">47%</text>',
             'fill="#f7f8f8" font-size="10" font-weight="600" font-family="\'Inter\', sans-serif" text-anchor="middle">47%</text>',
             1,
         )
@@ -405,7 +405,7 @@ def main() -> int:
                 failures.append(f"equivalent pixel lengths {label} were rejected: {output.strip()}")
         # Supported coordinate syntax must not bypass the contrast comparison.
         for template, theme, ink in ((original, "light", "#171717"),
-                                     (GOOD_DARK.read_text(encoding="utf-8"), "dark", "#010102")):
+                                     (GOOD_DARK.read_text(encoding="utf-8"), "dark", "#171717")):
             bad_contrast = template.replace(f'x="578" y="149" fill="{ink}"',
                                             'x="578" y="149" fill="#ffffff"', 1)
             for notation in ("px", "exponent-px"):
@@ -428,13 +428,11 @@ def main() -> int:
     # Translucent foregrounds compose against the cell beneath them, not paper.
     with tempfile.TemporaryDirectory() as tmp:
         d = Path(tmp)
-        # The accent composites over paper before the value text is measured, so
-        # the two skins have very different headroom: solid ink clears 6.38:1 on
-        # the light cell but only 4.78:1 on the dark one. The dark side is the
-        # tight case and needs a nearly opaque ink to stay above 4.5:1.
+        # The focal fill is solid accent in both skins and the value text is
+        # ink-strong (#171717), so the headroom is the same 5.51:1 on both sides.
         for template, theme, ink, alpha_ink, passing_alpha in (
             (original, "light", "#171717", "23,23,23", "0.98"),
-            (GOOD_DARK.read_text(encoding="utf-8"), "dark", "#010102", "1,1,2", "0.95"),
+            (GOOD_DARK.read_text(encoding="utf-8"), "dark", "#171717", "23,23,23", "0.98"),
         ):
             for alpha, expected_pass in ((passing_alpha, True), ("0.2", False)):
                 changed = template.replace(f'x="578" y="149" fill="{ink}"',

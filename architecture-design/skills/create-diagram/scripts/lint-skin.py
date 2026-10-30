@@ -81,6 +81,12 @@ ALLOWED_FONTS = {
     "monospace",
     "ui-monospace",
 }
+ROTATED_TEXT_RE = re.compile(
+    r"<text\b[^>]*?\btransform\s*=\s*(['\"])[^'\"]*\brotate\s*\(", re.IGNORECASE | re.DOTALL
+)
+LEGEND_HEADING_RE = re.compile(
+    r"<text\b[^>]*>\s*(?:<tspan\b[^>]*>\s*)?LEGEND\s*<", re.DOTALL
+)
 CSS_FONT_KEYWORDS = {"inherit", "initial", "revert", "revert-layer", "unset"}
 
 
@@ -609,6 +615,12 @@ def lint_text(
 
     for match in BLACK_RGB_RE.finditer(text):
         add(match.start(), "pure-black", "pure black rgb(0,0,0) is not allowed")
+
+    for match in ROTATED_TEXT_RE.finditer(text):
+        add(match.start(), "rotated-text", "<text> with a rotate transform is not allowed; set axis titles horizontally")
+
+    for match in LEGEND_HEADING_RE.finditer(text):
+        add(match.start(), "legend-heading", 'the word "LEGEND" is not a heading; the keys are self-evident')
 
     script_blocks = {match.start(): match for match in SCRIPT_BLOCK_RE.finditer(text)}
     script_openings = list(SCRIPT_OPEN_RE.finditer(text))

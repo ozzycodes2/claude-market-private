@@ -168,9 +168,14 @@ A self-contained palette for the terminal-window primitive (see [primitive-termi
 | `title` | Inter | 32px | 600, tracked -0.8px | Page H1 |
 | `node-name` | Inter | 12px | 600 | Human-readable labels |
 | `sublabel` | SF Mono | 9px | 400 | Port, protocol, URL, field type |
-| `eyebrow` | SF Mono | 8px | 500, tracked 0.14em, uppercase | Type tags, axis labels |
-| `arrow-label` | SF Mono | 8px | 400, tracked 0.08em, uppercase | Arrow annotations |
+| `eyebrow` | SF Mono | 8px | 500, tracked 0.14em, uppercase | Node type tags and the HTML page eyebrow only |
+| `arrow-label` | SF Mono | 8px | 400, tracking 0, sentence case | Arrow annotations |
+| `axis-title` | SF Mono | 8px | 400, tracking 0, sentence case, `muted`, horizontal | Axis titles, tick-unit captions, source lines |
 | `callout` | Inter *italic* | 14px | 400 | Editorial asides only |
+
+### Case
+
+Upper-and-lower case reads faster than capitals, which flatten word shapes (Tufte, *The Visual Display of Quantitative Information*, ch. 8). Every role is sentence case with no tracking except `eyebrow`, which stays uppercase and tracked only on the 7px node type tag and the HTML page eyebrow, where it works as a code rather than a sentence. Acronyms keep their case (HTTPS, API, JWT). No text is rotated: a y-axis title sits horizontally above the top of its axis, left-aligned to it.
 
 ### No serif
 
@@ -200,8 +205,9 @@ leaves no room for the name above it. What carries over is the *rules* rather
 than the ladder: one family and one monospace, weight never below 400, tracking
 positive only in the eyebrow register. The tracking values are the exception:
 the source system's eyebrow tracks +0.5px, which at 8px is 0.0625em and far too
-tight for uppercase mono. These roles track 0.14em and 0.08em instead — the
-source system's *direction*, at the value the size needs. Recorded in Known Gaps
+tight for uppercase mono. The eyebrow tracks 0.14em instead — the
+source system's *direction*, at the value the size needs; arrow labels are
+sentence case and track 0. Recorded in Known Gaps
 rather than resolved.
 
 ### Font stack
@@ -292,7 +298,7 @@ Simplified Chinese takes the same three rules with the Simplified stack (`'Noto 
 
 ### Cyrillic labels
 
-Inter ships Cyrillic — Google Fonts serves it in a `cyrillic` subset (U+0301, U+0400–045F, U+0490–0491, U+04B0–04B1, U+2116) and a `cyrillic-ext` subset — so names, titles, and callouts in Bulgarian, Russian, Ukrainian, or Serbian need no stack extension at all. Greek is the same: `greek` and `greek-ext` ship too. Sublabels, arrow labels, eyebrows, and legend text keep the Latin treatment as well — same faces, sizes, tracking, and uppercase — because `.SF NS Mono` and `Menlo` both carry Cyrillic and Greek. There is no register switch for either script.
+Inter ships Cyrillic — Google Fonts serves it in a `cyrillic` subset (U+0301, U+0400–045F, U+0490–0491, U+04B0–04B1, U+2116) and a `cyrillic-ext` subset — so names, titles, and callouts in Bulgarian, Russian, Ukrainian, or Serbian need no stack extension at all. Greek is the same: `greek` and `greek-ext` ship too. Sublabels, arrow labels, eyebrows, and legend text keep the Latin treatment as well — same faces, sizes, tracking, and case rules — because `.SF NS Mono` and `Menlo` both carry Cyrillic and Greek. There is no register switch for either script.
 
 **The register switch is a coverage test, not a face fact.** The shipped skin could settle it by citing a subset list: Geist Mono came over the network from Google Fonts, its Cyrillic coverage was published, and Hangul and Han switched register because that same list showed no face for them. This skin requests no mono over the network. The author therefore cannot ask what the mono *is*; the rule has to be stated over what the stack can be shown to cover. **A script keeps the mono treatment only when every named face in the mono stack carries it; otherwise it switches to 12px sans at weight 500, untracked and un-uppercased.** The stack's two named faces are `'SF Mono'` — `.SF NS Mono` on macOS — and `Menlo`. Read off the font files, both carry Latin, Greek, and Cyrillic, and neither carries a single Hangul syllable or Han character. That lands Cyrillic and Greek on the Latin treatment and Hangul and Han on the register switch: the same two outcomes as the shipped skin, reached from the glyph tables instead of from a subset list.
 

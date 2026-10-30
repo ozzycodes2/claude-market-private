@@ -918,6 +918,20 @@ def main() -> int:
     if len(errors) != 1 or "font-size=72" not in errors[0]:
         raise AssertionError(f"opaque watermark size was not reported: {errors}")
 
+    # Tufte: decorative watermark numerals are no longer exempt. The shipped
+    # spec must not carry the row, and without it even a faint 72px fails.
+    shipped_spec = (ROOT / "references/output-spec.md").read_text(encoding="utf-8")
+    if "watermark numerals" in shipped_spec.split("### Registered legacy sizes")[0]:
+        raise AssertionError("output-spec.md still exempts watermark numerals")
+    errors = []
+    verify.check_type_ramp(
+        errors, GRID_SKILL, TYPE_RAMP_SPEC.replace(
+            "| Decorative watermark numerals at or under 0.08 opacity | any | any |\n", ""
+        )
+    )
+    if len(errors) != 1 or "font-size=72" not in errors[0]:
+        raise AssertionError(f"faint watermark passed without its exemption: {errors}")
+
     # The grid lives in layout-budget.md and the markup patterns in
     # primitives-core.md since the ADR 0004 split; SKILL.md stays covered too.
     errors = []

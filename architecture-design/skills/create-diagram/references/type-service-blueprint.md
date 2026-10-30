@@ -16,7 +16,7 @@
 
 - **Orientation:** stages as equal columns (left → right in narrative order), layers as labeled rows (top → bottom). No connector arrows in this version — that is swimlane territory.
 - **ViewBox:** `0 0 1280 720` for the minimal examples. Full editorial keeps the same SVG and adds cards.
-- **Left margin:** 96px for layer labels. SF Mono 8px, uppercase, horizontal, `text-anchor="end"` at x=88. **Never** `writing-mode: vertical`.
+- **Left margin:** 96px for layer labels. SF Mono 8px, sentence case (`Customer`, `Frontstage`), no letter-spacing, horizontal, `text-anchor="end"` at x=88. Stage captions above each header name follow the same rule (`Stage 1`). **Never** `writing-mode: vertical`.
 - **Stage grid:** 4–6 columns. The worked example is 5 × 208px with 16px gutters (`col_x = 96 + i·224`). Each header carries `data-stage` on a rect at the column origin; every cell in that column uses the same `x`.
 - **Layer order, top to bottom:**
   1. Physical evidence (optional) — 48px
@@ -31,7 +31,7 @@
 - **Cells:** one action per stage per layer. Inter 12px, one line, centered on the column. A second muted mono line is allowed for a system or wait (`dunning-job · 4h`). Empty required cells are allowed only with an explicit `—` or `Not applicable` as `data-name` and as the printed text.
 - **Fills:** customer and frontstage are paper/white with `ink` stroke. Backstage and support take a light `ink` tint so the below-the-line band reads as hidden work, not another onstage row.
 - **Focal cell (≤1, optional):** the failure, wait, or handoff the figure exists to show — usually on or below the visibility line. Accent fill `rgba(191,69,32,0.12)` (dark: `rgba(240,138,89,0.18)`), accent stroke, `data-focal="true"`.
-- **Legend:** horizontal strip after a hairline rule, three keys in this order — visibility line, backstage layer, focal cell.
+- **Legend:** horizontal strip after a hairline rule, no "Legend" heading word, three keys in this order — visibility line, backstage layer, focal cell. Sentence-case text, no letter-spacing.
 
 ### Machine-readable data contract
 

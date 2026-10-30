@@ -83,6 +83,10 @@ GEOMETRY_TOLERANCE = 0.75
 CARRY_SPAN_TOLERANCE = 2.0
 HORIZONTAL_TOLERANCE = 1e-9
 MAX_BARS = 8
+# A rule this wide is a gridline or axis, not a carry or a tick.
+GRIDLINE_MIN_SPAN = 400
+# Tick labels sit right-aligned left of the plot (x=72 in the reference frame).
+TICK_LABEL_MAX_X = 79
 MAX_SUBTOTALS = 1
 # Fabric carries one accent across both polarities, so this is a
 # one-member set rather than the light/dark pair a reader may expect.
@@ -499,6 +503,69 @@ def check_sign_treatment(bars: list[Bar], errors: list[str], paper: str) -> None
         )
 
 
+def check_encoded_once(source: str, errors: list[str]) -> None:
+    """Every bar prints its signed value, so no second encoding of that value may be drawn.
+
+    A gridline or y-axis tick scale repeats what the value labels already state
+    (Tufte's data-ink rule). The zero baseline and the carries are the only
+    horizontal rules allowed; rotated text is refused for the axis title.
+    """
+    source = COMMENT_RE.sub("", source)
+    baselines = baselines_of(source)
+    for match in LINE_RE.finditer(source):
+        attrs = attrs_of(match.group("attrs"))
+        if "data-carry" in attrs:
+            continue
+        coords = [parse_number(attrs.get(key, "")) for key in ("x1", "y1", "x2", "y2")]
+        if any(c is None for c in coords):
+            continue
+        x1, y1, x2, y2 = coords  # type: ignore[misc]
+        if abs(y1 - y2) <= HORIZONTAL_TOLERANCE and abs(x2 - x1) >= GRIDLINE_MIN_SPAN:
+            if not any(abs(y1 - baseline) <= GEOMETRY_TOLERANCE for baseline in baselines):
+                errors.append(
+                    f"horizontal rule at y={y1:g} spans {abs(x2 - x1):g}px but is not the zero baseline; "
+                    "every bar prints its value, so a gridline repeats it"
+                )
+        if abs(x1 - x2) <= HORIZONTAL_TOLERANCE and abs(y2 - y1) >= GRIDLINE_MIN_SPAN / 2:
+            errors.append(
+                f"vertical rule at x={x1:g} is a y-axis line; every bar prints its value, so the axis repeats it"
+            )
+    for match in TEXT_RE.finditer(source):
+        attrs = attrs_of(match.group("attrs"))
+        carrier = transform_carrier(attrs)
+        if carrier is not None and "rotate" in carrier:
+            errors.append("rotated text found; the axis title is horizontal, above the plot")
+        body = html.unescape(TAG_RE.sub("", match.group("body"))).strip()
+        x = parse_number(attrs.get("x", ""))
+        if attrs.get("text-anchor") == "end" and x is not None and x <= TICK_LABEL_MAX_X \
+                and re.fullmatch(r"[\d.,]+", body):
+            errors.append(
+                f"y-axis tick label {body!r}: every bar prints its value, so a tick scale repeats it"
+            )
+
+
+def baselines_of(source: str) -> list[float]:
+    """The y of the zero baseline: the bottom edge shared by the anchored totals."""
+    ys = []
+    for match in RECT_RE.finditer(source):
+        attrs = attrs_of(match.group("attrs"))
+        if attrs.get("data-role") in {"total", "subtotal"}:
+            top, height = parse_number(attrs.get("y", "")), parse_number(attrs.get("height", ""))
+            if top is not None and height is not None:
+                ys.append(top + height)
+    return ys
+
+
+def check_money_basis(source: str, errors: list[str]) -> None:
+    """Money across periods must say whether it is nominal or real (base year)."""
+    visible = html.unescape(TAG_RE.sub("", " ".join(m.group("body") for m in TEXT_RE.finditer(COMMENT_RE.sub("", source)))))
+    if "$" in visible and not re.search(r"\bnominal\b|\breal \(", visible, re.IGNORECASE):
+        errors.append(
+            "the walk is in dollars but no text says 'nominal' or 'real (base year)'; "
+            "state which in the source line"
+        )
+
+
 def verify_file(path: Path) -> list[str]:
     errors: list[str] = []
     source = path.read_text(encoding="utf-8")
@@ -519,6 +586,8 @@ def verify_file(path: Path) -> list[str]:
         baseline, scale = fitted
         check_carries(source, bars, levels, baseline, scale, errors)
     check_printed(source, bars, errors)
+    check_encoded_once(source, errors)
+    check_money_basis(source, errors)
     check_sign_treatment(bars, errors, paper)
     return errors
 

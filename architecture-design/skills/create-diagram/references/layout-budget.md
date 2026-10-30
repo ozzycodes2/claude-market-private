@@ -45,12 +45,13 @@ These are the per-type limits. The universal rows in SKILL.md §7 (9 nodes, 12 a
 | Max polar categories | 8 |
 | Max polar series | 1 |
 | Max focal polar categories | 1 |
-| Max bars (bar chart) | 8 |
+| Max bars (bar chart) | 16 |
 | Max bars (waterfall) | 8 incl. totals, 1 subtotal |
 | Max cells (treemap) | 8 |
-| Max series (line chart) | 5 |
-| Max tasks (Gantt) | 12 |
-| Max points (scatter plot) | 30 |
+| Max series (line chart) | 6 (limited by end-label collisions) |
+| Max tasks (Gantt) | 24 |
+| Max points (scatter and beeswarm) | 300 |
+| Max cells (heatmap) | 12 x 12 |
 | Max stages / nodes / flows (sankey) | 3 / 8 / 12 |
 | Max categories (fishbone) | 6 bones, 3 sub-causes each |
 | Max components / links (wardley) | 9 / 12, 2 movement arrows |
@@ -63,22 +64,28 @@ These are the per-type limits. The universal rows in SKILL.md §7 (9 nodes, 12 a
 | Max activities / slices / cards (story map) | 5 / 3 / 12 |
 | Max tables / columns / FKs (db schema) | 5 / 8 shown / 6 |
 
-If you exceed, split into two diagrams (overview + detail).
+The chart rows (bar, line, scatter, Gantt, heatmap) are Tufte's data-density allowance: a chart earns its ink per value, so it can carry more than a schematic. The 9-node schematic budget is unchanged. Charts may shrink down to the type-ramp floor before they split.
+
+If a schematic exceeds, split into two diagrams (overview + detail). If a chart exceeds its row, split it into small multiples.
+
+### Small multiples
+
+The split method for charts. Repeat one small chart per category with an identical frame and identical scales, so panels compare by eye. Each panel gets a direct title (sentence case, in the panel, not a legend); the shared axis is labelled once, on the outer panel. Same marks, same colors, same order in every panel. Schematics split by overview + detail; charts split by small multiples.
 
 ### Page layout
 
 1. **Header** — `eyebrow` role, `title` role, optional subtitle (`node-name` family, `muted`).
 2. **Diagram container** — default: **clean, borderless**, no background — the SVG sits directly on the page paper. Optional *framed* variant (for card-heavy layouts or hero placements): `paper-2` bg + 1px `rule` border + 8px radius + `1.5rem` padding + `overflow-x: auto`.
-3. **Summary cards** — 2–3 col grid with *varied* widths (e.g., `1.1fr 1fr 0.9fr`).
+3. **Summary cards** (optional) — 2–3 col grid with *varied* widths (e.g., `1.1fr 1fr 0.9fr`).
 4. **Footer** — colophon in the `sublabel` role, `muted`, hairline top border.
 
 ## Summary Card Pattern
 
-Don't use 3 identical generic cards. Vary the treatment:
+Cards are optional, not required; add them only when they say something the diagram does not. Don't use 3 identical generic cards. Vary the treatment:
 
 ```html
 <div class="card">
-  <p class="eyebrow">SECTION LABEL</p>
+  <p class="eyebrow">SECTION LABEL</p> <!-- HTML page eyebrow: caps allowed -->
   <div class="card-header">
     <span class="card-dot accent"></span>
     <h3>Card Title</h3>

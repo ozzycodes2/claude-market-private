@@ -11,7 +11,7 @@
 ## Layout conventions
 - States are rounded rectangles (`rx=8`), labeled in the `node-name` role.
 - **Start**: filled ink dot (`r=6`). **End**: ringed dot (outer `r=8` outline, inner filled `r=5`).
-- Transitions: curved arrows labeled in the `arrow-label` role as `event [guard] / action` (omit sections you don't need).
+- Transitions: curved arrows labeled in the `arrow-label` role as `event [guard] / action` (omit sections you don't need). Labels are sentence case ("Submit", "Reject · revise"), at most 24 characters, no letter-spacing; code-like tokens (method names, HTTP verbs, field names) keep their literal case. Size each opaque mask to 0.62em per mono character plus 8px padding, rounded up to a multiple of 4, centred on the label. The 7px `STATE` / `WAIT` / `TERMINAL` tag inside a node stays uppercase and tracked.
 - Self-loops curve above the state.
 - Orient along the dominant flow direction (left→right or top→down); rearrange before crossing transitions.
 - The accent on the state the reader should notice — typically the error state, or "happy completion".

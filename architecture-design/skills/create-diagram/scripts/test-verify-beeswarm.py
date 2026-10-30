@@ -86,7 +86,7 @@ def label(name: str, x: float, y: float = 150, text=None,
           extra: str = "") -> str:
     return ('  <text data-name="%s" data-role="label" x="%g" y="%g"%s>%s</text>\n'
             % (name, x, y, (" " + extra) if extra else "",
-               name.upper() if text is None else text))
+               name if text is None else text))
 
 
 def tick(value: float, position=None, shown=None, declared=None,
@@ -121,8 +121,34 @@ def swarm(n: int = 24, depth: int = 1) -> str:
     return body
 
 
-def document(*blocks: str) -> str:
-    return HEAD + "".join(blocks) + TAIL
+TAIL_HEAD = HEAD.replace("Beeswarm fixture.", "Beeswarm fixture with a p99 tail.")
+
+
+def reference_furniture(blocks: str, scale=cx) -> str:
+    """The Tufte-pass furniture every honest fixture carries.
+
+    A median line and a p99 line computed from the fixture's own dots, each
+    dashed 4,3 with a direct label, plus a source line that names a unit.
+    `document(..., extras=False)` leaves all of it off.
+    """
+    values = [float(v) for v in re.findall(
+        r"<circle data-value=[\"'](-?[0-9.]+)[\"']", verify.blank_comments(blocks))]
+    out = '  <text data-role="source" x="40" y="488">Latency in ms, one dot per request.</text>\n'
+    if not values:
+        return out
+    for ref, value, text in (
+            ("median", verify.median(values), "Median %.1f ms"),
+            ("p99", verify.percentile(values, 0.99), "p99 %.1f ms")):
+        out += ('  <line data-ref="%s" data-value="%.1f" x1="%g" y1="64" x2="%g" y2="420" '
+                'stroke="#616161" stroke-width="1" stroke-dasharray="4,3"/>\n'
+                '  <text data-ref="%s" data-role="label" x="%g" y="52">%s</text>\n'
+                % (ref, value, scale(value), scale(value), ref, scale(value), text % value))
+    return out
+
+
+def document(*blocks: str, extras: bool = True, head: str = HEAD, scale=cx) -> str:
+    body = "".join(blocks)
+    return head + body + (reference_furniture(body, scale) if extras else "") + TAIL
 
 
 def honest(*extra: str) -> str:
@@ -236,7 +262,7 @@ def run_cases(h: Harness) -> int:
     inverted_ticks = ''.join(tick(value, position=1000 - cx(value))
                              for value in (0, 100, 200, 400))
     h.expect_clean("a finite nonzero inverted axis remains measurable",
-                   document(inverted, inverted_ticks))
+                   document(inverted, inverted_ticks, scale=lambda v: 1000 - cx(v)))
 
     # ── Positive polarity: honest figures pass ────────────────────────────
     for path in SHIPPED:
@@ -329,11 +355,102 @@ def run_cases(h: Harness) -> int:
         r"one accent dot max",
     )
 
+
+    # ── Tufte pass: reference lines, source line, text rules ──────────────
+    base = (swarm(23), dot(300), TICKS)
+    h.expect_clean("honest furniture: median, p99, source line", document(*base))
+    h.expect_finding(
+        "a figure with no median line is reported",
+        document(*base).replace('<line data-ref="median"', '<line data-xx="median"'),
+        r"no median line",
+    )
+    h.expect_clean(
+        "no p99 line is required while nothing argues about the tail",
+        document(*base).replace('<line data-ref="p99"', '<line data-xx="p99"'),
+    )
+    h.expect_clean(
+        "a title that argues the tail passes with the p99 line drawn",
+        document(*base, head=TAIL_HEAD),
+    )
+    h.expect_finding(
+        "a title that argues the tail needs the p99 line",
+        document(*base, head=TAIL_HEAD).replace('<line data-ref="p99"', '<line data-xx="p99"'),
+        r"no p99 line",
+    )
+    h.expect_finding(
+        "a median line that declares the wrong median is reported",
+        document(*base).replace('data-ref="median" data-value="', 'data-ref="median" data-value="1'),
+        r"reference line 'median' declares .* the dots' own median",
+    )
+    h.expect_finding(
+        "a p99 line that declares the wrong p99 is reported",
+        document(*base).replace('data-ref="p99" data-value="', 'data-ref="p99" data-value="1'),
+        r"reference line 'p99' declares .* the dots' own p99",
+    )
+    med = verify.median([10.0 * (c + 1) for c in range(23)] + [300.0])
+    h.expect_finding(
+        "a reference line drawn off the dots' scale is reported",
+        document(*base).replace('x1="%g" y1="64" x2="%g"' % (cx(med), cx(med)),
+                                'x1="%g" y1="64" x2="%g"' % (cx(med) + 30, cx(med) + 30)),
+        r"off the scale the dots describe",
+    )
+    h.expect_finding(
+        "a sloped reference line is reported",
+        document(*base).replace('x1="%g" y1="64" x2="%g"' % (cx(med), cx(med)),
+                                'x1="%g" y1="64" x2="%g"' % (cx(med), cx(med) + 9)),
+        r"vertical x1 == x2",
+    )
+    h.expect_finding(
+        "a reference line that is not dashed 4,3 is reported",
+        document(*base).replace('stroke-dasharray="4,3"', 'stroke-dasharray="2,3"', 1),
+        r"must be dashed 4,3",
+    )
+    h.expect_finding(
+        "a reference line with no direct label is reported",
+        document(*base).replace('<text data-ref="median"', '<text data-xx="median"'),
+        r"has no direct label",
+    )
+    h.expect_finding(
+        "a reference label that prints a different number is reported",
+        document(*base).replace("Median %.1f ms" % med, "Median 999.0 ms"),
+        r"must print the one number the line declares",
+    )
+    h.expect_finding(
+        "a figure with no source line is reported",
+        document(*base).replace('data-role="source"', 'data-role="note"'),
+        r"no source line",
+    )
+    h.expect_finding(
+        "a source line that names no unit is reported",
+        document(*base).replace("Latency in ms, one dot per request.", "One dot per sample."),
+        r"states no unit",
+    )
+    h.expect_finding(
+        "rotated text is reported",
+        document(*base, '  <text transform="rotate(-90 24 230)" x="24" y="230">Latency</text>\n'),
+        r"rotated text",
+    )
+    h.expect_finding(
+        "a LEGEND heading is reported",
+        document(*base, '  <text x="40" y="478">Legend</text>\n'),
+        r"LEGEND heading",
+    )
+    h.expect_clean(
+        "a horizontal sentence-case axis title passes",
+        document(*base, '  <text x="184" y="462">Per-request latency, ms</text>\n'),
+    )
+
     # ── Label lies ────────────────────────────────────────────────────────
     h.expect_clean(
-        "a small-caps label matches its mixed-case binding",
+        "a sentence-case label matches its binding exactly",
         document(swarm(23), dot(300, name="req-4c1f"), TICKS,
                  label("req-4c1f", cx(300))),
+    )
+    h.expect_finding(
+        "an upper-case label no longer matches its lower-case binding",
+        document(swarm(23), dot(300, name="req-4c1f"), TICKS,
+                 label("req-4c1f", cx(300), text="REQ-4C1F")),
+        r"the visible text and the binding must agree",
     )
     h.expect_finding(
         "a label naming an undeclared dot is reported",

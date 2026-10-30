@@ -56,6 +56,10 @@ The preset sets the SVG `viewBox`. Every value below is divisible by 4, so the g
 | `print-letter-landscape` | `0 0 1056 816` | ~1.29:1 | @3 → 3168×2448 | print | US Letter landscape |
 | `fit` | derived from content | any | @2 | standard | Vector hand-off; no fixed frame |
 
+### Aspect
+
+Charts are wider than tall by default. For a line chart, choose the plot height so the dominant slopes average about 45 degrees (banking to 45), within the preset's viewBox; a plot so tall that every line is near-vertical, or so flat that every line is near-horizontal, hides the rate of change.
+
 ### Holding the canvas on a narrow screen
 
 The SVG keeps its readable width on a phone instead of shrinking into it, so
@@ -131,7 +135,6 @@ Every `font-size` is one of the role values above for the preset in use, or one 
 | Dense annotation: legend keys, axis ticks, chart data labels, source lines, in-box tags | SF Mono or Inter regular | 7 to 11, half steps allowed |
 | Chart series or row name: bar category, line or bump series, gantt row, matrix header | Inter 600 | 10 to 11 |
 | Group or entity heading | Inter 600 | 14 |
-| Decorative watermark numerals at or under 0.08 opacity | any | any |
 
 An exception is bound to the font beside it, weight included: Inter at 600 or heavier is the node-name voice, lighter Inter is annotation. So a Inter 600 node name cannot borrow the dense-annotation range down to 7, and a SF Mono tick cannot borrow the 14 reserved for headings. A chart row carries a name in the same Inter 600 voice at a rank the ramp has no row for, which is why it has an exception of its own rather than a licence to shrink: `type-bar.md`, `type-gantt.md` and `type-line.md` all set that name at 10 or 11.
 
@@ -186,7 +189,7 @@ How much of the source survives. This is a *count* dial — it governs how many 
 
 `balanced` and `simplified` sit inside the standard complexity budget (SKILL.md §7). **`faithful` deliberately exceeds it** — that's the trade, and it comes with conditions:
 
-1. **Zoning is mandatory.** Above 9 nodes, every node belongs to a labeled zone (2–4 zones, hairline-bordered, `paper-2` fill, mono uppercase zone label at top-left). An unzoned 20-node diagram is a wiring diagram, not a schematic.
+1. **Zoning is mandatory.** Above 9 nodes, every node belongs to a labeled zone (2–4 zones, hairline-bordered, `paper-2` fill, mono zone label at top-left (sentence case)). An unzoned 20-node diagram is a wiring diagram, not a schematic.
 2. **Connector rules don't relax.** SKILL.md §6 rules 1–5 still apply at 24 nodes. If you can't route it without overlaps, you're over the real ceiling — split.
 3. **Above 24 nodes, split.** Produce an overview (zones as nodes, `balanced` grammar) plus one detail diagram per zone. Name them `<base>-overview.html`, `<base>-<zone>.html`. Never ship a 40-node single canvas.
 4. **Accent stays at 2.** More nodes never buys more focal elements.
@@ -200,7 +203,7 @@ When the source has more than the level allows, cut in this order and stop as so
 3. **Leaf clusters** — a container whose children are all leaves collapses to the container: `Core Services` replaces its three boxes. The extractor lists these under *collapsible groups*.
 4. **Degree-1 sinks that don't change the story** — a monitoring hook, a log bucket, an archive tier.
 5. **Cross-cutting infrastructure** — logging, metrics, secrets, CI. At `simplified` these go without asking; at `balanced` keep at most one, and only if the diagram is about it.
-6. **Still over?** Split into overview + detail. Splitting beats shrinking.
+6. **Still over?** Schematics split into overview + detail; charts shrink toward the type-ramp floor first (Tufte's shrink principle: a good graphic survives reduction), then split into small multiples ([layout-budget.md](layout-budget.md#small-multiples)). Never shrink below the ramp.
 
 Anything cut in steps 2–6 goes in the fidelity ledger (§5). Step 1 doesn't need reporting.
 
@@ -213,7 +216,7 @@ Independent of the detail dial: the same 12 nodes get named differently for a pl
 | Audience | Node names | Sublabels | Edge labels | Never |
 |---|---|---|---|---|
 | `engineer` | exact service / component names | protocol, port, version, image tag | `POST /v2/orders`, `SQL`, `gRPC` | Vague verbs like "connects to" |
-| `mixed` (default) | component names, expanded acronyms | technology only where it changes a decision | plain verbs — `verifies`, `writes`, `notifies` | Ports, versions, internal codenames |
+| `mixed` (default) | component names, expanded acronyms (an acronym in an edge label keeps its case and counts toward the 24-character, sentence-case limit) | technology only where it changes a decision | plain verbs — `verifies`, `writes`, `notifies` | Ports, versions, internal codenames |
 | `executive` | capabilities and outcomes | none | business verbs — `approves`, `pays out` | Vendor names, infrastructure, protocols |
 
 Worked example — the same node through all three:

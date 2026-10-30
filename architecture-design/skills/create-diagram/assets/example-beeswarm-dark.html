@@ -37,38 +37,31 @@
          radius or non-focal fill. -->
     <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="beeswarm-dark-title beeswarm-dark-desc">
       <title id="beeswarm-dark-title">The median hides the tail</title>
-      <desc id="beeswarm-dark-desc">Beeswarm of 138 per-request latency samples for one checkout endpoint on a shared linear value axis from zero; vertical spread is packing only and carries no value, and three requests past 380 ms form the p99 tail.</desc>
+      <desc id="beeswarm-dark-desc">Beeswarm of 138 per-request latency samples for one checkout endpoint on a shared linear value axis from zero; vertical spread is packing only and carries no value. The median is 122.5 ms, p99 is 396.8 ms, and the three requests past 380 ms form the tail.</desc>
       <rect width="100%" height="100%" fill="#010102"/>
 
-      <!-- Axis caption -->
-      <text x="520" y="492" fill="#d0d6e0" font-size="7" font-family="'SF Mono', monospace" letter-spacing="0.14em" text-anchor="middle">PER-REQUEST LATENCY, MS</text>
+      <!-- Range-frame value axis: the rule spans only the data (first dot to last dot), not the plot box. No gridlines: four bound ticks carry the scale, and the two reference lines below are the only other vertical rules. Scale is linear from zero, x = 80 + 2·ms. -->
+      <line data-axis="x" x1="184" y1="420" x2="942" y2="420" stroke="#8a8f98" stroke-width="1"/>
 
-      <!-- Vertical gridlines only: the swarm axis has no scale to grid.
-           A horizontal rule through the band would invite reading the
-           packing offsets as values, which they are not. -->
-      <line x1="280" y1="40" x2="280" y2="420" stroke="rgba(247,248,248,0.08)" stroke-width="0.8"/>
-      <line x1="480" y1="40" x2="480" y2="420" stroke="rgba(247,248,248,0.08)" stroke-width="0.8"/>
-      <line x1="680" y1="40" x2="680" y2="420" stroke="rgba(247,248,248,0.08)" stroke-width="0.8"/>
-      <line x1="880" y1="40" x2="880" y2="420" stroke="rgba(247,248,248,0.08)" stroke-width="0.8"/>
-
-      <!-- Value axis, from zero. -->
-      <line x1="80" y1="420" x2="960" y2="420" stroke="#8a8f98" stroke-width="1"/>
-
-      <!-- Tick labels are BOUND: data-tick names the (one) value axis and
-           data-value the number the tick claims to sit at. verify-beeswarm.py
-           cross-checks each against the scale the dots themselves describe. -->
-      <text data-tick="x" data-value="0" x="80" y="440" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">0</text>
+      <!-- Tick labels are BOUND: data-tick names the (one) value axis and data-value the number the tick claims to sit at. verify-beeswarm.py cross-checks each against the scale the dots themselves describe. -->
       <text data-tick="x" data-value="100" x="280" y="440" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">100</text>
       <text data-tick="x" data-value="200" x="480" y="440" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">200</text>
       <text data-tick="x" data-value="300" x="680" y="440" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">300</text>
       <text data-tick="x" data-value="400" x="880" y="440" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">400</text>
+      <text x="184" y="462" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace">Per-request latency, ms</text>
+
+      <!-- Comparison: the median and the p99 of the dots below, drawn behind them as soft 1px dashed 4,3 rules with direct labels. verify-beeswarm.py recomputes both from the dots. -->
+      <line data-ref="median" data-value="122.5" x1="325" y1="64" x2="325" y2="420" stroke="#8a8f98" stroke-width="1" stroke-dasharray="4,3"/>
+      <text data-ref="median" data-role="label" x="325" y="52" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">Median 122.5 ms</text>
+      <line data-ref="p99" data-value="396.8" x1="873.6" y1="64" x2="873.6" y2="420" stroke="#8a8f98" stroke-width="1" stroke-dasharray="4,3"/>
+      <text data-ref="p99" data-role="label" x="873.6" y="52" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">p99 396.8 ms</text>
 
       <!-- ─── THE SWARM. One dot = one request, every dot exactly at its
            value on the shared axis; the vertical offset is the greedy dodge
            and states nothing. One radius for every dot (size as a second
            encoding is a bubble chart) and one ink fill for every non-focal
            dot (opacity as a value encoding is banned while dodging). Each
-           dot sits on a paper underlay so gridlines do not show through
+           dot sits on a paper underlay so the reference lines do not show through
            the translucent fill. -->
       <circle cx="184" cy="230" r="4" fill="#010102"/>
       <circle data-value="52" cx="184" cy="230" r="4" fill="rgba(247,248,248,0.55)" stroke="#d0d6e0" stroke-width="0.75"/>
@@ -347,30 +340,19 @@
       <circle cx="942" cy="230" r="4" fill="#010102"/>
       <circle data-value="431" data-name="req-4c1f" cx="942" cy="230" r="4" fill="rgba(239,99,6,0.55)" stroke="#ef6306" stroke-width="1.2"/>
 
-      <!-- Labels: the p99 tail only, one tier per label, alternating sides,
-           each bound to its dot by data-name and tied to it by a leader the
-           reader follows, which is why it clears 3:1 rather than sitting at
-           gridline weight. verify-beeswarm.py proves each label sits nearer
-           its own dot than any other named dot along the value axis. -->
+      <!-- Labels: the p99 tail only, one tier per label, alternating sides, each bound to its dot by data-name and tied to it by a leader. The mask is sized to the label (0.62em per mono char at 8px, plus 4px padding a side, rounded up to a multiple of 4). verify-beeswarm.py proves each label sits nearer its own dot than any other named dot along the value axis. -->
       <line x1="856" y1="222" x2="856" y2="158" stroke="#8a8f98" stroke-width="0.8"/>
-      <rect x="826" y="141" width="60" height="12" rx="2" fill="#010102"/>
-      <text data-name="req-77d3" data-role="label" x="856" y="150" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle" letter-spacing="0.06em">REQ-77D3</text>
+      <rect x="832" y="141" width="48" height="12" fill="#010102"/>
+      <text data-name="req-77d3" data-role="label" x="856" y="150" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">req-77d3</text>
       <line x1="884" y1="238" x2="884" y2="298" stroke="#8a8f98" stroke-width="0.8"/>
-      <rect x="854" y="301" width="60" height="12" rx="2" fill="#010102"/>
-      <text data-name="req-09aa" data-role="label" x="884" y="310" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle" letter-spacing="0.06em">REQ-09AA</text>
+      <rect x="860" y="301" width="48" height="12" fill="#010102"/>
+      <text data-name="req-09aa" data-role="label" x="884" y="310" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">req-09aa</text>
       <line x1="942" y1="222" x2="942" y2="128" stroke="#8a8f98" stroke-width="0.8"/>
-      <rect x="912" y="111" width="60" height="12" rx="2" fill="#010102"/>
-      <text data-name="req-4c1f" data-role="label" x="942" y="120" fill="#f7f8f8" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle" letter-spacing="0.06em">REQ-4C1F</text>
+      <rect x="918" y="111" width="48" height="12" fill="#010102"/>
+      <text data-name="req-4c1f" data-role="label" x="942" y="120" fill="#f7f8f8" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">req-4c1f</text>
 
-      <!-- Legend -->
-      <line x1="40" y1="462" x2="960" y2="462" stroke="rgba(247,248,248,0.10)" stroke-width="0.8"/>
-      <text x="40" y="478" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" letter-spacing="0.18em">LEGEND</text>
-      <text x="960" y="478" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" letter-spacing="0.06em" text-anchor="end">ONE DOT = ONE REQUEST · VALUE AXIS 0–440 MS, LINEAR FROM ZERO · VERTICAL SPREAD IS PACKING, NOT A VALUE · ILLUSTRATIVE FIGURES, NOT MEASURED TRAFFIC</text>
-
-      <circle cx="52" cy="490" r="4" fill="rgba(239,99,6,0.55)" stroke="#ef6306" stroke-width="1.2"/>
-      <text x="68" y="494" fill="#d0d6e0" font-size="8.5" font-family="'Inter', sans-serif">req-4c1f · focal, the slowest request in the window</text>
-      <circle cx="660" cy="490" r="4" fill="rgba(247,248,248,0.55)" stroke="#d0d6e0" stroke-width="0.75"/>
-      <text x="676" y="494" fill="#d0d6e0" font-size="8.5" font-family="'Inter', sans-serif">request · vertical offset is packing only</text>
+      <!-- Source line: units, what a dot is, and that the vertical spread is packing. -->
+      <text data-role="source" x="40" y="488" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace">One dot = one request (138). Latency in ms, linear from zero. Vertical spread is packing, not a value. p99 by linear interpolation. Illustrative figures, not measured traffic.</text>
     </svg>
   </div>
 </body>

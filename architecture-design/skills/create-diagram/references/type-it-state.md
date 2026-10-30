@@ -64,14 +64,14 @@ dark: false
 **Reserved field semantics:**
 
 - `orientation` — `horizontal` (zones run L→R, components stack vertically inside each zone) or `vertical` (zones stack T→B, components run L→R inside each zone).
-- `zones[i].name` — uppercase short label (≤ 14 chars). Rendered at the top-left of the zone box in the `eyebrow` role with letter-spacing 0.14em, on a paper-masked break in the zone border.
+- `zones[i].name` — sentence-case short label (≤ 14 chars), e.g. `Collection`. Rendered at the top-left of the zone box in the `eyebrow` face and size with no letter-spacing and no uppercase transform, on a paper-masked break in the zone border sized to the text (0.62em per mono char plus 4px each side, rounded up to a multiple of 4).
 - `components[i][k].id` — globally unique slug; referenced by `connectors[].from/to`.
 - `components[i][k].name` — `node-name` role (the human-readable label).
 - `components[i][k].sub` — `sublabel` role at 10px in muted (the technical sub-label; up to 2 lines via auto-wrap when component height grows to 72).
 - `components[i][k].icon` — any id from `references/primitive-icons.md`. If missing → no icon, the name shifts left. (Catalog has 41 icons; `mail` is currently missing — use `icon: file` as fallback for email hand-offs.)
 - `components[i][k].kind` — `standard | focal | external | concern`. `focal` triggers the accent palette (§5); `external` switches to a 4-2 dashed stroke and muted ink to signal "this is outside our scope"; `concern` lifts the container onto the ink wash (§4).
 - `connectors[k].from` / `connectors[k].to` — refer to a component `id`. Cross-zone, cross-row, same-zone vertical, and same-zone horizontal all legal; routing chosen by §3.
-- `connectors[k].label` — uppercase short text (≤ 8 chars). `arrow-label` role at 9px, weight 600.
+- `connectors[k].label` — sentence-case short text (≤ 24 chars); acronyms and file formats keep their case (`CSV`, `XLSX`, `PDF`), code-like tokens keep literal case. `arrow-label` role at 9px, weight 600, no letter-spacing.
 - `connectors[k].icon` — optional inline icon to the left of the text. Same catalog as component icons.
 - `connectors[k].style` — `neutral | link | accent`. Drives stroke color + marker. `link` is a topology, not a hue: it paints `ink` at 1.2 because the edge leaves the system.
 - `connectors[k].dashed` — `true | false`.
@@ -132,7 +132,7 @@ Solid paper fill across `viewBox`. No dot pattern. Each zone box:
 <!-- paper-masked break for the zone label -->
 <rect x="zone_x(i)+20" y="zone_y-8" width="{label_w}" height="16" fill="{paper}"/>
 <text x="zone_x(i)+24" y="zone_y+4" fill="{soft}"
-      font-family="{eyebrow}" letter-spacing="0.14em">{name}</text>
+      font-family="{eyebrow}">{name}</text>
 ```
 
 ### 2.2 Component box
@@ -200,7 +200,7 @@ Footer bars are layer-wide services. **No connectors emerge from them.** They si
 
 ### 2.5 Legend strip
 
-Hairline divider at `y = content_bottom + 16`, then a row of swatches + labels at `y = content_bottom + 36`. Only the styles actually used by `connectors[]` (plus `focal` and `external` if those component kinds are present) appear in the legend.
+Hairline divider at `y = content_bottom + 16`, then a row of swatches + labels at `y = content_bottom + 36`, with no "Legend" heading word. Only the styles actually used by `connectors[]` (plus `focal` and `external` if those component kinds are present) appear in the legend.
 
 ---
 
@@ -268,7 +268,7 @@ The label sits **near the source end** of the connector (not at the mid-segment)
   <use href="#icon-{icon}" x="-{w/2 + 4}" y="-6" width="12" height="12" color="{stroke_color}"/>     <!-- if icon set -->
   <text x="{icon ? (-(w/2) + 22) : 0}" y="3" text-anchor="{icon ? 'start' : 'middle'}"
         font-family="{arrow-label}" font-size="9" font-weight="600"
-        letter-spacing="0.08em" fill="{stroke_color}">{label}</text>
+        fill="{stroke_color}">{label}</text>
 </g>
 ```
 
@@ -365,15 +365,15 @@ If your diagram needs more than 2 focal components, you've collapsed two narrati
 Before emitting SVG, verify **every** item:
 
 1. Eyebrow + title + subtitle present at canonical y-positions (24 / 36 / 52); body padding 32 px.
-2. 2..4 zones; each has its uppercase label at the top-left of its zone box, on a paper-masked break in the border.
+2. 2..4 zones; each has its sentence-case label at the top-left of its zone box, on a paper-masked break in the border.
 3. Every component has `id`, `name`. `sub`, `icon`, `kind` are optional.
 4. ≤ 2 components with `kind: focal`; focal styling auto-applied (accent fill 7 %, accent stroke 1.4, italic line-1 sub).
 5. Every connector exits the right (or bottom) of source and enters the top (or left) of destination; rounded right-angle Q-bezier `r=8` at every bend; marker triangle visibly touches the destination rectangle edge.
 6. Connector labels sit at the **start** of the connector (not mid-segment) and are offset **perpendicular** to the line (5 px gap above for horizontal segments, 6 px gap to the right for vertical segments) — never overlapping the stroke. Paper-fill mask kept behind text; icon (when `icon:` is set) sits left of text inside the same mask.
 7. ≤ 1 component with `kind: concern`; never on focal. No component carries a color of its own.
 8. ≤ 3 footer bars; each spans `viewBox_w − 2*left_pad`; no connectors emerge from any footer.
-9. Legend at bottom: hairline separator + one swatch per style actually used.
-10. `arrow-label` for connector labels, `eyebrow` for the page eyebrow and zone labels, `title` for the page title, `node-name` for the subtitle and component names, and `sublabel` for technical sub-labels.
+9. Legend at bottom: hairline separator + one swatch per style actually used. No "Legend" heading word; the keys sit directly under the separator.
+10. `arrow-label` for connector labels, `eyebrow` for the page eyebrow (zone labels use its face and size in sentence case, untracked), `title` for the page title, `node-name` for the subtitle and component names, and `sublabel` for technical sub-labels.
 11. Markers `#arrow` / `#arrow-ink` / `#arrow-accent` defined once in `<defs>`; no inline marker definitions.
 12. Dark variant: resolve every semantic token through its dark-mode value. Nothing needs a per-mode hex — every treatment is a role at an opacity.
 

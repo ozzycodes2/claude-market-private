@@ -37,7 +37,7 @@ Every element is a rounded prism standing on the plate: `r = 0` for walls, furni
 - Rooms and buildings are named by a horizontal tag: the name in the `node-name` role, 600, 12px, above a sublabel in the `sublabel` role at 8px, on an opaque `paper` backing with a `rule` hairline, 32px tall, width rounded up to a multiple of 4.
 - A room's tag sits on open floor inside the room. A building's tag sits on its roof. Tags paint after every box so walls never cut them.
 - Tags never overlap each other. Move a tag to open floor before you shorten its name.
-- One or two words per name. No leader lines and no numbered key.
+- One or two words per name. No leader lines and no numbered key. The focal caption under the figure is sentence case (`Focal room`), untracked.
 
 ### Focal element
 

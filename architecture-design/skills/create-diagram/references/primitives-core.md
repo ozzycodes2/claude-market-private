@@ -78,8 +78,8 @@ These six rules are **non-negotiable**. Run the pre-output checklist (SKILL.md �
 <rect x="X" y="Y" width="W" height="H" rx="6" fill="{paper}"/>
 <!-- 2. Styled box -->
 <rect x="X" y="Y" width="W" height="H" rx="6" fill="FILL" stroke="STROKE" stroke-width="1"/>
-<!-- 3. Rectangular type tag (rx=2, NOT a pill) -->
-<rect x="X+8" y="Y+6" width="28" height="12" rx="2" fill="transparent" stroke="STROKE@0.40" stroke-width="0.8"/>
+<!-- 3. Rectangular type tag (rx=0, NOT a pill; the radius ladder has no 2) -->
+<rect x="X+8" y="Y+6" width="28" height="12" rx="0" fill="transparent" stroke="STROKE@0.40" stroke-width="0.8"/>
 <text x="X+22" y="Y+15" fill="STROKE@0.8" font-size="7" font-family="{eyebrow}"
       text-anchor="middle" letter-spacing="0.08em">API</text>
 <!-- 4. Node name (node-name role, sans: human-readable) -->
@@ -96,33 +96,34 @@ Every arrow label needs an opaque rect behind it. Without one it bleeds through 
 
 ```svg
 <!-- Mask sits 14px above the arrow (8px text height + 6px gap). Stroke is at ARROW_Y. -->
-<rect x="MID_X-18" y="ARROW_Y-20" width="36" height="12" rx="2" fill="{paper}"/>
+<rect x="MID_X-18" y="ARROW_Y-20" width="36" height="12" rx="0" fill="{paper}"/>
 <text x="MID_X" y="ARROW_Y-11" fill="{soft}" font-size="8"
-      font-family="{arrow-label}" text-anchor="middle" letter-spacing="0.06em">WRITE</text>
+      font-family="{arrow-label}" text-anchor="middle">Write</text>
 ```
 
 Rules:
 
-- ≤14 characters, all-caps, centered on segment midpoint.
+- ≤24 characters, sentence case, centered on segment midpoint. Acronyms keep their case (`HTTPS`, `JWT`). No `letter-spacing`: tracking belongs to caps. Spell words out; no invented abbreviations.
+- Mask width = characters × 0.62em × font-size, plus the 4px padding each side, rounded up to a multiple of 4, centred on the label's anchor. At 8px, `Write` is 5 × 4.96 + 8 = 32.8, so the mask is 36 wide; `Read MDX` is 8 × 4.96 + 8 = 47.7, so 48.
 - **Mandatory 6–10px gap** between the bottom of the mask rect and the arrow stroke. The connector must remain visible — a label that hides its own arrow is a hard fail.
 - Never `writing-mode` vertical.
 - For vertical segments, place the label to the side (not on the line) with the same 6–10px horizontal gap.
 
 **Font substitution.** Don't estimate per-character widths — use the `style-guide.md` budget (0.60em sans / 0.62em mono per char). A production run sized mono labels at ~0.47em/char and clipped twice; the calibrated budget fits both the default skin's mono face (SF Mono) and the common substituted mono faces (Menlo, Courier New, Monaco, all ≈0.60em). SF Mono is not on Google Fonts, so on a non-Apple host the label is *always* drawn in one of those substitutes — the budget is the contract, not a fallback allowance. Previews via `rsvg`/`inkscape` can't fetch the injected Google Fonts, so verify with `python3 <repo-root>/scripts/verify-geometry.py` — it checks masks against later-painted nodes, not text fit; holding the budget is yours.
 
-## Legend — horizontal strip at the bottom
+## Legend — direct labels first
 
-**Never put the legend inside the diagram area.** Place as a horizontal strip after all nodes, with a hairline separator:
+Name series, categories and nodes where they are drawn: at the line end, beside the point, inside or next to the bar. A legend is for encodings that cannot be labelled in place: node treatments, edge styles, and size keys. Drop any legend key that duplicates a direct label. Never head the strip with the word "LEGEND"; the keys are self-evident.
+
+**Never put the legend inside the diagram area.** When one is needed, place it as a horizontal strip after all nodes, with a hairline separator:
 
 ```svg
 <line x1="30" y1="LEGEND_Y-8" x2="VIEWBOX_W-30" y2="LEGEND_Y-8"
       stroke="{ink @ 0.10}" stroke-width="0.8"/>
-<text x="30" y="LEGEND_Y+8" fill="{muted}" font-size="8" font-family="{eyebrow}"
-      letter-spacing="0.14em">LEGEND</text>
-<!-- Items — horizontal row, ~160px apart -->
+<!-- Items — horizontal row, ~160px apart, sentence-case text in {sublabel} or Inter -->
 ```
 
-Expand SVG `viewBox` height by ~60px.
+Expand SVG `viewBox` height by ~60px when a strip is present.
 
 ## Accessible SVG contract
 

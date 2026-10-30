@@ -12,7 +12,7 @@ Three nesting levels, outermost to innermost — reuses the containment grammar 
 
 **Replica badge.** A node running N copies carries a right-aligned `eyebrow`-role 8px badge (`x3`) inside its own small `rx=2` box in the node's top-right corner. A mask fully inside a node is a badge chip and is a legitimate exception to the "mask must not overlap a later node" rule (SKILL.md §6 rule 6) — it's part of that same node.
 
-**Network paths.** Orthogonal elbows between nodes (SKILL.md §6, elbow formula and port-selection rules in `type-architecture.md`), labelled with protocol and port in the `arrow-label` role at 8px (`HTTPS:443`, `TLS:5432`). A path that crosses a zone boundary is `ink` at 1.2; a path that stays inside one zone is `muted` at 1. The crossing reads by weight — there is no second hue to spend on it, and a legend that keys the two must key them by weight. Async or replication paths are dashed `5,4`.
+**Network paths.** Orthogonal elbows between nodes (SKILL.md §6, elbow formula and port-selection rules in `type-architecture.md`), labelled with protocol and port in the `arrow-label` role at 8px (`HTTPS:443`, `TLS:5432`, `WAL stream`): sentence case with acronyms kept, no tracking, ≤ 24 characters. A path that crosses a zone boundary is `ink` at 1.2; a path that stays inside one zone is `muted` at 1. The crossing reads by weight — there is no second hue to spend on it, and a legend that keys the two must key them by weight. Async or replication paths are dashed `5,4`.
 
 **Focal rule.** The 2 accent elements are the single-point-of-failure or the newly-introduced piece — never more than 2. In the canonical example: the RDS primary (accent-tint fill, accent stroke) and the replication path to its standby (accent, dashed).
 

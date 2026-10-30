@@ -10,6 +10,9 @@
 - Max depth: 4 (root + 3 tiers). Max breadth per level: 5.
 - The accent on **one** node: root OR critical leaf. Not both.
 - Draw connectors before nodes.
+- Tier captions in the left margin are sentence case, no tracking (`Tier 0 · root`, `Tier 1`).
+- Type tags inside a node (`ROOT`, `CATEGORY`) are the one caps exception: 7px, uppercase, tracked. Spell the word out and widen the tag box on the 4px grid to fit (≈4.9px per character plus 8px) rather than truncating (`CAT`). ID tags (`PAY-001`) are literal and keep their case.
+- Legend strip has no `Legend` heading; its keys (node treatments) stay.
 
 ## Anti-patterns
 - Tree 5+ levels deep on a single page (illegible — split).

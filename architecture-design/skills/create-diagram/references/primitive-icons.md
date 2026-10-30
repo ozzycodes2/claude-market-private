@@ -8,6 +8,8 @@ Find the icon by name (the `### name` headings below). Copy the fenced `<svg>` s
 
 Generic icons are stroked (1.5px, hairline, like the rest of the skill); brand silhouettes are filled. Don't mix the two styles in the same diagram unnecessarily.
 
+**Encode something the label does not.** An icon earns its place only when it adds information the label lacks (a store versus a service, a person versus a system). If the label already says it, omit the icon.
+
 ## Compute
 
 ### laptop

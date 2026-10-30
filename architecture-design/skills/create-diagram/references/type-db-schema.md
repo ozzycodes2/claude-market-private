@@ -23,7 +23,7 @@ Tables in a non-default schema sit inside a containment rect (`rx=8`, `ink @ 0.0
 
 ### Focal rule
 
-The 2 accent elements are: (1) the one destructive FK (`ON DELETE CASCADE`) — the edge and its label count together, since a labelled edge is one thing; and (2) the table that FK cascades into, carrying `accent-tint` on its **header band only**, never on the whole box. Nothing else on the diagram is `accent`.
+The 2 accent elements are: (1) the one destructive FK (`On delete cascade`, an arrow label in sentence case) — the edge and its label count together, since a labelled edge is one thing; and (2) the table that FK cascades into, carrying `accent-tint` on its **header band only**, never on the whole box. Nothing else on the diagram is `accent`.
 
 If a schema has no destructive FK, it has no focal element. Leave it unaccented rather than promoting an arbitrary table.
 
@@ -36,7 +36,7 @@ Max 5 tables, max 8 column rows shown per table, max 6 FK edges, max 2 accent el
 - Drawing every column of every table — a schema diagram is an argument about a subsystem, not a `\d+` dump.
 - FK lines that connect box to box instead of column to column — that's ER, use ER instead.
 - Missing SQL types — the type is half the content.
-- Unlabelled FK edges — the `ON DELETE` behavior is what a reviewer is looking for.
+- Unlabelled FK edges — the `On delete` behavior is what a reviewer is looking for.
 - Constraint chips on every row until the chips are the noise.
 - Index compartments listing every index rather than the ones that matter to the story.
 - Mixing conceptual entity names with physical table names in one diagram.

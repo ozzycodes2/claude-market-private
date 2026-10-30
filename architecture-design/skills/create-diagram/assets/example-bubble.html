@@ -37,102 +37,62 @@
       <desc id="bubble-desc">Bubble chart of nine services by p95 latency and error rate on zero-based axes, bubble area proportional to requests per second; Payments carries near-peak traffic at the highest error rate.</desc>
       <rect width="100%" height="100%" fill="#f8f8f8"/>
 
-      <!-- Axis captions -->
-      <text transform="rotate(-90 24 230)" x="24" y="230" fill="#4d4d4d" font-size="7" font-family="'SF Mono', monospace" letter-spacing="0.14em" text-anchor="middle">ERROR RATE, %</text>
-      <text x="520" y="492" fill="#4d4d4d" font-size="7" font-family="'SF Mono', monospace" letter-spacing="0.14em" text-anchor="middle">P95 LATENCY, MS</text>
+      <!-- Axis titles are horizontal: y above its axis, left-aligned to it; x below, left-aligned to its axis. -->
+      <text x="172" y="140" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Error rate, %</text>
+      <text x="229.6" y="464" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">p95 latency, ms</text>
 
-      <!-- Gridlines, same positions as the parent scatter -->
-      <line x1="80" y1="325" x2="960" y2="325" stroke="rgba(23,23,23,0.08)" stroke-width="0.8"/>
-      <line x1="80" y1="230" x2="960" y2="230" stroke="rgba(23,23,23,0.08)" stroke-width="0.8"/>
-      <line x1="80" y1="135" x2="960" y2="135" stroke="rgba(23,23,23,0.08)" stroke-width="0.8"/>
-      <line x1="80" y1="40"  x2="960" y2="40"  stroke="rgba(23,23,23,0.06)" stroke-width="0.8"/>
-      <line x1="256" y1="40" x2="256" y2="420" stroke="rgba(23,23,23,0.08)" stroke-width="0.8"/>
-      <line x1="432" y1="40" x2="432" y2="420" stroke="rgba(23,23,23,0.08)" stroke-width="0.8"/>
-      <line x1="608" y1="40" x2="608" y2="420" stroke="rgba(23,23,23,0.08)" stroke-width="0.8"/>
-      <line x1="784" y1="40" x2="784" y2="420" stroke="rgba(23,23,23,0.08)" stroke-width="0.8"/>
+      <!-- Range-frame axes: each rule spans only the data (centres), not the plot box. The scales are still linear from zero (x = 80 + 1.76·ms, y = 420 - 95·pct); no gridlines, because the ticks are sparse and the bubbles are not read against a grid. -->
+      <line x1="172" y1="154" x2="172" y2="372.5" stroke="#616161" stroke-width="1"/>
+      <line x1="229.6" y1="428" x2="889.6" y2="428" stroke="#616161" stroke-width="1"/>
 
-      <!-- Axes: both start at zero. A bubble's position is read against the
-           origin, so a truncated axis here shifts every bubble's story. -->
-      <line x1="80" y1="40" x2="80" y2="420" stroke="#616161" stroke-width="1"/>
-      <line x1="80" y1="420" x2="960" y2="420" stroke="#616161" stroke-width="1"/>
+      <!-- Tick labels are BOUND: data-tick names the axis, data-value the number the tick claims to sit at. -->
+      <text data-tick="y" data-value="1" x="164" y="329" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="end">1</text>
+      <text data-tick="y" data-value="2" x="164" y="234" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="end">2</text>
+      <text data-tick="x" data-value="100" x="256" y="444" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">100</text>
+      <text data-tick="x" data-value="200" x="432" y="444" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">200</text>
+      <text data-tick="x" data-value="300" x="608" y="444" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">300</text>
+      <text data-tick="x" data-value="400" x="784" y="444" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">400</text>
 
-      <!-- Tick labels are BOUND: data-tick names the axis, data-value the number
-           the tick claims to sit at. verify-bubble.py cross-checks each against
-           the scale the bubbles themselves describe, so the printed axis and
-           the drawn positions cannot drift apart. -->
-      <text data-tick="y" data-value="1" x="72" y="329" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="end">1</text>
-      <text data-tick="y" data-value="2" x="72" y="234" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="end">2</text>
-      <text data-tick="y" data-value="3" x="72" y="139" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="end">3</text>
-      <text data-tick="y" data-value="4" x="72" y="44"  fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="end">4</text>
-      <text data-tick="y" data-value="0" x="72" y="424" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="end">0</text>
+      <!-- Comparison: the error budget, 1.5%, as a reference line behind the bubbles. -->
+      <line data-ref="budget" data-value="1.5" x1="172" y1="277.5" x2="960" y2="277.5" stroke="#616161" stroke-width="1" stroke-dasharray="4,3"/>
+      <text data-ref="budget" data-role="label" x="960" y="271.5" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="end">Error budget, 1.5%</text>
 
-      <text data-tick="x" data-value="0"   x="80"  y="440" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">0</text>
-      <text data-tick="x" data-value="100" x="256" y="440" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">100</text>
-      <text data-tick="x" data-value="200" x="432" y="440" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">200</text>
-      <text data-tick="x" data-value="300" x="608" y="440" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">300</text>
-      <text data-tick="x" data-value="400" x="784" y="440" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">400</text>
-      <text data-tick="x" data-value="500" x="960" y="440" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">500</text>
-
-      <!-- ─── BUBBLES, drawn LARGEST FIRST so a small bubble can never be buried
-           under a big one. AREA carries the third value, never radius: a radius
-           proportional to traffic would show a 6x service as 36x the ink. The
-           fill ramp runs faintest-on-largest — it compensates ink mass so small
-           bubbles stay visible, it is NOT a fourth encoding, and the legend says
-           which end is which in skin-neutral terms. Each bubble sits on a paper
-           underlay so gridlines do not show through the translucent fill. -->
-
+      <!-- BUBBLES, largest first. AREA carries the third value, never radius: r = K·√v with K = 1.4. One uniform fill (ink at 0.14) on every non-focal bubble: tone is not an encoding here. The paper underlay keeps the reference line from showing through a translucent fill. -->
       <circle cx="229.6" cy="372.5" r="42" fill="#f8f8f8"/>
       <circle data-name="Gateway" data-x="85" data-y="0.5" data-size="900" cx="229.6" cy="372.5" r="42" fill="rgba(23,23,23,0.14)" stroke="#4d4d4d" stroke-width="1"/>
-
-      <!-- Payments FOCAL — and it is the risk, not the winner: near-peak traffic
-           riding the worst error rate. One accent bubble max; every other
-           service stays on the ink ramp. -->
       <circle cx="537.6" cy="154" r="38.6" fill="#f8f8f8"/>
       <circle data-name="Payments" data-x="260" data-y="2.8" data-size="760" cx="537.6" cy="154" r="38.6" fill="rgba(239,99,6,0.15)" stroke="#ef6306" stroke-width="1.2"/>
-
       <circle cx="326.4" cy="334.5" r="34.9" fill="#f8f8f8"/>
-      <circle data-name="Auth" data-x="140" data-y="0.9" data-size="620" cx="326.4" cy="334.5" r="34.9" fill="rgba(23,23,23,0.17)" stroke="#4d4d4d" stroke-width="1"/>
-
+      <circle data-name="Auth" data-x="140" data-y="0.9" data-size="620" cx="326.4" cy="334.5" r="34.9" fill="rgba(23,23,23,0.14)" stroke="#4d4d4d" stroke-width="1"/>
       <circle cx="396.8" cy="353.5" r="32.5" fill="#f8f8f8"/>
-      <circle data-name="Catalog" data-x="180" data-y="0.7" data-size="540" cx="396.8" cy="353.5" r="32.5" fill="rgba(23,23,23,0.20)" stroke="#4d4d4d" stroke-width="1"/>
-
+      <circle data-name="Catalog" data-x="180" data-y="0.7" data-size="540" cx="396.8" cy="353.5" r="32.5" fill="rgba(23,23,23,0.14)" stroke="#4d4d4d" stroke-width="1"/>
       <circle cx="643.2" cy="315.5" r="30.7" fill="#f8f8f8"/>
-      <circle data-name="Search" data-x="320" data-y="1.1" data-size="480" cx="643.2" cy="315.5" r="30.7" fill="rgba(23,23,23,0.23)" stroke="#4d4d4d" stroke-width="1"/>
-
+      <circle data-name="Search" data-x="320" data-y="1.1" data-size="480" cx="643.2" cy="315.5" r="30.7" fill="rgba(23,23,23,0.14)" stroke="#4d4d4d" stroke-width="1"/>
       <circle cx="484.8" cy="287" r="25.4" fill="#f8f8f8"/>
-      <circle data-name="Media" data-x="230" data-y="1.4" data-size="330" cx="484.8" cy="287" r="25.4" fill="rgba(23,23,23,0.26)" stroke="#4d4d4d" stroke-width="1"/>
-
+      <circle data-name="Media" data-x="230" data-y="1.4" data-size="330" cx="484.8" cy="287" r="25.4" fill="rgba(23,23,23,0.14)" stroke="#4d4d4d" stroke-width="1"/>
       <circle cx="819.2" cy="268" r="20.3" fill="#f8f8f8"/>
-      <circle data-name="Recommender" data-x="420" data-y="1.6" data-size="210" cx="819.2" cy="268" r="20.3" fill="rgba(23,23,23,0.29)" stroke="#4d4d4d" stroke-width="1"/>
-
+      <circle data-name="Recommender" data-x="420" data-y="1.6" data-size="210" cx="819.2" cy="268" r="20.3" fill="rgba(23,23,23,0.14)" stroke="#4d4d4d" stroke-width="1"/>
       <circle cx="247.2" cy="211" r="17.1" fill="#f8f8f8"/>
-      <circle data-name="Notifications" data-x="95" data-y="2.2" data-size="150" cx="247.2" cy="211" r="17.1" fill="rgba(23,23,23,0.32)" stroke="#4d4d4d" stroke-width="1"/>
-
+      <circle data-name="Notifications" data-x="95" data-y="2.2" data-size="150" cx="247.2" cy="211" r="17.1" fill="rgba(23,23,23,0.14)" stroke="#4d4d4d" stroke-width="1"/>
       <circle cx="889.6" cy="334.5" r="10.8" fill="#f8f8f8"/>
-      <circle data-name="Reports" data-x="460" data-y="0.9" data-size="60" cx="889.6" cy="334.5" r="10.8" fill="rgba(23,23,23,0.35)" stroke="#4d4d4d" stroke-width="1"/>
+      <circle data-name="Reports" data-x="460" data-y="0.9" data-size="60" cx="889.6" cy="334.5" r="10.8" fill="rgba(23,23,23,0.14)" stroke="#4d4d4d" stroke-width="1"/>
 
-      <!-- Labels: the focal bubble plus the two poles of the area story — the
-           giant that is healthy and the sliver that is slow. Each label is
-           bound to its bubble by data-name, so verify-bubble.py can prove it
-           sits nearer its own bubble than anyone else's. -->
-      <rect x="506" y="99" width="64" height="12" rx="2" fill="#f8f8f8"/>
-      <text data-name="Payments" data-role="label" x="538" y="108" fill="#171717" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PAYMENTS</text>
+      <!-- Labels: the focal bubble plus the two poles of the area story. Each is bound by data-name. -->
+      <text data-name="Payments" data-role="label" x="538" y="108" fill="#171717" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">Payments</text>
+      <text data-name="Gateway" data-role="label" x="230" y="325" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">Gateway</text>
+      <text data-name="Reports" data-role="label" x="890" y="356" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">Reports</text>
 
-      <rect x="198" y="316" width="64" height="12" rx="2" fill="#f8f8f8"/>
-      <text data-name="Gateway" data-role="label" x="230" y="325" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle" letter-spacing="0.06em">GATEWAY</text>
+      <!-- Size key: reference circles drawn with the same r = K·√v, bound by data-key-size. -->
+      <text x="764" y="52" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Bubble area, requests per second</text>
+      <circle data-key-size="100" cx="780" cy="130" r="14" fill="none" stroke="#4d4d4d" stroke-width="1"/>
+      <text data-key-size="100" x="780" y="160" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">100</text>
+      <circle data-key-size="400" cx="844" cy="116" r="28" fill="none" stroke="#4d4d4d" stroke-width="1"/>
+      <text data-key-size="400" x="844" y="160" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">400</text>
+      <circle data-key-size="800" cx="920" cy="104.4" r="39.6" fill="none" stroke="#4d4d4d" stroke-width="1"/>
+      <text data-key-size="800" x="920" y="160" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">800</text>
 
-      <rect x="858" y="347" width="64" height="12" rx="2" fill="#f8f8f8"/>
-      <text data-name="Reports" data-role="label" x="890" y="356" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle" letter-spacing="0.06em">REPORTS</text>
-
-      <!-- Legend -->
-      <line x1="40" y1="462" x2="960" y2="462" stroke="rgba(23,23,23,0.10)" stroke-width="0.8"/>
-      <text x="40" y="478" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" letter-spacing="0.18em">LEGEND</text>
-      <text x="960" y="478" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" letter-spacing="0.06em" text-anchor="end">P95 VS ERROR RATE, BUBBLE AREA ∝ REQUESTS PER SECOND · BOTH AXES START AT ZERO · ILLUSTRATIVE FIGURES, NOT MEASURED SERVICES</text>
-
-      <circle cx="52" cy="490" r="6" fill="rgba(239,99,6,0.15)" stroke="#ef6306" stroke-width="1.2"/>
-      <text x="68" y="494" fill="#4d4d4d" font-size="8.5" font-family="'Inter', sans-serif">Payments · focal, highest error rate at near-peak traffic</text>
-      <circle cx="660" cy="490" r="5" fill="rgba(23,23,23,0.23)" stroke="#4d4d4d" stroke-width="1"/>
-      <text x="676" y="494" fill="#4d4d4d" font-size="8.5" font-family="'Inter', sans-serif">Service · faintest fill is the largest bubble</text>
+      <!-- Source line: states the area constant K and the units. -->
+      <text data-role="source" x="40" y="488" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Area = π·K²·requests per second, K = 1.4 px per √(req/s). Latency in ms (p95), errors in % of requests. Scales linear from zero. Illustrative figures, not measured services.</text>
     </svg>
   </div>
 </body>

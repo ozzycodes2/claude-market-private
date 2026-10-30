@@ -377,7 +377,7 @@ def main() -> int:
         )
         case(
             failures, directory, "caption-gone",
-            source.replace('      <text data-axis="2" data-state="Q3" x="560" y="416" fill="#4d4d4d" font-size="9" font-family="\'SF Mono\', monospace" letter-spacing="0.14em" text-anchor="middle">Q3</text>\n', "", 1),
+            source.replace('      <text data-axis="2" data-state="Q3" x="560" y="416" fill="#4d4d4d" font-size="9" font-family="\'SF Mono\', monospace" text-anchor="middle">Q3</text>\n', "", 1),
             source, "no caption for snapshot 3",
             "a snapshot with no caption",
         )

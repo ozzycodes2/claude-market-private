@@ -8,6 +8,7 @@ Exit 0 only when all gates pass. Intended for local/PR checks alongside:
 
 from __future__ import annotations
 
+import math
 import re
 import subprocess
 import sys
@@ -36,6 +37,37 @@ def fail(msg: str) -> None:
 
 def ok(msg: str) -> None:
     print(f"OK: {msg}")
+
+
+LABEL_RE = re.compile(
+    r'<rect x="(\d+)" y="\d+" width="(\d+)" height="12" rx="2" fill="[^"]+"/>\s*'
+    r'<text x="(\d+)" [^>]*?font-size="8"[^>]*?text-anchor="middle"([^>]*)>([^<]*)</text>'
+)
+
+
+def check_message_labels(path: Path, body: str) -> int:
+    """Arrow labels: <=24 chars, no tracking, mask sized to the width budget.
+
+    Mask width = ceil4(chars * 8 * 0.62 + 8), centred on the label's anchor.
+    Returns the number of labels checked.
+    """
+    count = 0
+    for m in LABEL_RE.finditer(body):
+        x, width, cx, rest, text = int(m[1]), int(m[2]), int(m[3]), m[4], m[5]
+        count += 1
+        if "letter-spacing" in rest:
+            fail(f"{path.name} label {text!r} carries letter-spacing (tracking is for caps tags only)")
+        if len(text) > 24:
+            fail(f"{path.name} label {text!r} exceeds 24 characters")
+        want = math.ceil((len(text) * 8 * 0.62 + 8) / 4) * 4
+        if width != want:
+            fail(f"{path.name} label {text!r} mask width {width}, budget says {want}")
+        if x + width / 2 != cx:
+            fail(f"{path.name} label {text!r} mask not centred on its anchor")
+        letters = [c for c in text if c.isalpha()]
+        if len(letters) > 4 and all(c.isupper() for c in letters):
+            fail(f"{path.name} label {text!r} is not sentence case")
+    return count
 
 
 def main() -> int:
@@ -87,7 +119,7 @@ def main() -> int:
             fail(f"{path.name} missing else-region guard")
         if "arrow-open" not in body:
             fail(f"{path.name} missing arrow-open async marker")
-        if "Bearer" not in body and "BEARER" not in body:
+        if "Bearer" not in body:
             fail(f"{path.name} missing bearer call")
         # Return grammar: 401 and retry 200 body must be dashed (not solid calls)
         for y, label in (("368", "401"), ("544", "retry 200")):
@@ -108,6 +140,14 @@ def main() -> int:
         if not act or int(act.group(1)) < 100:
             fail(f"{path.name} first API activation height must cover M2 (height>=100)")
     ok("oauth trio has ALT two-region structure + async open + dashed returns")
+
+    for path in (*COLD, *OAUTH):
+        body = path.read_text(encoding="utf-8")
+        if ">LEGEND<" in body:
+            fail(f"{path.name} still carries a LEGEND heading word")
+        if check_message_labels(path, body) < 6:
+            fail(f"{path.name} has fewer than 6 checkable message labels")
+    ok("message labels sentence case, untracked, masks on budget, no LEGEND heading")
 
     # Drive real skin linter entry point on new files
     cmd = [

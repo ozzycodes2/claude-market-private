@@ -4,8 +4,12 @@
 
 ## Layout conventions
 - 2×2 grid. Axis lines: 1px ink cross through the center.
-- **Axis labels: Jobs-minimal.** One single word at each arrow tip — no glyphs baked into the label (no `↑` / `→` / `←` / `↓`), no parentheticals, no "HIGH / LOW" modifiers. `eyebrow` role at 9px regular weight, tracked 0.18em, uppercase. Flank the arrow tips — never sit labels on top of the axis line. Shorten the arrow enough (~60–80px inside the viewBox edge) to leave breathing room for the labels beyond the tips.
+- **Axis labels: Jobs-minimal.** One single word at each arrow tip — no glyphs baked into the label (no `↑` / `→` / `←` / `↓`), no parentheticals, no "high / low" modifiers. `eyebrow` role at 9px regular weight, sentence case, no tracking ("Effort", "Impact"). The word sits at the tip where the quantity rises; the source line says which way it rises. Flank the arrow tips — never sit labels on top of the axis line. Shorten the arrow enough (~60–80px inside the viewBox edge) to leave breathing room for the labels beyond the tips.
 - Never label at the midpoint.
+- **Quadrant names** (corner labels) are sentence case, 9px mono, no tracking ("Do first", "Quick wins").
+- **Positions are judged or measured, and the source line says which.** Judged: "Positions are team estimates, not measurements." Measured: name the metric, its unit and the period. Without that line the reader takes a point cloud for data.
+- **No legend.** Name the focal item in place (a short `muted` mono label beside it, e.g. "Start tomorrow"); ordinary dots need no key. A sentence-case `muted` source line sits bottom-left and states the direction of each axis and how positions were set.
+- **Context rule exception:** a quadrant's axis cross is its own comparison (quadrant versus quadrant); no extra reference line is drawn.
 - Items: small labeled dots (`r=4`) positioned in the quadrants. Labels 8–10px away; don't let labels cross axis lines.
 - The accent on the "do first" item (typically top-right).
 - Limit to ~12 items; cluster or split beyond that.
@@ -37,8 +41,8 @@ A **layout variant** of the standard quadrant — same house skin (near-white pa
 |---|---|---|
 | Axis arrows | single-ended | **double-ended** — both axes have `marker-start` + `marker-end` |
 | Cell content | small dots with labels | **named scenario + 1–3 line description** |
-| Quadrant corner | short tag (e.g. DO FIRST) | **numbered tag + axis combination** (`01 · DIMENSION-A / DIMENSION-B`) |
-| Focal accent | accent on one *item* | accent on one *quadrant* — tinted bg + accent stroke + accent corner tag, its label still ink |
+| Quadrant corner | short tag (e.g. Do first) | **numbered tag + axis combination** (`01 · Dimension-a / dimension-b`) |
+| Focal accent | accent on one *item* | accent on one *quadrant* — tinted bg + accent stroke + ink corner tag, its label still ink |
 | Axes | 1px muted ink | **1.2px ink** (slightly heavier — the axes carry more of the figure) |
 
 Both variants use the same Jobs-minimal axis labels: one word at each arrow tip, no glyphs, no parentheticals. The only axis difference is that the consultant variant uses double-ended arrows instead of single-ended.
@@ -50,12 +54,12 @@ Everything else — paper, typography, legend strip, 4px grid, complexity budget
 - **Paper / bg**: `paper` from `style-guide.md`, solid across the full viewBox.
 - **Axis lines**: `ink`, `stroke-width: 1.2`, `marker-start` + `marker-end` both pointing outward.
 - **Focal quadrant tint**: `accent @ 0.04` full rect behind the focal cell.
-- **Focal cell**: `accent-tint` fill, `accent` stroke at 1.2px. Corner tag in `accent`, weight 600.
+- **Focal cell**: `accent-tint` fill, `accent` stroke at 1.2px. Corner tag in `ink`, weight 600 (accent paints objects, never text).
 - **Non-focal cells**: `store` treatment (`ink @ 0.04` fill, `muted @ 0.28` stroke).
 - **Cell title**: `node-name` role, 16px, weight 600, `ink`.
 - **Cell description**: `node-name` role, 11px, `muted`, 1–3 lines, left-aligned inside the cell.
-- **Corner tag**: `eyebrow` role, 8px, uppercase, tracked `0.18em`, `muted` (or `accent` on focal). Format: `NN · DIMENSION-A / DIMENSION-B` — the two axis-dimension words must match the axis labels exactly.
-- **Axis labels**: `eyebrow` role 9px **regular weight** (not bold), tracked `0.18em`, uppercase, `ink`. **One word per tip.** No arrow glyphs in the label, no `HIGH / LOW` parentheticals, no multi-line sublabels. The word itself *is* the label. Position labels *beyond* the arrow tips (not on the axis line):
+- **Corner tag**: `eyebrow` role, 8px, sentence case, no tracking, `muted` (or `ink` on focal). Format: `NN · Remote / human` — the two axis-dimension words must match the axis labels exactly, case included.
+- **Axis labels**: `eyebrow` role 9px **regular weight** (not bold), sentence case, no tracking, `ink`. **One word per tip.** No arrow glyphs in the label, no `HIGH / LOW` parentheticals, no multi-line sublabels. The word itself *is* the label. Position labels *beyond* the arrow tips (not on the axis line):
   - Top tip: `text-anchor="middle"`, ~12px above the arrow tip
   - Bottom tip: `text-anchor="middle"`, ~20px below the arrow tip
   - Left tip: `text-anchor="end"`, ~12px left of the arrow tip, `dominant-baseline="middle"`
@@ -77,5 +81,5 @@ Everything else — paper, typography, legend strip, 4px grid, complexity budget
 - The accent on more than one cell — same focal rule as everywhere else in the skill.
 - 3×3 or 2×3 grids — those are different diagrams, not this variant.
 - Positioning dots *inside* the cells — if position matters, use the standard quadrant.
-- Bolded axis labels, arrow glyphs in the text (`↑ DRIVER`), or "HIGH / LOW" parentheticals — all forbidden. Jobs-minimal is non-negotiable on this variant.
-- Corner tags that disagree with the axis labels (e.g. axis says `REMOTE / IN-PERSON` but the tag reads `HIGH REMOTE / LOW AI`). Reader parses this as a bug in three seconds.
+- Bolded axis labels, arrow glyphs in the text (`↑ Driver`), or "high / low" parentheticals — all forbidden. Jobs-minimal is non-negotiable on this variant.
+- Corner tags that disagree with the axis labels (e.g. axis says `Remote / In-person` but the tag reads `High remote / low AI`). Reader parses this as a bug in three seconds.

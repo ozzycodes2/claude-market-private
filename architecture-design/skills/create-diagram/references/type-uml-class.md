@@ -16,7 +16,7 @@
 ## Layout conventions
 
 - Each class is a **single box** (`rx=6`), divided by full-width hairlines into up to three compartments. Compartment heights follow content — never pad to a uniform height.
-  1. **Name** — class name in the `node-name` role, 12px, weight 600, **centered**. An interface carries an `eyebrow`-role 8px `«interface»` stereotype line above the name. An abstract class sets the name in *italic*.
+  1. **Name** — class name in the `node-name` role, 12px, weight 600, **centered**. An interface carries an `eyebrow`-role 8px `«interface»` stereotype line above the name, lowercase as UML writes it, no `letter-spacing`. An abstract class sets the name in *italic*.
   2. **Attributes** — one line each, `sublabel` role 9px, left-aligned: `+ name: Type`. Visibility markers: `+` public, `-` private, `#` protected.
   3. **Operations** — one line each, `sublabel` role 9px, left-aligned: `+ method(arg): Return`.
   Omit a compartment entirely when a class has no members in it (an interface with no attributes skips that compartment).
@@ -25,7 +25,7 @@
 
 ## Relationship vocabulary
 
-Define every marker used in `<defs>` and show all six in the legend, even the ones not used in the diagram body — the legend is this type's complete grammar reference.
+Define every marker used in `<defs>` and show all six in the legend, even the ones not used in the diagram body — the legend is this type's complete grammar reference. The legend strip carries no heading word (no `Legend`); the keys speak for themselves. Relationship labels on lines (`Uses`) are sentence case, no tracking.
 
 | Relationship | Line | Ending (at the target/owner end) |
 |---|---|---|

@@ -17,7 +17,7 @@
     svg .zone { fill:rgba(247,248,248,.04); stroke:var(--soft); stroke-width:.8; }
     svg .zone-mask, svg .node-mask, svg .label-mask { fill:#010102; }
     svg .zone-label, svg .arrow-label, svg .legend-label { font-family:'SF Mono',monospace; }
-    svg .zone-label { fill:rgba(247,248,248,.40); font-size:8px; letter-spacing:.14em; }
+    svg .zone-label { fill:rgba(247,248,248,.40); font-size:8px; }
     svg .node { fill:rgba(247,248,248,.04); stroke:rgba(247,248,248,.32); stroke-width:1; }
     svg .node.external { stroke:#d0d6e0; stroke-dasharray:4 3; }
     svg .node.focal { fill:rgba(239,99,6,.12); stroke:#ef6306; stroke-width:1.4; }
@@ -25,7 +25,7 @@
     svg .node-name { fill:#f7f8f8; font:600 12px 'Inter',sans-serif; }
     svg .node-name.survivor { fill:var(--ink); }
     svg .sub { fill:#d0d6e0; font:400 10px 'SF Mono',monospace; } svg .sub.focal { fill:#f7f8f8; }
-    svg .arrow-label { font-size:8px; font-weight:600; letter-spacing:.08em; } svg .legend-label { fill:#d0d6e0; font-size:8px; }
+    svg .arrow-label { font-size:8px; font-weight:600; } svg .legend-label { fill:#d0d6e0; font-size:8px; }
   </style>
 </head>
 <body>
@@ -46,9 +46,9 @@
           <symbol id="icon-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="9" cy="8" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2M16 4.5a4 4 0 0 1 0 7M18 15a4 4 0 0 1 3 4v2"/></symbol>
         </defs>
         <rect width="960" height="500" fill="#010102"/>
-        <rect class="zone" x="16" y="52" width="256" height="360" rx="8"/><rect class="zone-mask" x="36" y="44" width="92" height="16"/><text class="zone-label" x="40" y="56">COLLECTION</text>
-        <rect class="zone" x="292" y="52" width="360" height="360" rx="8"/><rect class="zone-mask" x="312" y="44" width="92" height="16"/><text class="zone-label" x="316" y="56">PROCESSING</text>
-        <rect class="zone" x="672" y="52" width="272" height="360" rx="8"/><rect class="zone-mask" x="692" y="44" width="116" height="16"/><text class="zone-label" x="696" y="56">DISSEMINATION</text>
+        <rect class="zone" x="16" y="52" width="256" height="360" rx="8"/><rect class="zone-mask" x="36" y="44" width="60" height="16"/><text class="zone-label" x="40" y="56">Collection</text>
+        <rect class="zone" x="292" y="52" width="360" height="360" rx="8"/><rect class="zone-mask" x="312" y="44" width="60" height="16"/><text class="zone-label" x="316" y="56">Processing</text>
+        <rect class="zone" x="672" y="52" width="272" height="360" rx="8"/><rect class="zone-mask" x="692" y="44" width="76" height="16"/><text class="zone-label" x="696" y="56">Dissemination</text>
 
         <path d="M 252,108 H 340" fill="none" stroke="#f7f8f8" stroke-width="1.2" marker-end="url(#arrow-ink)"/>
         <path d="M 252,196 H 308 Q 316,196 316,188 V 132 Q 316,124 324,124 H 340" fill="none" stroke="#f7f8f8" stroke-width="1.2" marker-end="url(#arrow-ink)"/>
@@ -75,16 +75,16 @@
         <rect class="node-mask" x="704" y="216" width="208" height="56" rx="6"/><rect class="node" x="704" y="216" width="208" height="56" rx="6"/><use href="#icon-file" x="716" y="232" width="24" height="24" color="#f7f8f8"/><text class="node-name" x="748" y="242">Email Report Packs</text><text class="sub" x="748" y="258">weekly · PDF</text>
         <rect class="node-mask" x="704" y="344" width="208" height="56" rx="6"/><rect class="node external" x="704" y="344" width="208" height="56" rx="6"/><use href="#icon-users" x="716" y="360" width="24" height="24" color="#d0d6e0"/><text class="node-name" x="748" y="370">Regional Managers</text><text class="sub" x="748" y="386">12 store regions</text>
 
-        <rect class="label-mask" x="260" y="86" width="40" height="16" rx="2"/><text class="arrow-label" x="280" y="98" text-anchor="middle" fill="#f7f8f8">CSV</text>
-        <rect class="label-mask" x="260" y="174" width="52" height="16" rx="2"/><text class="arrow-label" x="286" y="186" text-anchor="middle" fill="#f7f8f8">EXPORT</text>
-        <rect class="label-mask" x="260" y="262" width="44" height="16" rx="2"/><text class="arrow-label" x="282" y="274" text-anchor="middle" fill="#f7f8f8">XLSX</text>
-        <rect class="label-mask" x="478" y="156" width="40" height="16" rx="2"/><text class="arrow-label" x="498" y="168" text-anchor="middle" fill="#f7f8f8">COPY</text>
-        <rect class="label-mask" x="478" y="312" width="40" height="16" rx="2"/><text class="arrow-label" x="498" y="324" text-anchor="middle" fill="#d0d6e0">LOAD</text>
-        <rect class="label-mask" x="612" y="246" width="44" height="16" rx="2"/><text class="arrow-label" x="634" y="258" text-anchor="middle" fill="#f7f8f8">XLSX</text>
-        <rect class="label-mask" x="814" y="148" width="36" height="16" rx="2"/><text class="arrow-label" x="832" y="160" text-anchor="middle" fill="#f7f8f8">PDF</text>
-        <rect class="label-mask" x="814" y="280" width="48" height="16" rx="2"/><text class="arrow-label" x="838" y="292" text-anchor="middle" fill="#f7f8f8">EMAIL</text>
+        <rect class="label-mask" x="268" y="86" width="24" height="16" rx="2"/><text class="arrow-label" x="280" y="98" text-anchor="middle" fill="#f7f8f8">CSV</text>
+        <rect class="label-mask" x="266" y="174" width="40" height="16" rx="2"/><text class="arrow-label" x="286" y="186" text-anchor="middle" fill="#f7f8f8">Export</text>
+        <rect class="label-mask" x="268" y="262" width="28" height="16" rx="2"/><text class="arrow-label" x="282" y="274" text-anchor="middle" fill="#f7f8f8">XLSX</text>
+        <rect class="label-mask" x="478" y="156" width="28" height="16" rx="2"/><text class="arrow-label" x="492" y="168" text-anchor="middle" fill="#f7f8f8">Copy</text>
+        <rect class="label-mask" x="478" y="312" width="28" height="16" rx="2"/><text class="arrow-label" x="492" y="324" text-anchor="middle" fill="#d0d6e0">Load</text>
+        <rect class="label-mask" x="620" y="246" width="28" height="16" rx="2"/><text class="arrow-label" x="634" y="258" text-anchor="middle" fill="#f7f8f8">XLSX</text>
+        <rect class="label-mask" x="814" y="148" width="24" height="16" rx="2"/><text class="arrow-label" x="826" y="160" text-anchor="middle" fill="#f7f8f8">PDF</text>
+        <rect class="label-mask" x="814" y="280" width="36" height="16" rx="2"/><text class="arrow-label" x="832" y="292" text-anchor="middle" fill="#f7f8f8">Email</text>
 
-        <line x1="16" y1="440" x2="944" y2="440" stroke="rgba(247,248,248,.12)" stroke-width="0.8"/><text class="legend-label" x="16" y="460" letter-spacing=".14em">LEGEND</text>
+        <line x1="16" y1="440" x2="944" y2="440" stroke="rgba(247,248,248,.12)" stroke-width="0.8"/>
         <line x1="80" y1="456" x2="104" y2="456" stroke="#f7f8f8" stroke-width="1.2"/><text class="legend-label" x="112" y="460">data flow</text>
         <line x1="208" y1="456" x2="232" y2="456" stroke="#ef6306" stroke-width="1.4"/><text class="legend-label" x="240" y="460">pain-point</text>
         <rect x="372" y="450" width="16" height="12" rx="2" fill="rgba(247,248,248,.04)" stroke="#d0d6e0" stroke-width=".8" stroke-dasharray="4 3"/><text class="legend-label" x="396" y="460">external</text>

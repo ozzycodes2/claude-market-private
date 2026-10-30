@@ -107,6 +107,46 @@ def main() -> int:
             )
         print("OK: removing the dashed 401 return marker is rejected")
 
+        # Label rules: each mutation starts from the pristine oauth copy.
+        cases = (
+            (
+                "tracked label",
+                'font-size="8" font-family="\'SF Mono\', monospace" text-anchor="middle">POST /token',
+                'font-size="8" font-family="\'SF Mono\', monospace" text-anchor="middle" '
+                'letter-spacing="0.08em">POST /token',
+                "letter-spacing",
+            ),
+            (
+                "undersized mask",
+                '<rect x="414" y="400" width="116"',
+                '<rect x="414" y="400" width="100"',
+                "mask width",
+            ),
+            (
+                "caps label",
+                ">Audit · async<",
+                ">AUDIT · ASYNC<",
+                "not sentence case",
+            ),
+            (
+                "legend heading",
+                "</svg>",
+                '<text x="56" y="664">LEGEND</text></svg>',
+                "LEGEND heading",
+            ),
+        )
+        for name, old, new, expect in cases:
+            if old not in original:
+                raise AssertionError(f"{name}: expected snippet missing from shipped example")
+            oauth_copy.write_text(original.replace(old, new, 1), encoding="utf-8")
+            bad = run_verifier(temp_root, verifier=temp_verifier)
+            if bad.returncode == 0 or expect not in bad.stdout + bad.stderr:
+                raise AssertionError(
+                    f"{name} not rejected with {expect!r}\n{bad.stdout}{bad.stderr}"
+                )
+            print(f"OK: {name} is rejected")
+        oauth_copy.write_text(original, encoding="utf-8")
+
     print("All sequence-oauth verifier tests passed.")
     return 0
 

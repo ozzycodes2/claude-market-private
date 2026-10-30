@@ -28,11 +28,11 @@ sources:                        # external; rendered in the dashed zone on the l
   - { name: "Legacy",     type: "legacy", connects_to: ["NiFi"] }
 
 components:                     # inside the cluster, plus bars and cross-cutting rows
-  - { name: "NiFi",       chevron: "Ingestion",      kind: node,          icon: nifi,     role: "COLL"  }
+  - { name: "NiFi",       chevron: "Ingestion",      kind: node,          icon: nifi,     role: "COLLECT" }
   - { name: "MinIO",      chevron: "Storage",        kind: node,          icon: minio,    role: "STORE", focal: true }
-  - { name: "Trino",      chevron: "Storage",        kind: node,          icon: trino,    role: "VIRT"  }
-  - { name: "Notebooks",  chevron: "Transformation", kind: node,          icon: jupyter,  role: "ANLZ"  }
-  - { name: "Superset",   chevron: "Visualization",  kind: node,          icon: superset, role: "DASH" }
+  - { name: "Trino",      chevron: "Storage",        kind: node,          icon: trino,    role: "VIRTUAL" }
+  - { name: "Notebooks",  chevron: "Transformation", kind: node,          icon: jupyter,  role: "ANALYZE" }
+  - { name: "Superset",   chevron: "Visualization",  kind: node,          icon: superset, role: "DASHBOARD" }
   - { name: "Airflow",    chevron: "Orchestration",  kind: bar,           icon: airflow,    subtitle: "Apache Airflow" }
   - { name: "Identity",   chevron: "Security",       kind: cross-cutting, icon: keycloak,   subtitle: "Keycloak · LDAP · OIDC" }
   - { name: "Monitoring", chevron: "Observability",  kind: cross-cutting, icon: prometheus, subtitle: "Prometheus · Grafana · Loki" }
@@ -74,17 +74,17 @@ Every coordinate below is derived from the inputs. **No hardcoded numbers in exa
 
 ```
 has_vertical       = any(c.vertical or c.name in reserved_names for c in chevrons)
-right_strip_w      = 28  if has_vertical else 0
+right_strip_w      = 88  if has_vertical else 0   # wide enough for the horizontal label `ORCHESTRATION`
 strip_margin       = 8   if has_vertical else 0   # gap between body and right strip
-effective_w        = 1000 - right_strip_w - strip_margin     # 1000 or 964
+effective_w        = 1060 - right_strip_w - strip_margin     # 964 with the strip (canvas 1060); with no strip the canvas stays 1000 and effective_w = 1000
 
 n_cross            = count of components with kind == "cross-cutting"
 strip_y_bot        = max(428, 388 + n_cross * 44 - 4)        # extends to last crosscut row
 viewBox_h          = max(540, strip_y_bot + 112)             # 112 reserved for legend
-viewBox            = f"0 0 1000 {viewBox_h}"
+viewBox            = f"0 0 {1060 if has_vertical else 1000} {viewBox_h}"
 ```
 
-Every horizontal element (chevron banner, cluster, orchestration bar, identity / cross-cutting bars) ends at `effective_w`. The right strip sits at `x = 1000 - right_strip_w` (= 972). The 8-px band between them is visual breathing room — never put content there.
+Every horizontal element (chevron banner, cluster, orchestration bar, identity / cross-cutting bars) ends at `effective_w`. The right strip sits at `x = effective_w + strip_margin` (= 972). The 8-px band between them is visual breathing room — never put content there.
 
 `viewBox_h` grows when more than one cross-cutting bar is declared: 1 crosscut → 540, 2 → 600 (or 584 if you want it tight; the rule rounds to the next multiple of 20 for clean grids).
 
@@ -197,13 +197,13 @@ src_gap            = 16
 src_row_top(k)     = src_first_top_y + k * (src_node_h + src_gap)
 ```
 
-Same role-badge / icon / name / subtitle pattern as cluster nodes (icon at `src_node_x+54, row_top(k)+6`; name centered at `src_node_x+src_node_w/2, row_top(k)+42`; subtitle one line below). Role badge text: `EXT`. Caps at 4 sources; for more, split into a separate diagram.
+Same role-badge / icon / name / subtitle pattern as cluster nodes (icon at `src_node_x+54, row_top(k)+6`; name centered at `src_node_x+src_node_w/2, row_top(k)+42`; subtitle one line below). Role badge text: `EXT` (the type tag stays uppercase and tracked; expand cryptic truncations to the whole word when the badge fits, `COLLECT` not `COLL`). Caps at 4 sources; for more, split into a separate diagram.
 
 ### 2.9 Right strip — vertical chevrons
 
 ```
-strip_x            = 1000 - right_strip_w       # 972 when present
-strip_w            = 28
+strip_x            = effective_w + strip_margin # 972 when present
+strip_w            = 88
 verticals          = [c for c in chevrons if c.vertical or c.name in reserved_names]
 strip_y_top        = 40
 strip_y_bot        = max(428, 388 + n_cross * 44 - 4)   # extends to last crosscut row (see §2.1)
@@ -223,7 +223,7 @@ Adjacent edges share the same y (no gap), like horizontal chevrons share x at th
 - Middle: notch on top, point on bottom — `(strip_x, y0) (strip_x+strip_w/2, y0+12) (strip_x+strip_w, y0) (strip_x+strip_w, y1-12) (strip_x+strip_w/2, y1) (strip_x, y1-12)`
 - Last (bottommost): notch on top, flat bottom — `(strip_x, y0) (strip_x+strip_w/2, y0+12) (strip_x+strip_w, y0) (strip_x+strip_w, y1) (strip_x, y1)`
 
-Fills alternate `band-1` / `band-2` (same phase-band palette as the horizontals, §6.1). Labels: `band-label` fill, `eyebrow` role (mono), `font-size=7`, `letter-spacing=0.14em`, **rotated −90°**, anchored at `(strip_x + strip_w/2, (y0+y1)/2)`.
+Fills alternate `band-1` / `band-2` (same phase-band palette as the horizontals, §6.1). Labels: `band-label` fill, `eyebrow` role (mono), `font-size=7`, `letter-spacing=0.14em`, uppercase, **set horizontally** (no `rotate` transform), `text-anchor="middle"`, anchored at `(strip_x + strip_w/2, (y0+y1)/2 + 3)`. The strip is 88 px wide so the longest reserved name, `ORCHESTRATION`, fits on one line.
 
 ---
 
@@ -411,7 +411,7 @@ Before emitting SVG, verify **every** item. If any fails, fix it — don't ship.
 
 1. Every cluster `node.cx` equals its chevron's `cx` (§2.2 + §2.7). This is what makes the chevron banner a real legend.
 2. Every chevron `width` is a multiple of 4 and ≥ 120.
-3. The reserved right strip (28 px) exists **iff** any vertical chevron is declared. If yes, `effective_w = 964`; if no, `effective_w = 1000`.
+3. The reserved right strip (88 px) exists **iff** any vertical chevron is declared. If yes, `effective_w = 964` and the canvas widens to 1060; if no, `effective_w = 1000` and the canvas stays 1000.
 4. Exactly **one** `focal` node. If `focal` is unset in inputs, default to the first `kind: node` under chevron "Storage".
 5. Every edge whose endpoint is the focal node uses `style: primary` (accent stroke + `arrow-accent` marker).
 6. Every edge originating from a `kind: bar` component uses `style: trigger` (dashed + `arrow-sm`).

@@ -84,22 +84,26 @@ Use Radar for multiple entities scored across common criteria, Line for more tha
 All three examples use `viewBox="0 0 1000 520"`, center `(500, 230)`, and `R = 160`.
 
 - Grid rings: `r = 32, 64, 96, 128, 160`. The four inner rings are gridlines at
-  `ink @ 0.10`; the outer ring at `R` is the 100% terminus a ray is read against,
+  `ink @ 0.08`; the outer ring at `R` is the 100% terminus a ray is read against,
   so it takes `soft` like the spokes.
 - Category spokes: center to `R`, `soft` at 0.8 px, no arrowhead. A spoke is the
   axis the reader traces to place a ray, which puts it over the 3:1 an essential
   mark needs — the same call `type-radar.md` makes for its own spokes.
 - Non-focal value rays: 2 px muted stroke; endpoint marker radius 4.
 - Focal value ray: 2.4 px accent stroke; endpoint marker radius 5.
-- Ring labels: `0.2 × max` through `1.0 × max` on the first axis only, `arrow-label` role 8 px; the example therefore shows `20, 40, 60, 80, 100`.
+- No ring tick labels. Every category prints its own value, so a ring label would encode the same number twice. The rings stay as the unlabelled ruler a ray is read against; the source line states the scale ("Centre is 0, outer ring is 100, rings every 20"). Keep the single `0` at the centre for the zero baseline.
 - Category labels: at `R + 28`, `node-name` role 11 px semibold, horizontal and upright.
-- Numeric labels: at `R + 44`, `arrow-label` role 8 px, including the unit in the chart subtitle rather than repeating it eight times.
+- Numeric labels: at `R + 44`, 8 px mono, including the unit in the source line rather than repeating it eight times.
 - Label anchor: `middle` within 15 degrees of vertical, `start` on the right half, and `end` on the left half.
-- Drawing order: background, rings, spokes, scale labels, non-focal rays, focal ray, endpoint markers, category labels, numeric labels, legend/source note.
+- Drawing order: background, rings, spokes, scale labels, non-focal rays, focal ray, endpoint markers, category labels, numeric labels, source line (no legend: the one series is named by the title).
 
 The minimal examples use the full 1000×520 canvas. The full-editorial example places the same chart in the existing editorial frame and adds summary cards without changing chart geometry.
 
 ## Visual treatment
+
+- **Text is sentence case, untracked.** The unit caption (`% of daily peak, 0 to 100`) and the source line carry no `letter-spacing` and no capitals beyond acronyms. The source line begins `Source:` and states the unit and the ring scale.
+- **Context line is not drawn.** The integrity allowlist above admits no extra circle or line, so a dashed average ring is not available on this type; the 100% outer ring and the focal ray are the comparison. Use Bar or Line when a target or average must be shown.
+- **Rings are a stated exception to the "labels or gridlines, not both" rule**, because ray length is a weak judgement without a concentric ruler; they stay at `ink @ 0.08`, with the outer ring and spokes at `soft` because the reader traces them.
 
 - One accent category maximum. All other value rays use the muted token.
 - Circular rings and spokes are structural grid marks, never category colors.

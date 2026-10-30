@@ -10,6 +10,9 @@
 - Self-messages: short U-shaped loop returning to the same lifeline; label right of the loop.
 - Return messages: **dashed** stroke + **filled** marker (never open). Prefer muted. There is no second chroma to match an originating call with, so a multi-hop stack pairs by dash pattern instead. Headline success may use the solid accent (see Message kinds).
 - The accent on the primary success response or headline message — one, maybe two. Actor focal strokes do not count toward the accent message budget.
+- Message labels: sentence case, 24 characters at most, no `letter-spacing` (`Cache miss · origin`, `200 · edge-cached`). Acronyms keep their case; code tokens (HTTP verbs, paths, header names) keep their literal case. Size each mask to `ceil4(chars × 0.62 × 8 + 8)`, centred on the label anchor; `verify-sequence-oauth.py` checks this.
+- Actor type tags (7px, uppercase, tracked) spell the whole word when it fits the tag box (`EXTERNAL`, `ORIGIN`, `ASYNC`); widen the box on the 4px grid rather than truncating.
+- The legend strip has no `LEGEND` heading; its keys (focal actor, activation bar, edge styles) stay because they cannot be labelled in place.
 - When the flow **branches** (valid vs invalid token, retry, optional step), draw a **combined fragment** frame — do not invent free-floating if/else arrow clusters.
 
 ## Message kinds
@@ -35,7 +38,7 @@ Dark mode: `muted` inverts with the skin, so the stroke needs no change. Do not 
 
 ## Combined fragments (`alt` / `opt` / `loop`)
 
-Use a rectangular **frame** that spans only the lifelines participating in the branch. Operator label uses the `eyebrow` role, uppercase, in a small tab at the top-left of the frame. Time still flows top→down inside the frame.
+Use a rectangular **frame** that spans only the lifelines participating in the branch. Operator label uses the `eyebrow` role, uppercase and tracked like a type tag, in a small tab at the top-left of the frame. Guards and message labels are not tags: they are sentence case with no tracking. Time still flows top→down inside the frame.
 
 ### Frame primitive (shared)
 
@@ -64,9 +67,9 @@ Dark mode: the roles invert with the skin, so only the frame fill changes, to `i
 ### Guard + divider primitives
 
 ```svg
-<!-- Guard: left-aligned inside the frame, mono -->
+<!-- Guard: left-aligned inside the frame, mono, sentence case, no tracking -->
 <text x="X+12" y="GUARD_Y" fill="{muted}" font-size="8"
-      font-family="{arrow-label}" letter-spacing="0.04em">[token valid]</text>
+      font-family="{arrow-label}">[token valid]</text>
 
 <!-- alt region divider -->
 <line x1="X+8" y1="DIV_Y" x2="X+W-8" y2="DIV_Y"

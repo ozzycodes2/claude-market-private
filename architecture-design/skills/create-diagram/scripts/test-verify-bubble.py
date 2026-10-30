@@ -76,7 +76,7 @@ def bubble(name: str, x: float, y: float, size: float, drawn_cx=None,
 def label(name: str, x: float, y: float, text=None, extra: str = "") -> str:
     return ('  <text data-name="%s" data-role="label" x="%g" y="%g"%s>%s</text>\n'
             % (name, x, y, (" " + extra) if extra else "",
-               name.upper() if text is None else text))
+               name if text is None else text))
 
 
 def tick(axis: str, value: float, position=None, shown=None,
@@ -109,8 +109,23 @@ def honest_block(rows=None, focal: str = "Edge") -> str:
     return body
 
 
-def document(*blocks: str) -> str:
-    return HEAD + "".join(blocks) + TAIL
+# The Tufte-pass furniture every honest fixture carries: a two-circle size key
+# on the fixture's own K (1.4), a source line stating it, and a labelled
+# comparison line on the y scale. `document(..., extras=False)` leaves it off.
+EXTRAS = (
+    '  <circle data-key-size="100" cx="40" cy="40" r="14" fill="none" stroke="#4d4d4d"/>\n'
+    '  <text data-key-size="100" x="40" y="60">100</text>\n'
+    '  <circle data-key-size="400" cx="100" cy="40" r="28" fill="none" stroke="#4d4d4d"/>\n'
+    '  <text data-key-size="400" x="100" y="80">400</text>\n'
+    '  <text data-role="source" x="40" y="488">Area, K = 1.4 px per root unit.</text>\n'
+    '  <line data-ref="budget" data-value="1.5" x1="80" y1="%g" x2="960" y2="%g" '
+    'stroke="#616161" stroke-width="1" stroke-dasharray="4,3"/>\n'
+    '  <text data-ref="budget" data-role="label" x="960" y="%g">Error budget</text>\n'
+) % (cy(1.5), cy(1.5), cy(1.5) - 6)
+
+
+def document(*blocks: str, extras: bool = True) -> str:
+    return HEAD + "".join(blocks) + (EXTRAS if extras else "") + TAIL
 
 
 def honest(rows=None, focal: str = "Edge") -> str:
@@ -256,7 +271,9 @@ def run_cases(h: Harness) -> int:
     inverted_ticks = (tick("x", 0) + tick("x", 500)
                       + tick("y", 0, position=44) + tick("y", 4, position=424))
     h.expect_clean("an inverted y axis with a shared scale passes",
-                   document(inverted, inverted_ticks))
+                   document(inverted, inverted_ticks).replace(
+                       'y1="%g"' % cy(1.5), 'y1="%g"' % (40 + 95 * 1.5)
+                   ).replace('y2="%g"' % cy(1.5), 'y2="%g"' % (40 + 95 * 1.5)))
 
     # Overlap honesty. Pair that genuinely overlaps: (256, 325, r28) and
     # (273.6, 315.5, r14) are 20px apart against 42px of radius.
@@ -364,10 +381,123 @@ def run_cases(h: Harness) -> int:
         document(two_accents, TICKS),
         r"one accent bubble max",
     )
+
+    # ── Tufte pass: uniform fill, size key, K, comparison line, text ─────
+    ramp = honest_block().replace('rgba(23,23,23,0.20)', 'rgba(23,23,23,0.14)', 1)
+    h.expect_finding(
+        "a fill that varies by bubble is reported - tone is not an encoding",
+        document(ramp, TICKS), r"different fills",
+    )
+    h.expect_clean(
+        "the focal bubble may differ in fill from the uniform rest",
+        document(honest_block(), TICKS),
+    )
+    h.expect_finding(
+        "a figure with no size key is reported",
+        document(honest_block(), TICKS, extras=False).replace(
+            "</svg>", "  <text data-role" + EXTRAS.split("  <text data-role", 1)[1] + "</svg>"),
+        r"size key has 0 reference circle",
+    )
+    one_key = EXTRAS.replace(
+        '  <circle data-key-size="400" cx="100" cy="40" r="28" fill="none" stroke="#4d4d4d"/>\n', "")
+    h.expect_finding(
+        "a size key of one circle is reported",
+        document(honest_block(), TICKS, extras=False).replace("</svg>", one_key + "</svg>"),
+        r"size key has 1 reference circle",
+    )
+    four_key = EXTRAS + "".join(
+        '  <circle data-key-size="%d" cx="%d" cy="40" r="%g" fill="none" stroke="#4d4d4d"/>\n'
+        '  <text data-key-size="%d" x="%d" y="60">%d</text>\n'
+        % (v, v, radius(v), v, v, v) for v in (200, 300))
+    h.expect_finding(
+        "a size key of four circles is reported",
+        document(honest_block(), TICKS, extras=False).replace("</svg>", four_key + "</svg>"),
+        r"size key has 4 reference circle",
+    )
+    h.expect_finding(
+        "a size-key circle on a different K than the bubbles is reported",
+        document(honest_block(), TICKS).replace('r="28"', 'r="40"'),
+        r"key must use the same K",
+    )
+    h.expect_finding(
+        "a size-key circle with no printed value is reported",
+        document(honest_block(), TICKS).replace(
+            '<text data-key-size="400" x="100" y="80">400</text>', ""),
+        r"has no text printing that value",
+    )
+    h.expect_finding(
+        "a size-key circle with an unreadable value is reported",
+        document(honest_block(), TICKS).replace('data-key-size="400" cx', 'data-key-size="x" cx'),
+        r"unreadable value or radius",
+    )
+    h.expect_finding(
+        "a source line that omits K is reported",
+        document(honest_block(), TICKS).replace("K = 1.4 px per root unit", "area by value"),
+        r"does not state K",
+    )
+    h.expect_finding(
+        "a source line stating the wrong K is reported",
+        document(honest_block(), TICKS).replace("K = 1.4", "K = 2.0"),
+        r"states K = 2.0 but the bubbles draw K = 1.40",
+    )
+    h.expect_finding(
+        "a figure with no source line is reported",
+        document(honest_block(), TICKS).replace('data-role="source"', 'data-role="note"'),
+        r"no source line",
+    )
+    h.expect_finding(
+        "a figure with no comparison line is reported",
+        document(honest_block(), TICKS).replace('<line data-ref', '<line data-xx'),
+        r"no comparison line",
+    )
+    h.expect_finding(
+        "a comparison line drawn off the y scale is reported",
+        document(honest_block(), TICKS).replace('y1="%g" x2' % cy(1.5), 'y1="%g" x2' % (cy(1.5) + 12)
+                                                ).replace('y2="%g"' % cy(1.5), 'y2="%g"' % (cy(1.5) + 12)),
+        r"off the scale the bubbles describe",
+    )
+    h.expect_finding(
+        "a sloped comparison line is reported",
+        document(honest_block(), TICKS).replace('y2="%g"' % cy(1.5), 'y2="%g"' % (cy(1.5) + 12)),
+        r"horizontal y1 == y2",
+    )
+    h.expect_finding(
+        "a comparison line that is not dashed 4,3 is reported",
+        document(honest_block(), TICKS).replace('stroke-dasharray="4,3"', 'stroke-dasharray="2,3"'),
+        r"must be dashed 4,3",
+    )
+    h.expect_finding(
+        "a comparison line with no direct label is reported",
+        document(honest_block(), TICKS).replace('<text data-ref="budget" data-role="label"', '<text data-xx="budget"'),
+        r"has no direct label",
+    )
+    h.expect_finding(
+        "rotated text is reported",
+        document(honest_block(), TICKS,
+                 '  <text transform="rotate(-90 24 230)" x="24" y="230">Error rate</text>\n'),
+        r"rotated text",
+    )
+    h.expect_finding(
+        "a LEGEND heading is reported",
+        document(honest_block(), TICKS, '  <text x="40" y="478">Legend</text>\n'),
+        r"LEGEND heading",
+    )
+    h.expect_clean(
+        "horizontal axis titles and a source line pass",
+        document(honest_block(), TICKS,
+                 '  <text x="80" y="30">Error rate, %</text>\n'),
+    )
+
     # ── Label lies ────────────────────────────────────────────────────────
     h.expect_clean(
-        "a small-caps label matches its mixed-case binding",
+        "a sentence-case label matches its binding exactly",
         document(honest_block(), TICKS, label("Edge", cx(100), cy(1.0) - 34)),
+    )
+    h.expect_finding(
+        "an upper-case label no longer matches its mixed-case binding",
+        document(honest_block(), TICKS,
+                 label("Edge", cx(100), cy(1.0) - 34, text="EDGE")),
+        r"the visible text and the binding must agree",
     )
     h.expect_finding(
         "a label naming an undeclared bubble is reported",

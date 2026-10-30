@@ -7,10 +7,11 @@ The CSS geometry guard ignores comments; active transform declarations still fai
 ## Layout conventions
 
 - **Plot area:** left 160px (row labels), top 64px (column labels), right 40px, bottom 120px (legend area); inside `0 0 1000 500` viewBox.
-- **Cell size:** 116px wide × 56px tall, gap 4px. Maximum grid: 6 columns × 5 rows within the viewBox; smaller grids scale the cells up to fill the space.
-- **Row count:** 3–7. Fewer → a table says it with less ink; more → the cells shrink below readability at the minimum viewBox width.
-- **Column count:** 3–8. Same constraint: 8 × 116 = 928px exceeds the available 800px at this viewBox, so either reduce columns or reduce cell width proportionally (minimum cell width 80px).
-- **Axes:** row labels right-aligned in the left gutter (`sublabel` role 9px, `text-anchor="end"`, x=148); column labels centered above each column (`sublabel` role 9px, `text-anchor="middle"`); axis titles in the `eyebrow` role 7px small-caps rotated/positioned in the margins.
+- **Cell size:** 116px wide × 56px tall, gap 4px. At this size the viewBox holds 6 columns × 5 rows; smaller grids scale the cells up to fill the space, larger grids (up to the 12 × 12 cap) scale the cells down and grow the viewBox height.
+- **Row count:** 3–12. Fewer → a table says it with less ink.
+- **Column count:** 3–12. 8 × 116 = 928px exceeds the available 800px at this viewBox, so reduce cell width proportionally (minimum cell width 80px).
+- **Cap: 12 × 12.** Past either limit, split into small multiples (identical frame, identical colour scale, one panel per group, direct title per panel) rather than shrinking cells.
+- **Axes:** row labels right-aligned in the left gutter (`sublabel` role 9px, `text-anchor="end"`, x=148); column labels centered above each column (`sublabel` role 9px, `text-anchor="middle"`), spelled out (`Sprint 1`, not `S1`; the `data-col` attribute keeps the short id); the row-axis title is horizontal and sentence case (`Service`), 8px mono, level with the column headers and left of the row labels. A column axis title is dropped when the column labels already carry it (`Sprint 1`). No rotated text, no letter-spacing.
 - **Value text (optional):** `arrow-label` role 8px centered inside each cell. Flip text color to paper when fill opacity ≥ 0.40 (the ink ramp becomes dark enough to carry white); keep ink text below that threshold.
 
 ### Cell pattern
@@ -39,16 +40,24 @@ Every cell is two overlapping `<rect>` elements: a paper-fill underlay (no data 
 
 **One focal cell only.** The accent marks the editorially focal cell — the one whose combination of row and column is the figure's argument. It is not the automatically highest value; choose the cell whose story the title is about. `data-focal="true"` is required; `scripts/verify-heatmap.py` counts all accent-fill and `data-focal` cells and fails if more than one is found.
 
+**The ramp is linear in opacity, not perceptually calibrated.** Equal steps in value are equal steps in opacity, but the eye does not read equal opacity steps as equal differences in darkness, least of all near the ends. Cell values are therefore printed in every cell, and the ramp supports comparative reading only. Say so in the source line.
+
 **Ramp bounds:** the lowest-value non-focal cell should land at ≥ 0.05 opacity (the cell must be visually distinct from the paper background) and the highest-value non-focal cell at ≤ 0.70 (the ramp must not bleed into the focal accent's territory).
 
-**The focal fill is solid, and its boundary is `ink`, not the accent.** The source system specifies `on-primary` against the *solid* primary (5.51:1); on a partly transparent accent over the dark paper the same label falls to 4.12:1, which `scripts/verify-contrast.py` fails. A solid fill also leaves the accent and the 0.70 ramp ceiling further apart than the 0.85 this replaced, so the focal cell separates more, not less. Since fill and stroke would then be the same hue, the boundary moves to `ink` — the cell still needs an edge over 3:1 and the accent alone is only held to 3:1 itself.
+**The focal fill is solid, and its boundary is `ink`, not the accent.** (The example follows this rule exactly: `fill="accent"` solid, `stroke="ink"` at 1.2px, value text in `ink-strong`.) The source system specifies `on-primary` against the *solid* primary (5.51:1); on a partly transparent accent over the dark paper the same label falls to 4.12:1, which `scripts/verify-contrast.py` fails. A solid fill also leaves the accent and the 0.70 ramp ceiling further apart than the 0.85 this replaced, so the focal cell separates more, not less. Since fill and stroke would then be the same hue, the boundary moves to `ink` — the cell still needs an edge over 3:1 and the accent alone is only held to 3:1 itself.
+
+## Legend, source and context
+
+- **No `LEGEND` heading and no key for the focal cell.** The focal cell is labelled in place (value and one word). The only key kept is the 8-step ramp strip with `Low` / `High` in sentence case.
+- **Source line** (sentence case, `muted`, 8px mono, under the strip): the data source and unit (`% of builds failing per service and sprint`), "illustrative" or "measured", the non-focal range, the ramp-linearity note, and the focal cell's value.
+- **Comparison exception.** A heatmap's context is the field of cells itself, so no average or target line is drawn; a row or column average is not added (it would repeat information the cells carry). If a target matters, print it in the source line.
 
 ## Anti-patterns
 
 - A hue per row or per column — hue is not a continuous variable; it maps "which series" (slopegraph contract), not "how much". The ramp carries quantity; the label carries category identity.
 - A multi-hue diverging ramp (e.g. blue–white–red) — these read as two variables (negative and positive deviation from center) and are only honest when the data is signed and the center is meaningful. For unsigned rates or counts, the single ink ramp is the honest encoding.
 - Focal accent on more than one cell — if two cells are both focal the figure needs a different title; hue-coding two things is a palette decision masquerading as an editorial one.
-- A value axis (color bar with a continuous legend) instead of a discrete ramp strip — the ink ramp is not a gradient legend; it encodes comparative reading ("S4 is much darker than S3"), not precise magnitude retrieval. If readers need the exact value, the number printed inside the cell carries it.
+- A value axis (color bar with a continuous legend) instead of a discrete ramp strip. The 8-step strip is a scale key, the one legend a heatmap keeps, because opacity cannot be labelled in place; the ink ramp is not a gradient legend; it encodes comparative reading ("S4 is much darker than S3"), not precise magnitude retrieval. If readers need the exact value, the number printed inside the cell carries it.
 - Rows or columns dropped because they made the pattern less clean — omitted rows and columns are invisible to the reader and look like "the services that didn't have this problem". Name everything included and say in the footnote if anything is excluded.
 - A transform on a cell, its underlay, or an ancestor `<g>`. The verifier reads raw `x`/`y`/`width`/`height` attributes; a transform silently moves the rendered mark off the verified position.
 
@@ -56,7 +65,7 @@ Every cell is two overlapping `<rect>` elements: a paper-fill underlay (no data 
 
 **Row × column labels are complete and stated.** A heatmap that quietly drops a service with a high rate is a filtered view the reader cannot see. State every included row and column; note any exclusions in the footnote or source line.
 
-**The ramp scale is declared.** The legend strip shows the range the ramp covers for non-focal cells, stated as "LOW" to "HIGH" rather than a continuous scale — because the ramp's job is comparative, not absolute. If the footnote states bounds, those bounds must match the actual minimum and maximum non-focal values in the figure.
+**The ramp scale is declared.** The legend strip shows the range the ramp covers for non-focal cells, stated as "Low" to "High" rather than a continuous scale — because the ramp's job is comparative, not absolute. If the footnote states bounds, those bounds must match the actual minimum and maximum non-focal values in the figure.
 
 **The focal cell is excluded from the ramp's scale.** Its value (often an outlier) would collapse every other cell into near-identical opacity if included. The footnote must state the focal cell's value explicitly. `scripts/verify-heatmap.py` checks that the focal cell carries `data-focal="true"` and that no non-focal cell uses accent fill.
 

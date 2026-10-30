@@ -12,17 +12,17 @@ This type is **parametric** — the inputs schema in §1 drives every coordinate
 
 ```yaml
 lanes:                              # 1..4 horizontal swimlanes (top to bottom)
-  - { name: ["DATA", "ADMINS"],     key: "ADM" }
-  - { name: ["DATA", "ENGINEERS"],  key: "ENG" }
-  - { name: ["DATA", "SCIENTISTS"], key: "SCI" }
-  - { name: ["DATA", "CONSUMERS"],  key: "CON" }
+  - { name: ["Data", "admins"],     key: "ADM" }
+  - { name: ["Data", "engineers"],  key: "ENG" }
+  - { name: ["Data", "scientists"], key: "SCI" }
+  - { name: ["Data", "consumers"],  key: "CON" }
 
 steps:                              # 1..6 columns (left to right)
-  - { number: "01", label: "COLLECT" }
-  - { number: "02", label: "STORE" }
-  - { number: "03", label: "TRANSFORM" }
-  - { number: "04", label: "ANALYZE",  focal: true }   # focal step header chip — accent fill
-  - { number: "05", label: "PUBLISH" }
+  - { number: "01", label: "Collect" }
+  - { number: "02", label: "Store" }
+  - { number: "03", label: "Transform" }
+  - { number: "04", label: "Analyze",  focal: true }   # focal step header chip — accent fill
+  - { number: "05", label: "Publish" }
 
 nodes:                              # explicit per-cell entries; empty cells render nothing
   - { lane: "ADM", step: 0, title: "Project Setup",   sub: "create · assign roles",     tool: "Platform console" }
@@ -57,7 +57,7 @@ dark: false
 
 **Reserved field semantics:**
 - `lanes[k].key` — the 3-letter role chip text (e.g., `ADM`, `ENG`, `SCI`, `CON`). Used inside every node in that lane.
-- `lanes[k].name` — two-line lane label; both lines use the uppercase `eyebrow` role.
+- `lanes[k].name` — two-line lane label; both lines are sentence case in the mono `eyebrow` face, untracked.
 - `steps[j].focal: true` — exactly **one** step may declare this. Header chip renders in accent.
 - `nodes[i].focal: true` — exactly **one** node may declare this. Renders with accent border (§5).
 - `nodes[i].chips` — data-type chips for the node. Either form accepted:
@@ -81,8 +81,8 @@ n_lanes          = len(lanes)
 viewBox_w        = label_col_w + n_steps * step_slot_w + right_pad   # 5 steps → 728
 header_h         = 36
 lane_h           = 80
-legend_h         = 80                                                # 3 rows
-viewBox_h        = header_h + n_lanes * lane_h + legend_h            # 4 lanes → 436
+legend_h         = 58                                                # 2 rows
+viewBox_h        = header_h + n_lanes * lane_h + legend_h            # 4 lanes → 414
 
 # Header strip (top)
 header_y         = 0                                                  # ends at header_h = 36
@@ -105,8 +105,8 @@ node_y(k)        = lane_y_top(k) + 8                                  # 44, 124,
 
 # Legend strip (bottom)
 legend_y_top     = header_h + n_lanes * lane_h                        # 356
-legend_row_y     = [legend_y_top + 16, legend_y_top + 37, legend_y_top + 59]
-                                                                      # 372, 393, 415
+legend_row_y     = [legend_y_top + 16, legend_y_top + 38]
+                                                                      # 372, 394
 ```
 
 ### 2.1 Background structure
@@ -135,7 +135,7 @@ Focal fill: `accent @ 0.20`, number + label text accent.
 
 ### 2.3 Lane labels
 
-Two-line `eyebrow` role label, both lines uppercase, fill muted:
+Two-line label in the mono `eyebrow` face, both lines sentence case (`Data` / `engineers`), no tracking, fill muted:
 - Line 1 at `(lane_label_x, lane_y_mid(k) - 4)`
 - Line 2 at `(lane_label_x, lane_y_mid(k) + 8)`
 
@@ -231,7 +231,7 @@ no dark-mode variant.
 
 The data-flow diagram is built around **one cross-role handoff** that defines its central claim. Three focal slots, exactly one entry each:
 
-- **One focal step** (`steps[j].focal: true`) — typically the analytical pivot (Analyze, Model, …). Header chip and legend chip both render in accent.
+- **One focal step** (`steps[j].focal: true`) — typically the analytical pivot (Analyze, Model, …). The header chip renders in accent.
 - **One focal node** (`nodes[i].focal: true`) — the node that *receives* the focal handoff. Accent border + accent role chip + ink title.
 - **One focal arrow** (`arrows[i].style: "accent"`) — the cross-role handoff into the focal node. Solid accent stroke + labeled with a short payload descriptor (e.g., `anon data`).
 
@@ -331,13 +331,12 @@ Chip marks are a **separate semantic axis** from the concern flag (§4). The chi
 
 ---
 
-## 9. Legend (3-row strip)
+## 9. Legend (2-row strip)
 
-Each row introduced by a category label at `x=144`. The legend has **3 rows** — `STEPS` / `DATA TYPE` / `FLOW`.
+Each row introduced by a category label at `x=144`. The legend has **2 rows** — `Data type` / `Flow`, labels in sentence case. There is no steps row: the header chips already name every step in place, so repeating them is ink that duplicates a label.
 
-- **Row 1 — `STEPS`** at `y = legend_y_top + 16`: repeat the header chips with their labels. Focal step keeps accent fill.
-- **Row 2 — `DATA TYPE`** at `y = legend_y_top + 37`: one swatch per chip type actually used in the diagram. **Append a small sub-hint** in the muted `sublabel` role after the chips: `left chip = input · right chip = output`. This makes the position-based input/output convention explicit for first-time readers.
-- **Row 3 — `FLOW`** at `y = legend_y_top + 58`: short line segments with their marker + text label, one per arrow style actually used.
+- **Row 1 — `Data type`** at `y = legend_y_top + 16`: one swatch per chip type actually used in the diagram. **Append a small sub-hint** in the muted `sublabel` role after the chips: `left chip = input · right chip = output`. This makes the position-based input/output convention explicit for first-time readers.
+- **Row 2 — `Flow`** at `y = legend_y_top + 38`: short line segments with their marker + text label, one per arrow style actually used.
 
 All legend items align on a single horizontal strip per row. Do not stack vertically inside a box.
 
@@ -365,7 +364,7 @@ Above 4 lanes or 6 steps: split into two diagrams (e.g., ingestion pipeline / an
 - **Diagonal arrows** — always horizontal-first, then vertical; single right-angle bend.
 - **`title` role for node titles** — node titles use the `node-name` role (technical context). Only the page `<h1>` uses `title`.
 - **Accent on more than one node, one step, one arrow** — focal = one node + one step + one arrow, max.
-- **`node-name` role for role labels** — lane labels always use the uppercase `eyebrow` role (they are identifiers, not prose).
+- **`node-name` role for role labels** — lane labels use the mono `eyebrow` face in sentence case, untracked.
 - **Reaching for a second hue to flag a concern** — one chroma. A concern separates by ink weight (§4); there is no palette to take a hue from.
 - **Concern flag on a focal element** — ignored. Accent always wins.
 - **Custom-colored arrows** — arrows are topology-driven. Nothing on a node spreads to its edges.

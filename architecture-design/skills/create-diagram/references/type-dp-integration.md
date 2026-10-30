@@ -14,13 +14,13 @@ This type is **parametric** — like `type-high-level.md`, every coord is derive
 sources:                            # left column, 0..6 nodes
   - { name: "Databases",  type: "db",        subtitle: "SQL · MariaDB",
       connects_to: [{to: "NiFi", label: "JDBC"},
-                    {to: "Trino", label: "FEDERATE", style: "federated"}] }
+                    {to: "Trino", label: "Federate", style: "federated"}] }
   - { name: "SFTP drops", type: "sftp",      subtitle: "scheduled pulls",
       connects_to: [{to: "NiFi", label: "SFTP"}] }
   - { name: "Email",      type: "mail",      subtitle: "IMAP attachments",
       connects_to: [{to: "NiFi", label: "IMAP"}] }
   - { name: "IBM legacy", type: "mainframe", subtitle: "file export",
-      connects_to: [{to: "NiFi", label: "FILE"}] }
+      connects_to: [{to: "NiFi", label: "File"}] }
 
 platform:
   name: "DATA PLATFORM"             # zone label (paper-masked top border)
@@ -51,8 +51,8 @@ footer:                             # 0..N cross-cutting bars stacked below zone
   # each band takes the next step of the §4 ladder — wash weight, edge ink, dash
 
 internal_connections:               # explicit platform-component edges
-  - { from: "NiFi",        to: "MinIO",      style: "primary",   label: "WRITE" }
-  - { from: "MinIO",       to: "JupyterLab", style: "secondary", label: "READ"  }
+  - { from: "NiFi",        to: "MinIO",      style: "primary",   label: "Write" }
+  - { from: "MinIO",       to: "JupyterLab", style: "secondary", label: "Read"  }
   - { from: "MinIO",       to: "Trino",      style: "secondary" }
   - { from: "JupyterLab",  to: "Trino",      style: "secondary", dashed: true }
   - { from: "Airflow",     to: ["Apache NiFi", "MinIO", "JupyterLab"], style: "trigger" }
@@ -234,7 +234,7 @@ Five styles, bound to topology. Don't let user override style on focal-touching,
 - **Fan-out staggering:** when one node fans out to N targets on the same side, stagger the exit y by ±4 px per index so arrows don't overlap (e.g., Trino → 4 consumers exits at y=124, 132, 140, 148). The vertical segments run in the corridor between the zone edge and the consumer column, also y-staggered.
 - **Z-order:** all connectors drawn **before** any rect (so node fills mask the line ends).
 - **Markers:** exactly one `marker-end` per `<line>` / `<path>`. Never `marker-start`.
-- **Labels:** every `primary`, `secondary`, `federated`, `auth` edge gets a protocol label (the `arrow-label` role at 8 px, paper-filled rect mask with 6–10 px clear gap above the stroke). `trigger` edges are unlabelled.
+- **Labels:** every `primary`, `secondary`, `federated`, `auth` edge gets a protocol label (the `arrow-label` role at 8 px, sentence case with acronyms kept — `JDBC`, `HTTPS`, `Write`, `Authentication` — no tracking, ≤ 24 characters, paper-filled rect mask with 6–10 px clear gap above the stroke). `trigger` edges are unlabelled.
 
 ### 3.3 Footer → zone trunk
 
@@ -251,7 +251,7 @@ Examples:
 - N=2 → 544, 576
 - N=3 → 528, 560, 592
 
-Each AUTH line goes from `(footer_auth_x(k), footer_y(k))` up to `(footer_auth_x(k), zone_y + zone_h)`. AUTH labels sit just above the arrowhead at the zone bottom edge.
+Each AUTH line goes from `(footer_auth_x(k), footer_y(k))` up to `(footer_auth_x(k), zone_y + zone_h)`. `Authentication` labels sit just above the arrowhead at the zone bottom edge.
 
 ### 3.4 Crossings
 

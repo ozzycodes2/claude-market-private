@@ -3,7 +3,7 @@ name: create-diagram
 description: Create Fabric-skinned architecture, architecture delta, IT current-state, flowchart, sequence, state machine, ER/data model, timeline, swimlane, quadrant, radar/spider, polar chart (polar/radial lollipop), loop/flywheel, nested, tree, org chart, layer stack, exploded axonometric, axonometric plan, Venn, pyramid/funnel, treemap and marimekko, heatmap, bar and dumbbell, waterfall, line (slopegraph, ridgeline, streamgraph, bump), Gantt and scatter charts (bubble, beeswarm), high-level, process, medallion, data flow, DP integration, DP security matrix, Sankey, fishbone, Wardley map, kanban, user journey, service blueprint, deployment, dependency graph, UML class, story map, or database schema diagrams as HTML/SVG/PNG, with .drawio, Mermaid, and .excalidraw import, plus lifecycle phase maps, block decomposition trees, and onboarding guidance. One signal chroma, no serif, accent on objects never type.
 license: MIT
 metadata:
-  version: "2.6"
+  version: "2.7"
 ---
 
 # Diagram Design — Fabric
@@ -40,13 +40,14 @@ Then branch per the matching section of [`references/onboarding.md`](references/
 
 ## 1. Philosophy
 
-**The highest-quality move is usually deletion.**
+**The highest-quality move is usually deletion.** Tufte names it as data-ink: erase non-data ink, then erase redundant data-ink. Two companions come with it: graphical integrity (the picture never says more than the numbers) and direct labels (name the thing where it is, not in a key).
 
 Applied to schematics:
 
 - Every node represents a distinct idea. Two nodes that always travel together are one node.
 - Every connection carries information. If the relationship is obvious from layout, remove the line.
 - The accent is **editorial, not a flag.** 1–2 focal nodes per diagram. Using it on 5 nodes erases the signal. It is also the only chroma in the skin, so a second use has nowhere to go.
+- A value is encoded once. A label that repeats a color, a gridline that repeats a value label, or a legend that repeats a direct label is ink to erase.
 - The schematic isn't done when everything is added. It's done when nothing can be removed.
 
 **Target density: 4/10.** Enough to be technically complete. Not so dense it needs a guide. Above 9 nodes, it's probably two diagrams.
@@ -160,6 +161,12 @@ These mark "AI slop" schematics of any type:
 | JetBrains Mono as blanket "dev" font | Mono is for *technical* content — ports, commands, URLs. Names go in Inter. |
 | Identical boxes for every node | Erases hierarchy |
 | Legend floating inside the diagram area | Collides with nodes |
+| Legend for something a direct label could name | Makes the reader look away and back. Label series, categories and bars in place |
+| Gridlines plus value labels on the same marks | The value is encoded twice. Keep one |
+| Rotated axis title | Reader tilts their head. Put it horizontal above the axis |
+| All-caps sentence text | Caps read slower. Caps are for node type tags only |
+| Watermark numerals, decorative chrome, frames around plots | Ink that carries no data |
+| Area chart where the data has one dimension | Graphic dimensions exceed data dimensions |
 | Arrow labels with no masking rect | Bleeds through the line |
 | Vertical `writing-mode` text on arrows | Unreadable |
 | 3 equal-width summary cards as default | Generic grid — vary widths |
@@ -201,6 +208,8 @@ There is no `link` role. Where a type reference keeps `link` as an edge-*style* 
 
 **Node treatments** (focal, backend/API/step, store/state, external/cloud, input/user, optional/async, security/boundary): fill and stroke per [style-guide.md § Node type → treatment](references/style-guide.md#node-type--treatment).
 
+**Case:** sentence case for arrow labels, axis titles, callouts, legend text and source lines; acronyms keep their case. Uppercase with tracking is only for the 7px node type tag and the page eyebrow (Tufte: upper-and-lower case reads faster than caps). No rotated text.
+
 **Typography:** there is no serif. Inter carries the H1 title and italic callouts at a larger size step, Inter 600 the node names, SF Mono the sublabels, eyebrows, and arrow labels — the one family change this skin allows is the monospace, so the register shift a serif used to carry is a size step at one weight. Sizes, weights, and the font `<link>`: [style-guide.md § Typography](references/style-guide.md#typography); per-preset type ramp: [output-spec.md](references/output-spec.md). When the user asks for offline output, system fonts, or no Google Fonts, follow [style-guide.md § Font source](references/style-guide.md#font-source).
 
 **Non-Latin labels** — extend the family: [Korean](references/style-guide.md#korean-labels), [Chinese](references/style-guide.md#traditional-chinese-labels), [Cyrillic](references/style-guide.md#cyrillic-labels).
@@ -229,7 +238,7 @@ Exact markup (background, markers, node box, arrow label, legend) and the long f
 Non-negotiable, and §9 checks each one. Full text and edge cases: [primitives-core.md § Mandatory connector rules](references/primitives-core.md#mandatory-connector-rules).
 
 1. **Orthogonal only.** Connectors between off-axis nodes are rounded right-angle elbows at `r=8` (`r=6` minimum in tight layouts); a straight `<line>` only when both ends share x or y. Diagonals fail.
-2. **Label gap.** Every arrow label (14 characters max, all caps, centered on its segment) sits on an opaque mask with a visible 6 to 10px gap from its stroke, beside vertical segments, never on the line.
+2. **Label gap.** Every arrow label (24 characters max, sentence case, centered on its segment) sits on an opaque mask with a visible 6 to 10px gap from its stroke, beside vertical segments, never on the line.
 3. **No overlaps.** No shared or stacked strokes: offset parallel routes by 12px or more, and use the bridge/hop at a single crossing.
 4. **Fan attach points.** Connectors on one box edge each get their own point at `L * k / (N + 1)`, 12px or more apart (8px on very small boxes).
 5. **No transit behind a non-endpoint box.** Reroute. Only when the box is geometrically unavoidable: dashed stroke (`4,3`), label at the visible end, no marker on the intervening box.
@@ -248,18 +257,18 @@ Structural geometry sits on a 4px grid: node origins, widths, heights, gaps, and
 | Max nodes | 9 |
 | Max arrows / transitions | 12 |
 | Max accent elements | 2 |
-| Max annotation callouts | 2 |
+| Max annotation callouts | 2 (charts: 4 short ones) |
 | Max motion (optional) | 8 steps, 12 marked items, 2 simultaneous items — see [animation.md](references/animation.md) |
 
 Per-type limits (lifelines, lanes, series, bars, stages, and the rest): [layout-budget.md § Complexity budget](references/layout-budget.md#complexity-budget-per-diagram). Check your type's row before drawing.
 
-If you exceed, split into two diagrams (overview + detail).
+If you exceed, split into two diagrams (overview + detail). Charts shrink first, then split into small multiples (identical frame and scales, one panel per category); see [layout-budget.md](references/layout-budget.md#small-multiples).
 
 ---
 
 ## 8. Summary Card Pattern
 
-Don't use 3 identical generic cards. Vary the treatment: column widths such as `1.1fr 1fr 0.9fr`, a `paper-2` background with a 1px `rule` border at `radius-lg`, no `box-shadow`. Markup and the card-dot variants: [layout-budget.md § Summary Card Pattern](references/layout-budget.md#summary-card-pattern).
+Cards are optional; a diagram with its own labels needs none. When used, don't use 3 identical generic cards. Vary the treatment: column widths such as `1.1fr 1fr 0.9fr`, a `paper-2` background with a 1px `rule` border at `radius-lg`, no `box-shadow`. Markup and the card-dot variants: [layout-budget.md § Summary Card Pattern](references/layout-budget.md#summary-card-pattern).
 
 ---
 
@@ -283,6 +292,7 @@ Run before producing any diagram.
 - [ ] Can I merge any two nodes? (Do they always travel together?)
 - [ ] Can I remove any arrow? (Is the relationship obvious from layout?)
 - [ ] Can I remove any label? (Does color or shape already signal it?)
+- [ ] Is any value encoded twice? (Gridline and value label, color and label, legend and direct label.)
 
 **Signal:**
 
@@ -292,7 +302,7 @@ Run before producing any diagram.
 - [ ] External and HTTP arrows at `ink` 1.2, internal at `muted` 1 — and the legend keyed by weight, not by swatch?
 - [ ] Series ≤3, separated by dash on one ink? If a fourth was dropped, is that stated?
 - [ ] Axes, baselines, lifelines at `soft` rather than `rule`?
-- [ ] Legend covers every type used — and nothing extra?
+- [ ] Direct labels before a legend? Legend only for what can't be labelled in place, and it covers every such type — and nothing extra?
 - [ ] Within the type's complexity budget (§7)?
 
 **Technical:**
@@ -308,13 +318,24 @@ Run before producing any diagram.
 - [ ] **§6 rule 5:** no transit behind a non-endpoint box, except the unavoidable case (dashed, label at the visible end)?
 - [ ] **§6 rule 6:** no label mask overlapping a node drawn after it? (From a repository checkout, run `python3 <repo-root>/scripts/verify-geometry.py <file>`.)
 - [ ] Every arrow label has an opaque `fill="#f8f8f8"` rect behind it (`#010102` on dark)?
-- [ ] Legend is a horizontal bottom strip, not floating?
-- [ ] No vertical `writing-mode` text?
-- [ ] `viewBox` expanded for the legend strip (~60px)?
+- [ ] Legend only for what can't be labelled in place; when present, a horizontal bottom strip, not floating, with no "LEGEND" heading?
+- [ ] No vertical `writing-mode` text and no `rotate` transform on text?
+- [ ] `viewBox` expanded for the legend strip (~60px) when one is present?
 - [ ] **`min-width` equals the viewBox width, and the SVG sits in a local `overflow-x: auto` wrapper? (Otherwise a phone scrolls the whole page — or an `overflow: hidden` ancestor clips the diagram with no scrollbar at all. See [output-spec.md](references/output-spec.md).)**
 - [ ] Node origins, dimensions, gaps, padding on the 4px grid; type sizes on the role ramp?
 - [ ] From the installed skill directory, did `python3 scripts/self_check.py <file>` pass? (Accessible-SVG contract, single-file safety, content inside the viewBox, motion basics.)
 - [ ] If animated, does the complete static/no-JS frame work, does reduced motion hide/disable playback, and is the controller copied verbatim from `assets/template-motion.html`? From a repository checkout, also run `python3 <repo-root>/scripts/verify-motion.py path/to/generated.html` plus the skin linter; from an installed skill, manually check print and static-query states on top of the self-check.
+
+**Graphical integrity (charts):**
+
+- [ ] Lie factor ~1: mark size changes in proportion to the value?
+- [ ] Quantitative axis starts at zero, or a break is drawn and stated?
+- [ ] Area encodes value by area, not radius, with a size key?
+- [ ] Graphic dimensions <= data dimensions (no 3D, no area for one-dimensional data)?
+- [ ] Units stated; money across periods marked nominal or real (base year)?
+- [ ] A comparison shown (target, average, or prior period)?
+- [ ] Each value encoded once; direct labels before a legend?
+- [ ] Sentence case except node type tags; no rotated text?
 
 **Typography:**
 

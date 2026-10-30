@@ -24,83 +24,33 @@
       <title id="line-dark-title">Weekly signups · Organic leads the growth</title>
       <desc id="line-dark-desc">Line chart showing weekly signups from organic, direct, and referral channels across weeks W1 through W8.</desc>
       <rect width="100%" height="100%" fill="#010102"/>
-
-      <!-- Y-axis rotated label -->
-      <text transform="rotate(-90 24 230)" x="24" y="230" fill="#d0d6e0" font-size="7" font-family="'SF Mono', monospace" letter-spacing="0.14em" text-anchor="middle">SIGNUPS / WEEK</text>
-
-      <!-- Gridlines -->
-      <line x1="80" y1="357" x2="960" y2="357" stroke="rgba(247,248,248,0.08)" stroke-width="0.8"/>
-      <line x1="80" y1="293" x2="960" y2="293" stroke="rgba(247,248,248,0.08)" stroke-width="0.8"/>
-      <line x1="80" y1="230" x2="960" y2="230" stroke="rgba(247,248,248,0.08)" stroke-width="0.8"/>
-      <line x1="80" y1="167" x2="960" y2="167" stroke="rgba(247,248,248,0.08)" stroke-width="0.8"/>
-      <line x1="80" y1="103" x2="960" y2="103" stroke="rgba(247,248,248,0.08)" stroke-width="0.8"/>
-      <line x1="80" y1="40"  x2="960" y2="40"  stroke="rgba(247,248,248,0.06)" stroke-width="0.8"/>
-
-      <!-- Axes -->
-      <line x1="80" y1="40" x2="80" y2="420" stroke="#8a8f98" stroke-width="1"/>
-      <line x1="80" y1="420" x2="960" y2="420" stroke="#8a8f98" stroke-width="1"/>
-
-      <!-- Y-axis labels -->
-      <text x="72" y="361" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" text-anchor="end">40</text>
-      <text x="72" y="297" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" text-anchor="end">80</text>
-      <text x="72" y="234" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" text-anchor="end">120</text>
-      <text x="72" y="171" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" text-anchor="end">160</text>
-      <text x="72" y="107" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" text-anchor="end">200</text>
-      <text x="72" y="44"  fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" text-anchor="end">240</text>
-
-      <!-- ─── SERIES (non-focal drawn first) ───
-           One chroma: non-focal series separate by dash, not hue. The vocabulary
-           is 6,3 then 2,3 and stops there -- a fourth pattern is not separable
-           at 1.2, so three non-focal series plus the accent focal is the cap. -->
-      <!-- Referral: [45,52,48,60,55,68,62,75] series-2 muted, dash 2,3 -->
-      <polyline points="80,349 200,338 320,344 440,325 560,333 680,312 800,322 920,301"
-                fill="none" stroke="#d0d6e0" stroke-width="1.2" stroke-dasharray="2,3" stroke-linejoin="round"/>
-
-      <!-- Direct: [80,82,88,90,86,92,95,98] series-1 ink, dash 6,3 -->
-      <polyline points="80,293 200,290 320,281 440,278 560,284 680,274 800,270 920,265"
-                fill="none" stroke="#f7f8f8" stroke-width="1.2" stroke-dasharray="6,3" stroke-linejoin="round"/>
-
-      <!-- Organic FOCAL area fill (subtle) -->
-      <polygon points="80,230 200,206 320,186 440,164 560,175 680,138 800,111 920,88 920,420 80,420"
-               fill="rgba(239,99,6,0.08)"/>
-
-      <!-- Organic FOCAL line: [120,135,148,162,155,178,195,210] accent -->
-      <polyline points="80,230 200,206 320,186 440,164 560,175 680,138 800,111 920,88"
-                fill="none" stroke="#ef6306" stroke-width="1.8" stroke-linejoin="round"/>
-
-      <!-- Focal vertex dots -->
-      <circle cx="80"  cy="230" r="4" fill="#ef6306"/>
-      <circle cx="200" cy="206" r="4" fill="#ef6306"/>
-      <circle cx="320" cy="186" r="4" fill="#ef6306"/>
-      <circle cx="440" cy="164" r="4" fill="#ef6306"/>
-      <circle cx="560" cy="175" r="4" fill="#ef6306"/>
-      <circle cx="680" cy="138" r="4" fill="#ef6306"/>
-      <circle cx="800" cy="111" r="4" fill="#ef6306"/>
-      <circle cx="920" cy="88"  r="4" fill="#ef6306"/>
-
-      <!-- X-axis labels -->
-      <text x="80"  y="440" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">W1</text>
-      <text x="200" y="440" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">W2</text>
-      <text x="320" y="440" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">W3</text>
-      <text x="440" y="440" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">W4</text>
-      <text x="560" y="440" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">W5</text>
-      <text x="680" y="440" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">W6</text>
-      <text x="800" y="440" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">W7</text>
-      <text x="920" y="440" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">W8</text>
-
-      <!-- Legend -->
-      <line x1="40" y1="462" x2="960" y2="462" stroke="rgba(247,248,248,0.10)" stroke-width="0.8"/>
-      <text x="40" y="478" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" letter-spacing="0.18em">LEGEND</text>
-
-      <line x1="40" y1="492" x2="64" y2="492" stroke="#ef6306" stroke-width="1.8"/>
-      <circle cx="52" cy="492" r="4" fill="#ef6306"/>
-      <text x="72" y="496" fill="#d0d6e0" font-size="8.5" font-family="'Inter', sans-serif">Organic · focal</text>
-
-      <line x1="200" y1="492" x2="224" y2="492" stroke="#f7f8f8" stroke-width="1.2" stroke-dasharray="6,3"/>
-      <text x="232" y="496" fill="#d0d6e0" font-size="8.5" font-family="'Inter', sans-serif">Direct</text>
-
-      <line x1="316" y1="492" x2="340" y2="492" stroke="#d0d6e0" stroke-width="1.2" stroke-dasharray="2,3"/>
-      <text x="348" y="496" fill="#d0d6e0" font-size="8.5" font-family="'Inter', sans-serif">Referral</text>
+      <text x="64" y="60" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace">Signups per week</text>
+      <!-- Range-frame axes: each rule spans only the data min to max -->
+      <line data-axis="y" x1="64" y1="80" x2="64" y2="410" stroke="#8a8f98" stroke-width="1"/>
+      <line data-axis="x" x1="80" y1="428" x2="472" y2="428" stroke="#8a8f98" stroke-width="1"/>
+      <text data-tick="y" data-value="210" x="56" y="83" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" text-anchor="end">210</text>
+      <text data-tick="y" data-value="120" x="56" y="263" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" text-anchor="end">120</text>
+      <text data-tick="y" data-value="45" x="56" y="413" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" text-anchor="end">45</text>
+      <text x="80" y="444" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">W1</text>
+      <text x="136" y="444" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">W2</text>
+      <text x="192" y="444" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">W3</text>
+      <text x="248" y="444" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">W4</text>
+      <text x="304" y="444" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">W5</text>
+      <text x="360" y="444" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">W6</text>
+      <text x="416" y="444" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">W7</text>
+      <text x="472" y="444" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">W8</text>
+      <!-- Comparison: weekly target, drawn under the data -->
+      <line data-ref="target" data-value="150" x1="80" y1="200" x2="472" y2="200" stroke="#8a8f98" stroke-width="1" stroke-dasharray="4,3"/>
+      <text data-ref="target" data-role="label" x="488" y="203" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace">Target: 150 a week</text>
+      <!-- Series: accent focal line, ink solid, muted dash 6,3. Every series is named at its last point, so there is no legend. -->
+      <polyline data-line="Referral" data-values="45,52,48,60,55,68,62,75" points="80,410 136,396 192,404 248,380 304,390 360,364 416,376 472,350" fill="none" stroke="#d0d6e0" stroke-width="1.2" stroke-dasharray="6,3" stroke-linejoin="round"/>
+      <polyline data-line="Direct" data-values="80,82,88,90,86,92,95,98" points="80,340 136,336 192,324 248,320 304,328 360,316 416,310 472,304" fill="none" stroke="#f7f8f8" stroke-width="1.2" stroke-linejoin="round"/>
+      <polyline data-line="Organic" data-values="120,135,148,162,155,178,195,210" points="80,260 136,230 192,204 248,176 304,190 360,144 416,110 472,80" fill="none" stroke="#ef6306" stroke-width="1.8" stroke-linejoin="round"/>
+      <circle cx="472" cy="80" r="4" fill="#ef6306"/>
+      <text data-line="Referral" data-role="name" x="488" y="354" fill="#d0d6e0" font-size="11" font-weight="500" font-family="'Inter', sans-serif">Referral</text>
+      <text data-line="Direct" data-role="name" x="488" y="308" fill="#d0d6e0" font-size="11" font-weight="500" font-family="'Inter', sans-serif">Direct</text>
+      <text data-line="Organic" data-role="name" x="488" y="84" fill="#f7f8f8" font-size="11" font-weight="600" font-family="'Inter', sans-serif">Organic</text>
+      <text data-role="source" x="64" y="484" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace">Source: product analytics, weekly signups by channel, W1 to W8. Y axis spans 45 to 210, not from zero. Dashed line: weekly target.</text>
     </svg>
   </div>
 </body>

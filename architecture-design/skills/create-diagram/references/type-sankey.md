@@ -16,9 +16,11 @@ The resulting pixels-per-unit scale and relative comparisons must also be finite
 - **Labels:** node name in the `node-name` role 12px 600, quantity directly under it in the `sublabel` role 9px `muted`. Placement is column-specific: column 1 sits outside the bar, `text-anchor="end"`; column 2 sits in the gutter above its bar, `text-anchor="middle"`, **vertically centred in that gutter** rather than flush to the top, or the cap line grazes the bar above; column 3 sits outside the bar, `text-anchor="start"`.
 
   Centring the column-2 label in its gutter is what makes it legible: the gutter is the gap the bands themselves leave between two nodes, so a centred label sits on clean paper and needs no backing at all. Don't reach for a mask rect here — over a filled band it reads as a hole punched in the diagram, and if the label already sits on paper it is solving nothing. If a label genuinely has nowhere clear to sit, the column is over budget: drop a node or split the diagram.
-- **Column headers:** `eyebrow` role 8px, uppercase, tracked, centered above each column — "CI COMPUTE BUDGET / TEST STAGE / OUTCOME" style eyebrows, not full sentences.
-- **Drawing order:** background → column headers → ordinary ribbons → the accent path's ribbon(s) (painted last among ribbons so they read on top) → node bars → node labels → legend.
-- **Legend:** horizontal strip at the bottom per the global rule, viewBox extended ~60–100px to fit it (a Sankey's ribbons need more bottom clearance than a typical diagram because node stacks run tall). Swatches are 16×8 rectangles matching each ribbon treatment, plus an optional italic aside stating the editorial read.
+- **Column headers:** `eyebrow` role 8px, sentence case, no tracking, centered above each column ("Budget", "Test stage", "Outcome"). Short noun phrases, not full sentences.
+- **Drawing order:** background → column headers → ordinary ribbons → the accent path's ribbon(s) (painted last among ribbons so they read on top) → node bars → node labels → accent-path direct label and leader → source line.
+- **No legend.** Node labels name every stage, and the one accent path is named in place: a sentence-case mono 9px `muted` label above it, joined by a 1px `soft` leader. A swatch key would repeat that label. No rect is drawn outside the plot band, and `verify-sankey.py` refuses one.
+- **Source line:** sentence case, `muted`, bottom-left (y=496). States the unit (minutes), the total the stages carry, the scale (px per minute), and which ribbons the accent marks.
+- **Context rule exception:** a sankey's stage totals are already each other's comparison (conservation across stages), so no reference line is drawn.
 
 ## Scale rule
 

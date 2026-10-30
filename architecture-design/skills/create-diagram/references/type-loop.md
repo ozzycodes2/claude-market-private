@@ -19,10 +19,10 @@ hub:                                  # exactly one
   sublabel: "one record, every loop"
 
 stations:                             # 5..8, clockwise from top
-  - { name: "Capture",  sublabel: "signals in",       spoke_label: "SIGNALS" }
+  - { name: "Capture",  sublabel: "signals in",       spoke_label: "Signals" }
   - { name: "Research", sublabel: "evidence pulled" }
   - { name: "Decide",   sublabel: "human approves",   focal: true }
-  - { name: "Act",      sublabel: "work ships",        spoke_label: "OUTCOMES" }
+  - { name: "Act",      sublabel: "work ships",        spoke_label: "Outcomes" }
   - { name: "Measure",  sublabel: "outcomes logged" }
   - { name: "Learn",    sublabel: "playbook updated" }
 
@@ -148,7 +148,7 @@ Include the full circle extrema `cx +/- R`, `cy +/- R` plus station bounds and m
 | Focal station | At most one: `accent-tint` fill, `accent` stroke; station name may use `accent` |
 | Ring flow | Circular `A R R 0 0 1` arcs on the station circle, solid `muted` stroke, default arrowhead at the destination; clockwise only |
 | Write-back spoke | Dashed `soft` stroke at reduced emphasis, `stroke-dasharray="5,4"`, with a `soft` arrowhead |
-| Spoke label | `arrow-label` role, `soft`, uppercase, paper mask, 6–10px clear of the connector |
+| Spoke label | `arrow-label` role, `soft`, sentence case, 24 characters max, no letter-spacing, paper mask sized per the width budget, 6–10px clear of the connector |
 
 Draw in this order: paper or optional dot grid → ring arrows → dashed spokes → spoke-label masks and labels → station boxes → hub → text. The nodes mask microscopic connector overshoot, while every intended endpoint still lands on an edge.
 

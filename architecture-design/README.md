@@ -86,6 +86,13 @@ type, or explicit paths. `verify-contrast.py` and `verify-dumbbell.py` take no
 arguments. A bare invocation that prints a usage block and exits 2 wants `--all`;
 it is not a failure.
 
+`verify-bar.py`, `verify-gantt.py`, `verify-line.py` and `verify-scatter.py` are
+local, not upstream. Each one checks that drawn marks sit where their bound
+`data-*` values put them on one linear scale, which is Tufte's graphical
+integrity rule from *The Visual Display of Quantitative Information*. ADR 0003
+in `skills/create-diagram/docs/adr/` records the Tufte decisions the whole skill
+now follows.
+
 Two further gates run clean once pointed at this layout:
 
 ```sh

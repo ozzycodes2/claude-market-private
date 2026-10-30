@@ -60,7 +60,7 @@ Nine invariants:
 
 7. BOUND LABELS, BOTH WAYS, ON A UNIQUE NAME - a dot that declares data-name
    has exactly one label bound to it and vice versa; the visible text matches
-   the binding (case aside - labels ship small-caps); and each label sits
+   the binding exactly (sentence case); and each label sits
    nearer its own dot than any other named dot along the value axis, because
    two labels exchanged between outliers rename both while every number stays
    correct. The name itself must be non-empty and unique: identity is a map
@@ -78,6 +78,16 @@ Nine invariants:
    because the scale test is leave-one-out and each fit needs three points;
    below that nothing here is verifiable. The documented budget (20-300
    dots) is enforced at BOTH ends on top of that floor.
+
+10. COMPARISON LINES - a vertical `<line data-ref="median" data-value>` is
+    required, plus `data-ref="p99"` when the title or description argues
+    about the tail. Each declares the statistic the dots themselves compute
+    (median; linear-interpolation p99; within 0.5), is drawn at that value
+    on the dots' scale, is dashed 4,3, and has a direct `<text data-ref>`
+    label printing the same number.
+
+11. TEXT RULES - no rotated text, no LEGEND heading, and a visible
+    `<text data-role="source">` line that names a unit.
 
 The basis for geometry is the `data-value` each dot circle declares, never
 the rendered text.
@@ -121,6 +131,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "assets"
 
+LINE_RE = re.compile(r"<line\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
+PNUM_RE = re.compile(r"\bp\d+\b", re.IGNORECASE)
+UNIT_RE = re.compile(r"\b(?:ms|s|sec|secs|seconds|milliseconds|units?|kb|mb|gb|bytes|"
+                     r"%|usd|dollars|requests?)\b|[%$]", re.IGNORECASE)
+REF_TOLERANCE = 0.5        # declared / printed reference value vs the dots' own
 CIRCLE_RE = re.compile(r"<circle\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
 TEXT_RE = re.compile(r"<text\b(?P<attrs>[^>]*)>(?P<body>.*?)</text>", re.IGNORECASE | re.DOTALL)
 COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
@@ -200,6 +215,7 @@ TICK_TOLERANCE = 6.0       # px, tick position vs the scale the dots set
 LABEL_TOLERANCE = 0.5      # px, slack before a label counts as another dot's
 OVERLAP_SLACK = 0.5        # px, separation below which two dots overprint
 
+REF_POSITION_TOLERANCE = 1.0   # px, reference line vs the scale the dots set
 MIN_DOTS, MAX_DOTS = 20, 300   # the documented budget, enforced at both ends
 MAX_NAMED = 6                  # labeled dots; past this the tail is a list
 
@@ -719,9 +735,10 @@ def check_labels(dots: list, source: str, findings: list, name: str) -> None:
             )
             continue
         seen.add(label)
-        # Case-insensitive: labels ship small-caps ("REQ-4C1F" for a dot named
-        # "req-4c1f"), and casing is presentation, not identity.
-        if body.casefold() != label.casefold():
+        # Exact match: labels are sentence case, the same string as the
+        # binding. Small-caps labels ("REQ-4C1F" for "req-4c1f") used to need a
+        # case-insensitive compare; that slack is gone.
+        if body != label:
             findings.append(
                 "%s:%d: a label bound to dot %r reads %r — the visible text "
                 "and the binding must agree"
@@ -833,6 +850,113 @@ def check_ticks(scale, source: str, findings: list, name: str) -> None:
             )
 
 
+def percentile(values: list, q: float) -> float:
+    """Linear-interpolation percentile; q in [0, 1]."""
+    ordered = sorted(values)
+    rank = (len(ordered) - 1) * q
+    low = int(math.floor(rank))
+    high = min(low + 1, len(ordered) - 1)
+    return ordered[low] + (ordered[high] - ordered[low]) * (rank - low)
+
+
+def check_reference(dots: list, scale, source: str, findings: list, name: str) -> None:
+    """The median (always) and the p99 (when the title claims a tail) as lines.
+
+    Each is a vertical `<line data-ref data-value>` drawn at its value on the
+    dots' own scale, equal to the statistic the dots themselves compute,
+    dashed 4,3, with a direct `<text data-ref>` label that prints the number.
+    """
+    lines = []
+    for match in LINE_RE.finditer(source):
+        attrs = attrs_of(match.group("attrs"))
+        if "data-ref" in attrs:
+            lines.append((attrs, match.start()))
+    labels = {}
+    for match in TEXT_RE.finditer(source):
+        attrs = attrs_of(match.group("attrs"))
+        if "data-ref" in attrs:
+            labels.setdefault(attrs["data-ref"], (plain(match.group("body")), match.start()))
+
+    truth = {"median": median([d.value for d in dots]),
+             "p99": percentile([d.value for d in dots], 0.99)}
+    named = " ".join(plain(m.group("body")) for m in NAMED_RE.finditer(source)).casefold()
+    required = ["median"]
+    if re.search(r"\btail\b|\bp99\b|99th", named):
+        required.append("p99")
+    declared_refs = {a["data-ref"] for a, _o in lines}
+    for ref in required:
+        if ref not in declared_refs:
+            findings.append(
+                "%s: no %s line (a <line data-ref=\"%s\" data-value>) - the "
+                "swarm needs the statistic its title argues about drawn on it"
+                % (name, ref, ref)
+            )
+    slope, intercept = scale if scale else (None, None)
+    for attrs, offset in lines:
+        ref = attrs["data-ref"]
+        where = line_of(source, offset)
+        value = number(attrs.get("data-value"))
+        x1, x2 = number(attrs.get("x1")), number(attrs.get("x2"))
+        if value is None or x1 is None or x2 is None or x1 != x2:
+            findings.append(
+                "%s:%d: reference line %r needs a readable data-value and a "
+                "vertical x1 == x2" % (name, where, ref)
+            )
+            continue
+        if ref in truth and abs(value - truth[ref]) > REF_TOLERANCE:
+            findings.append(
+                "%s:%d: reference line %r declares %g but the dots' own %s is "
+                "%.1f" % (name, where, ref, value, ref, truth[ref])
+            )
+        if slope is not None and abs(x1 - (slope * value + intercept)) > REF_POSITION_TOLERANCE:
+            findings.append(
+                "%s:%d: reference line %r declares %g but is drawn at x=%g, off "
+                "the scale the dots describe (%.1f)"
+                % (name, where, ref, value, x1, slope * value + intercept)
+            )
+        if re.sub(r"\s", "", attrs.get("stroke-dasharray", "")) != "4,3":
+            findings.append("%s:%d: reference line %r must be dashed 4,3"
+                            % (name, where, ref))
+        label = labels.get(ref)
+        if label is None or not label[0]:
+            findings.append("%s:%d: reference line %r has no direct label (a "
+                            "<text data-ref>)" % (name, where, ref))
+            continue
+        numbers = re.findall(r"[0-9]+(?:\.[0-9]+)?", PNUM_RE.sub("", label[0]))
+        if len(numbers) != 1 or abs(float(numbers[0]) - value) > REF_TOLERANCE:
+            findings.append(
+                "%s:%d: the label for reference line %r reads %r - it must "
+                "print the one number the line declares (%g)"
+                % (name, line_of(source, label[1]), ref, label[0][:28], value)
+            )
+
+
+def check_text_rules(source: str, findings: list, name: str) -> None:
+    """No rotated text, no LEGEND heading, and a source line that states units."""
+    sources = []
+    for match in TEXT_RE.finditer(source):
+        attrs = attrs_of(match.group("attrs"))
+        body = plain(match.group("body"))
+        where = line_of(source, match.start())
+        carrier = attrs.get("transform", "") + attrs.get("style", "")
+        if "rotate" in carrier.casefold():
+            findings.append("%s:%d: rotated text (%s) - axis titles are "
+                            "horizontal, left-aligned to the axis"
+                            % (name, where, body[:24]))
+        if body.casefold() == "legend":
+            findings.append("%s:%d: a LEGEND heading - drop the word, keep the "
+                            "keys" % (name, where))
+        if attrs.get("data-role") == "source":
+            sources.append((body, where))
+    if not sources:
+        findings.append("%s: no source line (a <text data-role=\"source\">) - "
+                        "the units belong in visible text" % name)
+    elif not any(UNIT_RE.search(body) for body, _w in sources):
+        findings.append("%s:%d: the source line states no unit (ms, s, %%, "
+                        "requests, units...) - say what the axis measures"
+                        % (name, sources[0][1]))
+
+
 def check_source(path: Path, raw: str) -> list:
     """Findings for one already-read document."""
     source = blank_comments(raw)
@@ -873,6 +997,8 @@ def check_source(path: Path, raw: str) -> list:
     check_focal(dots, findings, source, path.name)
     check_labels(dots, source, findings, path.name)
     check_ticks(scale, source, findings, path.name)
+    check_reference(dots, scale, source, findings, path.name)
+    check_text_rules(source, findings, path.name)
     return findings
 
 

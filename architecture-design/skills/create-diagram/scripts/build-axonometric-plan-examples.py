@@ -287,14 +287,14 @@ def build_svg(plan: Plan, skin: str, motion: bool, slug: str):
     if plan.caption:
         cy = vh - 28
         x0 = ox + minx
-        out.append(f'<text x="{f(x0)}" y="{cy}" fill="{sk["muted"]}" font-size="8" font-family="\'SF Mono\', monospace" letter-spacing="0.18em">{plan.caption[0]}</text>')
+        out.append(f'<text x="{f(x0)}" y="{cy}" fill="{sk["muted"]}" font-size="8" font-family="\'SF Mono\', monospace">{plan.caption[0]}</text>')
         out.append(f'<text x="{f(x0 + 120)}" y="{cy}" fill="{sk["muted"]}" font-size="8.5" font-family="\'Inter\', sans-serif" font-style="italic">{plan.caption[1]}</text>')
     return "\n        ".join(out), vh
 
 
 def caption(plan, sk, vh, x0):
     cy = vh - 28
-    return [f'<text x="{f(x0)}" y="{cy}" fill="{sk["muted"]}" font-size="8" font-family="\'SF Mono\', monospace" letter-spacing="0.18em">{plan.caption[0]}</text>',
+    return [f'<text x="{f(x0)}" y="{cy}" fill="{sk["muted"]}" font-size="8" font-family="\'SF Mono\', monospace">{plan.caption[0]}</text>',
             f'<text x="{f(x0 + 120)}" y="{cy}" fill="{sk["muted"]}" font-size="8.5" font-family="\'Inter\', sans-serif" font-style="italic">{plan.caption[1]}</text>']
 
 
@@ -389,7 +389,7 @@ def office() -> Plan:
         title="Level 3 office · Where the team actually sits",
         desc="Axonometric floor plan of an office level with an open office, meeting room, kitchen, lobby, and phone booth, with the meeting room as the focal room.",
         plate=Rect(0, 0, W, D, 0), plate_t=6, boxes=walls + furniture, rooms=rooms,
-        caption=("FOCAL ROOM", "Walls cut at desk height so every room reads from one view; the meeting room is the one under discussion."),
+        caption=("Focal room", "Walls cut at desk height so every room reads from one view; the meeting room is the one under discussion."),
         subtitle="One floor, walls cut at desk height, so every room and what is in it reads from a single view.",
         cards=[("The headline", "accent", "One room is the subject", "The meeting room gets the accent because it is the room being discussed. It seats twelve, and the floor tint marks it without colouring the furniture."),
                ("", "ink", "Reading the plan", ["Walls are cut low so nothing hides a room", "Tags sit on the floor they name", "Furniture shows how each room is used", "Gaps in walls are doors"]),
@@ -418,7 +418,7 @@ def campus() -> Plan:
         plate=Rect(0, 0, SW, SD, 6), plate_t=8, boxes=buildings + trees,
         flats=[(Rect(0, 144, SW, 168, 0), "road"), (Rect(196, 0, 220, SD, 0), "road")],
         lines=[((0, 156), (SW, 156)), ((208, 0), (208, SD))],
-        caption=("FOCAL BUILDING", "The library opens in phase 1 and anchors the quad; housing and sport follow as enrolment grows."),
+        caption=("Focal building", "The library opens in phase 1 and anchors the quad; housing and sport follow as enrolment grows."),
         subtitle="Six buildings in three phases. Each tag carries its phase, so the build order reads without a legend.",
         cards=[("The headline", "accent", "The library comes first", "Everything else on the site is placed around it, so it gets the accent and opens in phase 1 with the labs."),
                ("", "ink", "Reading the site", ["Heights are to scale with each other", "Roads cross at the quad", "Tags sit on the roof they name", "Trees mark the green edges"]),
@@ -465,7 +465,7 @@ def coffee_shop() -> Plan:
         title="Corner coffee shop · From the door to a seat",
         desc="Axonometric floor plan of a small coffee shop with an entrance and queue, an espresso bar, seating, a kitchen, and a restroom, with the espresso bar as the focal room.",
         plate=Rect(0, 0, W, D, 0), plate_t=6, boxes=walls + kitchen + restroom + bar + queue + seating, rooms=rooms,
-        caption=("FOCAL ROOM", "Every customer passes the espresso bar twice, once to order and once to pick up, so it sits beside the door."),
+        caption=("Focal room", "Every customer passes the espresso bar twice, once to order and once to pick up, so it sits beside the door."),
         subtitle="One room with a kitchen behind it. The queue runs along the counter, so ordering, paying and pickup happen in one line.",
         cards=[("The headline", "accent", "The bar is the bottleneck", "Every order goes through two baristas and one espresso machine. The accent marks the bar because its length sets how many people can wait without blocking the door."),
                ("", "ink", "Reading the plan", ["Posts mark the queue lane along the counter", "The tall unit on the back bar is the fridge", "Round tables seat two, the long table seats six", "Gaps in walls are doors"]),
@@ -501,7 +501,7 @@ def warehouse() -> Plan:
         plate=Rect(0, 0, W, D, 0), plate_t=6, boxes=walls + receiving + racks + pick + packing + shipping, rooms=rooms,
         flats=[(dock(30), "dock"), (dock(120), "dock"), (dock(210), "dock")],
         lines=[((96, 6), (96, 294)), ((306, 6), (306, 294)), ((380, 6), (380, 294)), ((96, 196), (306, 196))],
-        caption=("FOCAL ZONE", "Goods move left to right; packing is where most orders wait, so it gets the accent."),
+        caption=("Focal zone", "Goods move left to right; packing is where most orders wait, so it gets the accent."),
         subtitle="Goods come in on the left and leave on the right. Everything in between is storage, picking and packing, laid out in that order.",
         cards=[("The headline", "accent", "Packing sets the pace", "Receiving and storage can run ahead. An order only ships when someone packs it, so the three stations are the accent and the place to add capacity first."),
                ("", "ink", "Reading the plan", ["Tall racks hold reserve stock", "The low flow rack faces the pick lane", "The conveyor carries packed orders to shipping", "Gaps in the side walls are dock doors"]),

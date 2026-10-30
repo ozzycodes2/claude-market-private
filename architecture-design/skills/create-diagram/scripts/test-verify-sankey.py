@@ -46,13 +46,13 @@ RIBBON = ('<path d="M132,120 C316,120 316,120 500,120 L500,224 '
           'C316,224 316,224 132,224 Z" fill="rgba(77,77,77,0.18)"/>')
 RIBBON_ANCHOR = '<path d="M132,120 C316,120 316,120 500,120'
 RIBBON_FILL = 'fill="rgba(77,77,77,0.18)"'
-# The first legend swatch — the only stroked, stroke-width-bearing element the
+# The accent-path leader line — the only stroked, stroke-width-bearing element the
 # stroke grammar cases can anchor on, since shipped ribbons carry no stroke.
-SWATCH = 'fill="rgba(77,77,77,0.18)" stroke="#4d4d4d" stroke-width="1"'
+SWATCH = 'stroke="#616161" stroke-width="1"'
 # The Failed node bar — last stage, 32px for 1,600 min at 50 min/px.
 BAR = '<rect x="880" y="344" width="12" height="32" fill="#171717"/>'
-# Insertion point for extra paths: just before the legend block.
-ANNOT = "      <!-- Legend -->"
+# Insertion point for extra paths: just before the source line.
+ANNOT = "      <!-- Source line -->"
 SVG_OPEN = '<svg viewBox="0 0 1000 560"'
 
 # The checker's findings contain em dashes. Without this the child writes them
@@ -226,20 +226,21 @@ def main() -> int:
         )
 
         # 8a. A rect that is none of the three shapes a sankey draws — not a node
-        #     bar, not a legend swatch, not the full-bleed paper. Painted last it
+        #     bar, not the full-bleed paper. Painted last it
         #     covers whatever was measured, and widening the bars is how the
         #     parser was blinded before the rule existed.
         case(
             failures, directory, "fat-bars",
             source.replace('width="12" height=', 'width="20" height='),
-            source, "neither a node bar, a legend swatch",
+            source, "neither a node bar nor the full-bleed paper",
             "a rect that is not any shape this figure draws",
         )
 
         # 8a-bis. A rect's SIZE is not enough — its position decides what it may
-        #     claim to be. A swatch-sized 16x8 rect is a legend key below the
-        #     band floor and ink over the figure inside it, where it is exactly
-        #     big enough to cover a printed value. And a bar-width rect BELOW
+        #     claim to be. A swatch-sized 16x8 rect is ink over the figure
+        #     inside the band, where it is exactly big enough to cover a printed
+        #     value, and below the band it is a legend key this figure no longer
+        #     draws. And a bar-width rect BELOW
         #     the band is a shape parse_bars will never read: unrefused, it is
         #     ink this checker certified without examining.
         case(
@@ -249,6 +250,14 @@ def main() -> int:
                 + ANNOT, 1),
             source, "neither a node bar",
             "a swatch-sized rect parked inside the plot band",
+        )
+        case(
+            failures, directory, "swatch-below-band",
+            source.replace(ANNOT,
+                '      <rect x="40" y="496" width="16" height="8" fill="#f8f8f8"/>\n'
+                + ANNOT, 1),
+            source, "neither a node bar",
+            "a legend swatch below the band, which the figure no longer draws",
         )
         case(
             failures, directory, "bar-below-band",

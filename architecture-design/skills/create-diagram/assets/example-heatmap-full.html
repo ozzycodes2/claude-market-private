@@ -22,7 +22,7 @@
     .card .eyebrow { font-family: var(--font-mono); font-size: 0.5rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }
     .card-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.875rem; padding-bottom: 0.875rem; border-bottom: 1px solid rgba(23,23,23,0.08); }
     .card-swatch { width: 14px; height: 14px; border-radius: 2px; }
-    .card-swatch.focal { background: rgba(239,99,6,0.85); border: 1px solid #ef6306; }
+    .card-swatch.focal { background: #ef6306; border: 1px solid #171717; }
     .card-swatch.high { background: rgba(23,23,23,0.65); }
     .card-swatch.low { background: rgba(23,23,23,0.07); border: 1px solid rgba(23,23,23,0.20); }
     .card h3 { font-size: 0.875rem; font-weight: 600; }
@@ -35,7 +35,7 @@
     <div class="header">
       <p class="header-eyebrow">Heatmap · Diagram Design</p>
       <h1>The week payments went dark</h1>
-      <p class="subtitle">CI failure rate (%) by service and sprint, six sprints. payments spiked to 47% in S4 — a deploy regression that slipped through the gate — and had recovered to 4% by S6. billing carries the highest structural rate; notifications is the quietest service throughout.</p>
+      <p class="subtitle">CI failure rate (%) by service and sprint, six sprints. payments spiked to 47% in sprint 4 — a deploy regression that slipped through the gate — and had recovered to 4% by sprint 6. billing carries the highest structural rate; notifications is the quietest service throughout.</p>
     </div>
 
     <div class="diagram-container">
@@ -48,19 +48,16 @@
              Cell size 116×56, gap 4px (col step=120, row step=60).
              scripts/verify-heatmap.py enforces monotone opacity, complete grid, ≤1 focal. -->
 
-        <!-- SERVICE axis label (rotated) -->
-        <text transform="rotate(-90 24 212)" x="24" y="212" fill="#4d4d4d" font-size="7" font-family="'SF Mono', monospace" letter-spacing="0.14em" text-anchor="middle">SERVICE</text>
-
-        <!-- SPRINT axis label -->
-        <text x="518" y="36" fill="#4d4d4d" font-size="7" font-family="'SF Mono', monospace" letter-spacing="0.14em" text-anchor="middle">SPRINT</text>
+        <!-- Row axis title, horizontal, level with the column headers -->
+      <text x="24" y="52" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Service</text>
 
         <!-- Column headers -->
-        <text data-axis="0" data-col="S1" x="218" y="52" fill="#4d4d4d" font-size="9" font-family="'SF Mono', monospace" letter-spacing="0.14em" text-anchor="middle">S1</text>
-        <text data-axis="1" data-col="S2" x="338" y="52" fill="#4d4d4d" font-size="9" font-family="'SF Mono', monospace" letter-spacing="0.14em" text-anchor="middle">S2</text>
-        <text data-axis="2" data-col="S3" x="458" y="52" fill="#4d4d4d" font-size="9" font-family="'SF Mono', monospace" letter-spacing="0.14em" text-anchor="middle">S3</text>
-        <text data-axis="3" data-col="S4" x="578" y="52" fill="#4d4d4d" font-size="9" font-family="'SF Mono', monospace" letter-spacing="0.14em" text-anchor="middle">S4</text>
-        <text data-axis="4" data-col="S5" x="698" y="52" fill="#4d4d4d" font-size="9" font-family="'SF Mono', monospace" letter-spacing="0.14em" text-anchor="middle">S5</text>
-        <text data-axis="5" data-col="S6" x="818" y="52" fill="#4d4d4d" font-size="9" font-family="'SF Mono', monospace" letter-spacing="0.14em" text-anchor="middle">S6</text>
+        <text data-axis="0" data-col="S1" x="218" y="52" fill="#4d4d4d" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">Sprint 1</text>
+        <text data-axis="1" data-col="S2" x="338" y="52" fill="#4d4d4d" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">Sprint 2</text>
+        <text data-axis="2" data-col="S3" x="458" y="52" fill="#4d4d4d" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">Sprint 3</text>
+        <text data-axis="3" data-col="S4" x="578" y="52" fill="#4d4d4d" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">Sprint 4</text>
+        <text data-axis="4" data-col="S5" x="698" y="52" fill="#4d4d4d" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">Sprint 5</text>
+        <text data-axis="5" data-col="S6" x="818" y="52" fill="#4d4d4d" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">Sprint 6</text>
 
         <!-- Row labels -->
         <text data-row-label="auth" x="148" y="96" fill="#171717" font-size="9" font-family="'SF Mono', monospace" text-anchor="end">auth</text>
@@ -109,9 +106,9 @@
 
         <!-- FOCAL CELL: payments·S4 = 47% deploy regression -->
         <rect x="520" y="124" width="116" height="56" fill="#f8f8f8"/>
-        <rect data-row="payments" data-col="S4" data-value="47" data-focal="true" x="520" y="124" width="116" height="56" fill="rgba(239,99,6,0.85)" stroke="#ef6306" stroke-width="1.2"/>
+        <rect data-row="payments" data-col="S4" data-value="47" data-focal="true" x="520" y="124" width="116" height="56" fill="#ef6306" stroke="#171717" stroke-width="1.2"/>
         <text x="578" y="149" fill="#171717" font-size="10" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">47%</text>
-        <text x="578" y="163" fill="#171717" font-size="7" font-family="'SF Mono', monospace" text-anchor="middle" letter-spacing="0.06em">REGRESSION</text>
+        <text x="578" y="163" fill="#171717" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">Regression</text>
 
         <rect x="640" y="124" width="116" height="56" fill="#f8f8f8"/>
         <rect data-row="payments" data-col="S5" data-value="6" x="640" y="124" width="116" height="56" fill="rgba(23,23,23,0.43)"/>
@@ -196,18 +193,11 @@
         <rect data-row="notifications" data-col="S6" data-value="1" x="760" y="304" width="116" height="56" fill="rgba(23,23,23,0.07)"/>
         <text x="818" y="336" fill="#171717" font-size="8" font-family="'SF Mono', monospace" text-anchor="middle">1%</text>
 
-        <!-- Annotation: callout for focal column -->
-        <line x1="520" y1="60" x2="636" y2="60" stroke="#ef6306" stroke-width="1" stroke-dasharray="3,2"/>
-        <text x="578" y="58" fill="#171717" font-size="7" font-family="'SF Mono', monospace" letter-spacing="0.06em" text-anchor="middle">DEPLOY REGRESSION</text>
-
         <!-- Annotation: callout for billing row high baseline -->
         <line x1="880" y1="244" x2="880" y2="300" stroke="#616161" stroke-width="1" stroke-dasharray="3,2"/>
-        <text x="884" y="272" fill="#4d4d4d" font-size="7" font-family="'SF Mono', monospace" letter-spacing="0.04em">HIGH BASELINE</text>
+        <text x="884" y="272" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">High baseline</text>
 
         <!-- Legend -->
-        <line x1="40" y1="382" x2="960" y2="382" stroke="rgba(23,23,23,0.10)" stroke-width="0.8"/>
-        <text x="40" y="398" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" letter-spacing="0.18em">LEGEND</text>
-        <text x="960" y="398" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" letter-spacing="0.06em" text-anchor="end">ILLUSTRATIVE CI FAILURE RATES · NOT A MEASURED REGISTRY</text>
 
         <rect x="120" y="386" width="20" height="12" fill="#f8f8f8"/><rect x="120" y="386" width="20" height="12" fill="rgba(23,23,23,0.07)"/>
         <rect x="142" y="386" width="20" height="12" fill="#f8f8f8"/><rect x="142" y="386" width="20" height="12" fill="rgba(23,23,23,0.14)"/>
@@ -217,24 +207,22 @@
         <rect x="230" y="386" width="20" height="12" fill="#f8f8f8"/><rect x="230" y="386" width="20" height="12" fill="rgba(23,23,23,0.43)"/>
         <rect x="252" y="386" width="20" height="12" fill="#f8f8f8"/><rect x="252" y="386" width="20" height="12" fill="rgba(23,23,23,0.51)"/>
         <rect x="274" y="386" width="20" height="12" fill="#f8f8f8"/><rect x="274" y="386" width="20" height="12" fill="rgba(23,23,23,0.65)"/>
-        <text x="116" y="396" fill="#4d4d4d" font-size="7.5" font-family="'SF Mono', monospace" text-anchor="end">LOW</text>
-        <text x="298" y="396" fill="#4d4d4d" font-size="7.5" font-family="'SF Mono', monospace">HIGH</text>
+        <text x="116" y="396" fill="#4d4d4d" font-size="7.5" font-family="'SF Mono', monospace" text-anchor="end">Low</text>
+        <text x="298" y="396" fill="#4d4d4d" font-size="7.5" font-family="'SF Mono', monospace">High</text>
 
-        <rect x="360" y="386" width="20" height="12" fill="#f8f8f8"/><rect x="360" y="386" width="20" height="12" fill="rgba(239,99,6,0.85)" stroke="#ef6306" stroke-width="1"/>
-        <text x="388" y="396" fill="#4d4d4d" font-size="8.5" font-family="'Inter', sans-serif">payments · S4 · 47% — deploy regression (now fixed)</text>
-
-        <text x="40" y="418" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" letter-spacing="0.06em">NON-FOCAL SCALE: 1–9% · SINGLE INK RAMP · ACCENT IS EDITORIAL, NOT A DATA RANGE</text>
+        <text x="40" y="418" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Source: illustrative CI failure rates, % of builds failing per service and sprint; not measured data.</text>
+        <text x="40" y="432" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Ramp covers the non-focal cells (1–9%); opacity is linear in value, not perceptually calibrated. The focal cell, payments in sprint 4 (47%), is outside the ramp.</text>
       </svg>
     </div>
 
     <div class="cards">
       <div class="card">
-        <p class="eyebrow">Focal · payments · S4</p>
+        <p class="eyebrow">Focal · payments · sprint 4</p>
         <div class="card-header">
           <div class="card-swatch focal"></div>
           <h3>Deploy regression — 47%</h3>
         </div>
-        <p>A CI gate misconfiguration during the payments S4 deploy let a breaking change through. The spike resolved by S6 after the rollback and a gate fix, returning to a 4% baseline.</p>
+        <p>A CI gate misconfiguration during the payments sprint 4 deploy let a breaking change through. The spike resolved by sprint 6 after the rollback and a gate fix, returning to a 4% baseline.</p>
       </div>
       <div class="card">
         <p class="eyebrow">Structural issue · billing</p>
@@ -242,7 +230,7 @@
           <div class="card-swatch high"></div>
           <h3>Highest baseline — peaks 9%</h3>
         </div>
-        <p>billing shows the highest non-focal failure rates across all six sprints, peaking at 9% in S3. This is a persistent structural issue unrelated to the payments regression.</p>
+        <p>billing shows the highest non-focal failure rates across all six sprints, peaking at 9% in sprint 3. This is a persistent structural issue unrelated to the payments regression.</p>
       </div>
       <div class="card">
         <p class="eyebrow">Quietest service · notifications</p>

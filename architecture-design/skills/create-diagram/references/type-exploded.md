@@ -55,7 +55,7 @@ Light comes from the top left, so the left face is lighter than the right. Alway
 
 ### Labels
 
-- One label per part, in one column to the right of the object. A label is the part name (`node-name` role, 600, 16px, one or two words) above a technical sublabel (`sublabel` role, 10px, `muted`, tracked 0.08em).
+- One label per part, in one column to the right of the object. A label is the part name (`node-name` role, 600, 16px, one or two words) above a technical sublabel (`sublabel` role, 10px, `muted`, tracked 0.08em). The focal caption under the figure is sentence case (`Focal layer`), untracked.
 - A horizontal leader (0.8px, `ink` at 0.40) runs from 6px right of a 2px dot on the part's right extreme, at mid-thickness, to 12px left of the column. Leaders never bend, never cross a part, and never cross each other; horizontal leaders from distinct heights cannot cross each other, and the gap rule above keeps them clear of parts.
 - The focal part's dot, leader, and sublabel take the accent. Its name stays `ink`.
 - No numbered callouts and no legend. The label is on the part it names.

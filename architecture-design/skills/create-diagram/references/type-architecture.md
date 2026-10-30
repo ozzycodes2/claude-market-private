@@ -19,7 +19,7 @@
       fill="none" stroke="…" stroke-width="1.2" marker-end="url(#arrow)"/>
 ```
 
-Flip the vertical signs for right+up. Use a plain `<line>` only when endpoints share the same x or y. Arrow labels sit on the vertical segment, centered horizontally on `mid` and vertically between the two corners.
+Flip the vertical signs for right+up. Use a plain `<line>` only when endpoints share the same x or y. Arrow labels sit on the vertical segment, centered horizontally on `mid` and vertically between the two corners. They are sentence case, no tracking, ≤ 24 characters, with acronyms keeping their case (`HTTPS`, `SSR`, `Read MDX`, `Response`, `Query`); each mask is sized to its text by the `style-guide.md` width budget and stays centred on the same point. The 7px type tag inside a node stays uppercase and tracked, spelled out in full when it fits (`ORIGIN`, `BUNDLE`), and the diagram carries no large faint index numerals.
 
 **Port selection for vertical connectors.** When the destination is noticeably above or below the source, enter the destination through its top or bottom edge. Use a single-bend L-path: leave the source through the side edge that faces the destination's column, run horizontally, turn once, and run vertically into the destination:
 

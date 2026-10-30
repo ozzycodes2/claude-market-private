@@ -4,7 +4,7 @@
 
 ## Layout conventions
 - 3–5 rounded rectangles (`rx=8`), nested with consistent inset padding (24–32px horizontal, 32–36px vertical recommended).
-- Each level labeled at the top-left in the `eyebrow` role (7–8px, letter-spacing 0.14em). Labels sit on a paper-colored mask rect over the ring's top border.
+- Each level labeled at the top-left in the `eyebrow` role (7–8px, letter-spacing 0.14em). Labels sit on a paper-colored mask rect over the ring's top border. Path-like labels (`~/vault/`) keep their literal case; a worded label ("Team scope") is sentence case, never all caps. The innermost name and callouts are sentence case too.
 - Stroke hierarchy: outer rings faint (`rgba(..,0.30–0.45)`), progressing to muted, to ink, to the accent at the innermost focal.
 - Fills step up in opacity from outer to inner: `rgba(..,0.015)` → `rgba(..,0.025)` → accent-tint on the innermost.
 - Optional file-icon glyph (folded-corner rect) inside each level hints at scope content.

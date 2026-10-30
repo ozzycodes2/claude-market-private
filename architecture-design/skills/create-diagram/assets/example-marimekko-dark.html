@@ -107,32 +107,27 @@
 
       <!-- Column captions, centred under each column, each printing the column's
            share of the whole so the width can be read as a number -->
-      <text data-column="web" data-role="caption" x="180" y="438" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" letter-spacing="0.06em" text-anchor="middle">web · 31%</text>
-      <text data-column="api" data-role="caption" x="450" y="438" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" letter-spacing="0.06em" text-anchor="middle">api · 28%</text>
-      <text data-column="mobile" data-role="caption" x="688" y="438" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" letter-spacing="0.06em" text-anchor="middle">mobile · 24%</text>
-      <text data-column="infra" data-role="caption" x="864" y="438" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" letter-spacing="0.06em" text-anchor="middle">infra · 14%</text>
-      <text data-column="docs" data-role="caption" x="944" y="438" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" letter-spacing="0.06em" text-anchor="middle">docs · 3%</text>
+      <text data-column="web" data-role="caption" x="180" y="438" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">web · 31%</text>
+      <text data-column="api" data-role="caption" x="450" y="438" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">api · 28%</text>
+      <text data-column="mobile" data-role="caption" x="688" y="438" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">mobile · 24%</text>
+      <text data-column="infra" data-role="caption" x="864" y="438" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">infra · 14%</text>
+      <text data-column="docs" data-role="caption" x="944" y="438" fill="#d0d6e0" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">docs · 3%</text>
 
-      <!-- Legend -->
-      <line x1="40" y1="462" x2="960" y2="462" stroke="rgba(247,248,248,0.10)" stroke-width="0.8"/>
-      <text x="40" y="478" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" letter-spacing="0.18em">LEGEND</text>
-      <text x="960" y="478" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" letter-spacing="0.06em" text-anchor="end">WIDTH = PIPELINE SHARE · HEIGHT = RUNNER SHARE WITHIN PIPELINE · AREA = SHARE OF ALL CI MINUTES · 30 DAYS · 10,000 MIN · ILLUSTRATIVE FIGURES</text>
+      <!-- Keys and source line -->
+      <text x="960" y="478" fill="#d0d6e0" font-size="8" font-family="'SF Mono', monospace" text-anchor="end">Source: illustrative CI minutes, 30 days, 10,000 min total. Width is pipeline share, height is runner share within a pipeline, area is share of all minutes.</text>
 
-      <rect x="40" y="488" width="16" height="10" rx="2" fill="rgba(239,99,6,0.16)" stroke="#ef6306" stroke-width="1"/>
-      <text x="64" y="497" fill="#d0d6e0" font-size="8.5" font-family="'Inter', sans-serif">mobile × macOS · the focal segment</text>
+      <rect x="40" y="488" width="16" height="10" rx="2" fill="rgba(247,248,248,0.14)" stroke="rgba(247,248,248,0.30)" stroke-width="1"/>
+      <text data-segment="Linux" data-role="key" x="64" y="497" fill="#d0d6e0" font-size="8.5" font-family="'Inter', sans-serif">Linux</text>
 
-      <rect x="248" y="488" width="16" height="10" rx="2" fill="rgba(247,248,248,0.14)" stroke="rgba(247,248,248,0.30)" stroke-width="1"/>
-      <text data-segment="Linux" data-role="key" x="272" y="497" fill="#d0d6e0" font-size="8.5" font-family="'Inter', sans-serif">Linux</text>
+      <rect x="112" y="488" width="16" height="10" rx="2" fill="rgba(247,248,248,0.09)" stroke="rgba(247,248,248,0.30)" stroke-width="1"/>
+      <text data-segment="macOS" data-role="key" x="136" y="497" fill="#d0d6e0" font-size="8.5" font-family="'Inter', sans-serif">macOS</text>
 
-      <rect x="320" y="488" width="16" height="10" rx="2" fill="rgba(247,248,248,0.09)" stroke="rgba(247,248,248,0.30)" stroke-width="1"/>
-      <text data-segment="macOS" data-role="key" x="344" y="497" fill="#d0d6e0" font-size="8.5" font-family="'Inter', sans-serif">macOS</text>
+      <rect x="188" y="488" width="16" height="10" rx="2" fill="rgba(247,248,248,0.04)" stroke="rgba(247,248,248,0.30)" stroke-width="1"/>
+      <text data-segment="Windows" data-role="key" x="212" y="497" fill="#d0d6e0" font-size="8.5" font-family="'Inter', sans-serif">Windows</text>
 
-      <rect x="396" y="488" width="16" height="10" rx="2" fill="rgba(247,248,248,0.04)" stroke="rgba(247,248,248,0.30)" stroke-width="1"/>
-      <text data-segment="Windows" data-role="key" x="420" y="497" fill="#d0d6e0" font-size="8.5" font-family="'Inter', sans-serif">Windows</text>
-
-      <circle cx="500" cy="493" r="5" fill="#f7f8f8"/>
-      <text x="500" y="496" fill="#010102" font-size="7" font-weight="600" font-family="'SF Mono', monospace" text-anchor="middle">i</text>
-      <text x="516" y="497" fill="#d0d6e0" font-size="8.5" font-family="'Inter', sans-serif">docs · 260 min on Linux, 2.6% — too narrow to label</text>
+      <circle cx="292" cy="493" r="5" fill="#f7f8f8"/>
+      <text x="292" y="496" fill="#010102" font-size="7" font-weight="600" font-family="'SF Mono', monospace" text-anchor="middle">i</text>
+      <text x="308" y="497" fill="#d0d6e0" font-size="8.5" font-family="'Inter', sans-serif">docs · 260 min on Linux, 2.6% — too narrow to label</text>
     </svg>
     </div>
   </div>

@@ -37,7 +37,7 @@
            as a tight one, which is the single lie this type is built to tell.
            scripts/verify-ridgeline.py derives the amplitude from the figure and then
            holds every vertex of every ridge to it. -->
-      <text transform="rotate(-90 24 264)" x="24" y="264" fill="#4d4d4d" font-size="7" font-family="'SF Mono', monospace" letter-spacing="0.14em" text-anchor="middle">SHARE OF REQUESTS · 1% = 2.4PX ON EVERY RIDGE</text>
+      <text x="320" y="28" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="start">Share of requests · 1% = 2.4px on every ridge</text>
 
       <!-- One baseline per ridge, 56px pitch. The baseline is where a bin of zero
            requests sits, so it can never be moved to give a ridge more room. -->
@@ -72,21 +72,20 @@
 
       <!-- Bin ticks on the shared latency scale. data-bin binds the printed number,
            so a caption cannot be edited without its binding. -->
-      <text data-tick="0" data-bin="0" x="320" y="400" fill="#4d4d4d" font-size="9" font-family="'SF Mono', monospace" letter-spacing="0.14em" text-anchor="middle">0</text>
-      <text data-tick="1" data-bin="120" x="410" y="400" fill="#4d4d4d" font-size="9" font-family="'SF Mono', monospace" letter-spacing="0.14em" text-anchor="middle">120</text>
-      <text data-tick="2" data-bin="240" x="500" y="400" fill="#4d4d4d" font-size="9" font-family="'SF Mono', monospace" letter-spacing="0.14em" text-anchor="middle">240</text>
-      <text data-tick="3" data-bin="360" x="590" y="400" fill="#4d4d4d" font-size="9" font-family="'SF Mono', monospace" letter-spacing="0.14em" text-anchor="middle">360</text>
-      <text data-tick="4" data-bin="480" x="680" y="400" fill="#4d4d4d" font-size="9" font-family="'SF Mono', monospace" letter-spacing="0.14em" text-anchor="middle">480</text>
-      <text x="500" y="424" fill="#4d4d4d" font-size="7" font-family="'SF Mono', monospace" letter-spacing="0.18em" text-anchor="middle">REQUEST LATENCY (MS), BIN LOWER EDGE</text>
+      <text data-tick="0" data-bin="0" x="320" y="400" fill="#4d4d4d" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">0</text>
+      <text data-tick="1" data-bin="120" x="410" y="400" fill="#4d4d4d" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">120</text>
+      <text data-tick="2" data-bin="240" x="500" y="400" fill="#4d4d4d" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">240</text>
+      <text data-tick="3" data-bin="360" x="590" y="400" fill="#4d4d4d" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">360</text>
+      <text data-tick="4" data-bin="480" x="680" y="400" fill="#4d4d4d" font-size="9" font-family="'SF Mono', monospace" text-anchor="middle">480</text>
+      <text x="500" y="424" fill="#4d4d4d" font-size="7" font-family="'SF Mono', monospace" text-anchor="middle">Request latency (ms), bin lower edge</text>
 
       <!-- Legend -->
       <line x1="40" y1="462" x2="960" y2="462" stroke="rgba(23,23,23,0.10)" stroke-width="0.8"/>
-      <text x="40" y="478" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" letter-spacing="0.18em">LEGEND</text>
-      <text x="960" y="478" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" letter-spacing="0.06em" text-anchor="end">SHARE OF EACH SERVICE'S OWN REQUESTS PER 40 MS BIN · 1% = 2.4PX ON EVERY RIDGE · UNSMOOTHED · ILLUSTRATIVE FIGURES</text>
+      <text x="40" y="478" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Share of each service's own requests per 40 ms bin · 1% = 2.4px on every ridge · Unsmoothed · Illustrative figures</text>
 
       <rect x="40" y="486" width="24" height="10" fill="rgba(239,99,6,0.16)"/>
       <line x1="40" y1="486" x2="64" y2="486" stroke="#ef6306" stroke-width="2.4"/>
-      <text x="72" y="496" fill="#4d4d4d" font-size="8.5" font-family="'Inter', sans-serif">checkout-api · focal, second peak past 300 ms</text>
+      <text x="72" y="496" fill="#4d4d4d" font-size="8.5" font-family="'Inter', sans-serif">Accent: the second peak past 300 ms</text>
       <rect x="360" y="486" width="24" height="10" fill="rgba(23,23,23,0.12)"/>
       <line x1="360" y1="486" x2="384" y2="486" stroke="rgba(23,23,23,0.80)" stroke-width="1.2"/>
       <text x="392" y="496" fill="#4d4d4d" font-size="8.5" font-family="'Inter', sans-serif">Other services · strongest tone is the fastest median</text>

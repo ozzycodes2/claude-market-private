@@ -22,9 +22,12 @@
 - **Totals are the heaviest marks:** `ink @ 0.08` fill with a 1px `ink` stroke. The reader's eye should land on the two anchors first, then walk the bridges.
 - **Focal bridge (≤1, optional):** the one contribution the chart exists to show keeps its sign fill and takes an `accent` stroke at 1.8 against the 1 of its siblings. The accent cannot take the fill here: fill *is* the sign channel, so an accent-filled decrease reads as an increase. The value label stays `ink` — the accent paints objects, never type.
 - **Value labels:** `arrow-label` role 8px. Totals and increases print above the bar top (baseline `top − 8`); decreases print below the bar bottom (baseline `bottom + 12`), because the space above a decrease is where its carry arrives. Deltas print with an explicit sign (`+64`, `−38`); totals print unsigned.
-- **Gridlines / axes:** identical to the bar chart — 4–6 faint horizontal gridlines `ink @ 0.08` 0.8px, y-axis line and x-axis baseline `soft` 1px, tick labels `arrow-label` role 8px `muted` right-aligned at x=72, rotated y-axis title `eyebrow` role 7px tracked.
+- **Each value is encoded once.** Every bar prints its signed value, so the chart carries no gridlines, no value-axis line and no tick labels. The only rule is the zero baseline at `soft`, 1px, where the totals anchor; the carries are the walk itself, not a scale. `scripts/verify-waterfall.py` refuses a full-width rule that is not the baseline, a vertical axis line, numeric tick labels beside the bars, and rotated text.
+- **Axis title:** one horizontal line above the plot, left-aligned at x=80, y=28, `eyebrow` role 7px `muted`, sentence case with no tracking ("Cloud spend, $K per month"). Never rotated.
+- **Context:** the start total is the comparison. The first carry draws it at its own level and every later bar is read against the running total, so no extra reference line is added; a second one would cross the bars.
 - **Category labels:** centered under each bar at y=440, `node-name` role 11px 600 `ink`; the focal bar's label stays `ink`, one value step above its `muted` siblings; the accent on its bar carries the focus.
-- **Legend:** horizontal bottom strip after a hairline rule, one key per treatment used: total, increase, decrease, focal.
+- **Direct labels first.** Name the focal bridge in place with an italic `ink` callout below its value label ("Largest saving"), not a legend key. The legend strip keeps only the treatments that cannot be labelled in place (total, increase, decrease), with no "LEGEND" heading and no rule above it.
+- **Source line:** sentence case, `Inter` 8.5px `muted` at x=40, y=478. State the unit and, for money across periods, **nominal** or **real (base year)** — "Nominal dollars, not adjusted for inflation". `scripts/verify-waterfall.py` fails a walk in dollars that says neither.
 
 ### Waterfall element pattern
 
@@ -53,6 +56,7 @@ Endpoint positions round to the nearest integer pixel and never snap to the 4px 
 - **Sign by hue alone** (green up / red down, or accent on every decrease). Hue is the one channel that does not survive greyscale or CVD; fill weight and geometry carry the sign here, and the accent stays editorial.
 - **A truncated value axis.** The domain follows the data's range, never its observed extremes — the same rule, cases, and all-zero fallback as the dumbbell (`type-bar.md` § Dumbbell honesty rules). A waterfall on a clipped domain inflates every bridge.
 - **More than one subtotal.** A walk that needs several resting points is two walks; split it.
+- **Gridlines or a tick scale under printed values** — the same number encoded twice.
 - **Mixing units mid-walk.** Every bar is in the start total's unit or the reconciliation is fiction.
 - **3-D, shadows, rounded bridge bars** — same editorial rules as every chart here.
 
@@ -66,7 +70,7 @@ Endpoint positions round to the nearest integer pixel and never snap to the 4px 
 - **Zero bridges are dropped, never drawn.** A zero-height bar is invisible ink that still occupies a column; state it in prose or the source line instead.
 - **A degenerate start (zero or negative total) is a named failure,** not a silently rescaled chart — the scale is derived from the start anchor.
 
-These rules are executable: `scripts/verify-waterfall.py` reads each bar's declaration, recomputes the running totals, refits the shared scale from the start anchor, and fails on any conservation, geometry, carry, label, or sign-treatment drift. `scripts/test-verify-waterfall.py` proves both polarities — the shipped examples pass, and each mutation class above fails with a named finding.
+These rules are executable: `scripts/verify-waterfall.py` reads each bar's declaration, recomputes the running totals, refits the shared scale from the start anchor, and fails on any conservation, geometry, carry, label, or sign-treatment drift, on a second encoding of the values (gridline, value-axis line, tick labels, rotated text), and on a dollar walk whose text never says nominal or real. `scripts/test-verify-waterfall.py` proves both polarities — the shipped examples pass, and each mutation class above fails with a named finding.
 
 ## Examples
 

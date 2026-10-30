@@ -54,13 +54,13 @@
 <path data-kind="relationship" data-object-id="r2" data-status="rewired" data-signature="submit-order" data-from="api" data-to="legacy" d="M 168 160 V 192" fill="none" stroke="#4d4d4d" stroke-width="1.2" stroke-dasharray="8 3 2 3" marker-end="url(#architecture-delta-arrow)"/>
 <path data-kind="relationship" data-object-id="r3" data-status="removed" data-signature="dispatch" data-from="legacy" data-to="worker" d="M 168 256 V 272 Q 168 280 160 280 H 88 Q 80 280 80 288 V 304" fill="none" stroke="#4d4d4d" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#architecture-delta-arrow)"/>
 <path data-kind="relationship" data-object-id="r5" data-status="unchanged" data-signature="write-order" data-from="worker" data-to="db" d="M 80 368 V 384 Q 80 392 88 392 H 160 Q 168 392 168 400 V 416" fill="none" stroke="#4d4d4d" stroke-width="1.2" marker-end="url(#architecture-delta-arrow)"/>
-<rect x="176" y="72" width="92" height="16" rx="2" fill="#f8f8f8"/>
+<rect x="176" y="72" width="60" height="16" rx="2" fill="#f8f8f8"/>
 <text x="180" y="84" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" >r1 · HTTPS</text>
-<rect x="176" y="168" width="92" height="16" rx="2" fill="#f8f8f8"/>
-<text x="180" y="180" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" >r2 · REWIRED</text>
-<rect x="176" y="260" width="92" height="16" rx="2" fill="#f8f8f8"/>
-<text x="180" y="272" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" >r3 · REMOVED</text>
-<rect x="176" y="396" width="68" height="16" rx="2" fill="#f8f8f8"/>
+<rect x="176" y="168" width="68" height="16" rx="2" fill="#f8f8f8"/>
+<text x="180" y="180" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" >r2 · Rewired</text>
+<rect x="176" y="260" width="68" height="16" rx="2" fill="#f8f8f8"/>
+<text x="180" y="272" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" >r3 · Removed</text>
+<rect x="176" y="396" width="48" height="16" rx="2" fill="#f8f8f8"/>
 <text x="180" y="408" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" >r5 · SQL</text>
 <g data-kind="component" data-object-id="storefront" data-status="unchanged" data-signature="web:v1">
 <rect data-role="bounds" x="96" y="0" width="144" height="64" rx="6" fill="#ffffff" stroke="#4d4d4d" stroke-width="1.2"/>
@@ -116,7 +116,7 @@
 <path d="M 456 448 H 776" stroke="rgba(23,23,23,0.12)" stroke-width="0.8"/>
 <text x="424" y="470" fill="#4d4d4d" font-size="9" font-family="'SF Mono', monospace" >07</text>
 <text x="456" y="468" data-change="ADDED" data-target="r4" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" letter-spacing="0.06em">ADDED · r4<tspan x="456" y="491" fill="#171717" font-size="12" font-family="'Inter', sans-serif" letter-spacing="0">Queue → worker</tspan></text>
-<text x="424" y="544" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" letter-spacing="0.14em">PRESERVED</text>
+<text x="424" y="544" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace">Preserved</text>
 <text x="424" y="564" fill="#4d4d4d" font-size="11" font-family="'Inter', sans-serif" >Storefront · database · r1 · r5</text>
         <g data-snapshot="after" transform="translate(840 96)" data-grid="336 480 4">
 <!-- Relationships precede components; endpoints meet the declared bounds. -->
@@ -124,13 +124,13 @@
 <path data-kind="relationship" data-object-id="r2" data-status="rewired" data-signature="submit-order" data-from="api" data-to="queue" d="M 168 160 V 192" fill="none" stroke="#4d4d4d" stroke-width="1.2" stroke-dasharray="8 3 2 3" marker-end="url(#architecture-delta-arrow)"/>
 <path data-kind="relationship" data-object-id="r4" data-status="added" data-signature="deliver" data-from="queue" data-to="worker" d="M 168 256 V 272 Q 168 280 176 280 H 248 Q 256 280 256 288 V 304" fill="none" stroke="#4d4d4d" stroke-width="2" marker-end="url(#architecture-delta-arrow)"/>
 <path data-kind="relationship" data-object-id="r5" data-status="unchanged" data-signature="write-order" data-from="worker" data-to="db" d="M 256 368 V 384 Q 256 392 248 392 H 176 Q 168 392 168 400 V 416" fill="none" stroke="#4d4d4d" stroke-width="1.2" marker-end="url(#architecture-delta-arrow)"/>
-<rect x="176" y="72" width="92" height="16" rx="2" fill="#f8f8f8"/>
+<rect x="176" y="72" width="60" height="16" rx="2" fill="#f8f8f8"/>
 <text x="180" y="84" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" >r1 · HTTPS</text>
-<rect x="176" y="168" width="92" height="16" rx="2" fill="#f8f8f8"/>
-<text x="180" y="180" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" >r2 · REWIRED</text>
-<rect x="68" y="260" width="92" height="16" rx="2" fill="#f8f8f8"/>
-<text x="156" y="272" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="end">r4 · ADDED</text>
-<rect x="92" y="396" width="68" height="16" rx="2" fill="#f8f8f8"/>
+<rect x="176" y="168" width="68" height="16" rx="2" fill="#f8f8f8"/>
+<text x="180" y="180" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" >r2 · Rewired</text>
+<rect x="100" y="260" width="60" height="16" rx="2" fill="#f8f8f8"/>
+<text x="156" y="272" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="end">r4 · Added</text>
+<rect x="112" y="396" width="48" height="16" rx="2" fill="#f8f8f8"/>
 <text x="156" y="408" fill="#4d4d4d" font-size="8" font-family="'SF Mono', monospace" text-anchor="end">r5 · SQL</text>
 <g data-kind="component" data-object-id="storefront" data-status="unchanged" data-signature="web:v1">
 <rect data-role="bounds" x="96" y="0" width="144" height="64" rx="6" fill="#ffffff" stroke="#4d4d4d" stroke-width="1.2"/>

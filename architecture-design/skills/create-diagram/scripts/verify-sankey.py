@@ -272,13 +272,13 @@ VALUE_RE = re.compile(
     r"(?:[eE][-+]?\d+)?)(?![\d,.eE])"
 )
 
-# A node bar is a thin vertical rect inside the plot band. The legend keys are
-# 16x8 and the two background rects are the full viewBox, so both fall out on
-# width and on the band test.
+# A node bar is a thin vertical rect inside the plot band. The two background
+# rects are the full viewBox, so they fall out on the 100% test. The figure has
+# no legend, so no other rect is admitted.
 BAR_MIN_W, BAR_MAX_W = 5.0, 14.0
-BAR_MIN_H = 2.0   # a small flow is still a node; swatches fall out on width and band
-# The band's floor sits between the lowest plot row (bottom 456 in the shipped
-# example) and the legend rule at y=492 — a bar is above it, a swatch below.
+BAR_MIN_H = 2.0   # a small flow is still a node
+# The band's floor sits below the lowest plot row (bottom 456 in the shipped
+# example) and above the source line at y=496 — every bar is above it.
 BAND_TOP, BAND_BOTTOM = 30.0, 480.0
 COLUMN_EPS = 1.5      # x values this close are the same column
 EDGE_EPS = 2.0        # a ribbon end this close to a bar edge is attached to it
@@ -782,7 +782,6 @@ RULE_RE = re.compile(r"(?P<selector>[^{}]+)\{(?P<body>[^{}]*)\}")
 CSS_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
 DEFS_BLOCK_RE = re.compile(r"<defs\b[^>]*>(?P<body>.*?)</defs>", re.IGNORECASE | re.DOTALL)
 GEOMETRIC_ATTRS = ("x", "y", "width", "height", "x1", "y1", "x2", "y2", "cx", "cy", "r")
-LEGEND_SWATCH = (16.0, 8.0)
 
 
 
@@ -877,8 +876,7 @@ def certify_readable(name: str, source: str) -> list[str]:
                 continue                                    # the paper, or its texture
             width, why_w = length_px(raw_w)
             height, why_h = length_px(raw_h)
-            # y decides WHICH shape a rect may claim to be — a swatch lives in
-            # the legend region and a bar in the plot band — so an unreadable y
+            # y decides whether a rect sits in the plot band, so an unreadable y
             # is refused along with an unreadable size. Absent y is SVG's 0.
             y, why_y = length_px((attrs.get("y") or "0").strip() or "0")
             if why_w or why_h or why_y:
@@ -887,16 +885,14 @@ def certify_readable(name: str, source: str) -> list[str]:
                                f"claims, so a value this checker has to guess at is a sum "
                                f"it cannot stand behind")
                 continue
-            if (width, height) == LEGEND_SWATCH and y is not None and y >= BAND_BOTTOM:
-                continue                                    # a legend key, in the legend
             if (width is not None and height is not None and y is not None
                     and BAR_MIN_W <= width <= BAR_MAX_W and height >= BAR_MIN_H
                     and BAND_TOP <= y and y + height <= BAND_BOTTOM):
                 continue                                    # a node bar; parse_bars reads it
             refuse(offset, f"draws a <rect> {raw_w or '?'}x{raw_h or '?'} at y={y:g}, "
-                           f"which is neither a node bar, a legend swatch, nor the "
-                           f"full-bleed paper — a bar lives inside the plot band and a "
-                           f"swatch below it. A rect that is none of those is ink laid "
+                           f"which is neither a node bar nor the "
+                           f"full-bleed paper — a bar lives inside the plot band, and the "
+                           f"figure has no legend swatches. A rect that is neither is ink laid "
                            f"over the figure, and painted last it covers whatever was "
                            f"just measured")
         if tag == "line":
@@ -1025,7 +1021,7 @@ def check(path: Path) -> list[str]:
                     f"of its own would render whatever this says. Set it per element"
                 )
     # Which leaves the direct route: a stroke-width attribute is legitimate — the
-    # legend swatches carry a 1px key stroke — but a fat one paints outside the
+    # leader line carries a 1px stroke — but a fat one paints outside the
     # fill this checker measures, so a 30px stroke renders a ribbon 30px wider
     # than the volume it is credited with. A separator is a hairline; anything
     # thicker is being used as width, and width is the encoding.
